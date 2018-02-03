@@ -4,15 +4,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{FB46AD2C-DF81-4D35-B419-D93E5EF9D98A}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>SqlWorkload</RootNamespace>
-    <AssemblyName>SqlWorkload</AssemblyName>
+    <ProjectGuid>{AE6E4548-8C33-4728-8504-88AA9666020B}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>WorkloadTools</RootNamespace>
+    <AssemblyName>WorkloadTools</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,7 +22,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -31,9 +30,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CommandLine, Version=1.9.71.2, Culture=neutral, PublicKeyToken=de6f01bd326f8c32, processorArchitecture=MSIL">
-      <HintPath>..\packages\CommandLineParser.1.9.71\lib\net40\CommandLine.dll</HintPath>
-    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.12\lib\net40\NLog.dll</HintPath>
     </Reference>
@@ -46,17 +42,32 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="Consumer\AnalysisConsumer.cs" />
+    <Compile Include="BufferedWorkloadConsumer.cs" />
+    <Compile Include="Listener\ExtendedEventsWorkloadListener.cs" />
+    <Compile Include="Listener\ProfilerWorkloadListener.cs" />
+    <Compile Include="Consumer\ReplayConsumer.cs" />
+    <Compile Include="Listener\SqlTraceWorkloadListener.cs" />
+    <Compile Include="Listener\Trace\SqlConnectionInfoWrapper.cs" />
+    <Compile Include="Listener\Trace\TraceServerWrapper.cs" />
+    <Compile Include="SqlConnectionInfo.cs" />
+    <Compile Include="WorkloadConsumer.cs" />
+    <Compile Include="WorkloadController.cs" />
+    <Compile Include="WorkloadEvent.cs" />
+    <Compile Include="WorkloadEventFilter.cs" />
+    <Compile Include="WorkloadListener.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Listener\sqlworkload.tdf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WorkloadTools\WorkloadTools.csproj">
-      <Project>{ae6e4548-8c33-4728-8504-88aa9666020b}</Project>
-      <Name>WorkloadTools</Name>
-    </ProjectReference>
+    <Content Include="Listener\sqlworkload.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
