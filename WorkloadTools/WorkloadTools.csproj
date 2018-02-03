@@ -46,6 +46,8 @@
     <Compile Include="BufferedWorkloadConsumer.cs" />
     <Compile Include="Consumer\Analysis\SqlTextNormalizer.cs" />
     <Compile Include="Consumer\Analysis\WorkloadAnalyzer.cs" />
+    <Compile Include="Consumer\Replay\ReplayCommand.cs" />
+    <Compile Include="Consumer\Replay\ReplayWorker.cs" />
     <Compile Include="Listener\ExtendedEventsWorkloadListener.cs" />
     <Compile Include="Listener\ProfilerWorkloadListener.cs" />
     <Compile Include="Consumer\ReplayConsumer.cs" />
@@ -71,8 +73,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Consumer\Replay\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
