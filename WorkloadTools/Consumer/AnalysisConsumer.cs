@@ -13,9 +13,9 @@ namespace WorkloadTools.Consumer
         public SqlConnectionInfo ConnectionInfo { get; set; }
         public int UploadIntervalSeconds { get; set; }
 
-        public override void Consume(WorkloadEvent evt) 
+        public override void ConsumeBuffered(WorkloadEvent evt)
         {
-            base.Consume(evt);
+            throw new NotImplementedException();
         }
     }
 }

@@ -10,6 +10,7 @@ namespace WorkloadTools
         public enum EventType
         {
             RPCCompleted,
+            RPCStarted,
             BatchCompleted,
             Unknown
         }
