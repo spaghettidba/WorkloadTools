@@ -28,27 +28,47 @@ namespace SqlWorkload
             string name = assembly.FullName;
             logger.Info(name + " " + version);
 
+            try
+            {
+                var options = new Options();
+                if (!CommandLine.Parser.Default.ParseArguments(args, options))
+                {
+                    return;
+                }
+                Run(options);
+            }
+            catch(Exception e)
+            {
+                logger.Error(e);
+            }
+
+        }
+
+        static void Run(Options options)
+        {
+
             WorkloadListener listener = null;
             WorkloadController controller = null;
 
-            var options = new Options();
+            
+
             if (options.ListenerType.ToLower() == "ProfilerWorkloadListener".ToLower())
             {
                 listener = new ProfilerWorkloadListener();
-                options.TraceDefinition = System.IO.Path.GetFullPath(options.TraceDefinition);
-                listener.Source = options.TraceDefinition;
+                options.Source = System.IO.Path.GetFullPath(options.Source);
+                listener.Source = options.Source;
             }
             else if (options.ListenerType.ToLower() == "SqlTraceWorkloadListener".ToLower())
             {
                 listener = new SqlTraceWorkloadListener();
-                options.SqlTraceScript = System.IO.Path.GetFullPath(options.SqlTraceScript);
-                listener.Source = options.SqlTraceScript;
+                options.Source = System.IO.Path.GetFullPath(options.Source);
+                listener.Source = options.Source;
             }
             else if (options.ListenerType.ToLower() == "ExtendedEventsWorkloadListener".ToLower())
             {
                 listener = new ExtendedEventsWorkloadListener();
-                options.XESessionDefinition = System.IO.Path.GetFullPath(options.XESessionDefinition);
-                listener.Source = options.XESessionDefinition;
+                options.Source = System.IO.Path.GetFullPath(options.Source);
+                listener.Source = options.Source;
             }
             else
             {
@@ -135,19 +155,13 @@ namespace SqlWorkload
 
     class Options
     {
-        [Option("ListenerType", HelpText = "Class name of the Listener")]
+        [Option("ListenerType", Required = true, HelpText = "Class name of the Listener")]
         public string ListenerType { get; set; }
 
-        [Option("TraceDefinition", DefaultValue = "sqlworkload.tdf", HelpText = "Path to the Trace Definition file")]
-        public string TraceDefinition { get; set; }
+        [Option("Source", DefaultValue = "sqlworkload.tdf", HelpText = "Path to the Trace Definition file / Trace SQL script / XE session script")]
+        public string Source { get; set; }
 
-        [Option("SqlTraceScript", DefaultValue = "sqlworkload.sql", HelpText = "Path to the Sql Trace script file")]
-        public string SqlTraceScript { get; set; }
-
-        [Option("XESessionDefinition", DefaultValue = "xeworkload.sql", HelpText = "Path to the XE Session Definition file")]
-        public string XESessionDefinition { get; set; }
-
-        [Option('S', "SourceServerName", DefaultValue = ".", HelpText = "Source SQL Server instance")]
+        [Option('S', "SourceServerName", Required = true, DefaultValue = ".", HelpText = "Source SQL Server instance")]
         public string SourceServerName { get; set; }
 
         [Option('U', "SourceUserName", HelpText = "Source User Name")]

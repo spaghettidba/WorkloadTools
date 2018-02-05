@@ -35,7 +35,7 @@ namespace WorkloadTools.Consumer
             };
 
             int session_id = -1;
-            session_id = evt.SPID;
+            session_id = (int)evt.SPID;
 
             ReplayWorker rw = null;
             if (ReplayWorkers.TryGetValue(session_id, out rw))

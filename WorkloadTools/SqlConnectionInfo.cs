@@ -13,5 +13,31 @@ namespace WorkloadTools
         public bool UseIntegratedSecurity { get; set; }
         public string UserName { get; set; }
         public string Password { get; set; }
+
+        public string ConnectionString
+        {
+            get
+            {
+                string connectionString = "Data Source=" + ServerName + ";";
+                if (String.IsNullOrEmpty(DatabaseName))
+                {
+                    connectionString += "Initial Catalog = master; ";
+                }
+                else
+                {
+                    connectionString += "Initial Catalog = " + DatabaseName + "; ";
+                }
+                if (String.IsNullOrEmpty(UserName))
+                {
+                    connectionString += "Integrated Security = SSPI; ";
+                }
+                else
+                {
+                    connectionString += "User Id = " + UserName + "; ";
+                    connectionString += "Password = " + Password + "; ";
+                }
+                return connectionString;
+            }
+        }
     }
 }

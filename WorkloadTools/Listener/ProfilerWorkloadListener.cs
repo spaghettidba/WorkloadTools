@@ -18,9 +18,6 @@ namespace WorkloadTools.Listener
         private TraceServerWrapper trace;
         private bool stopped = false;
 
-        public string TraceDefinition { get; set; }
-
-
         public override void Initialize()
         {
             SqlConnectionInfoWrapper conn = new SqlConnectionInfoWrapper
@@ -43,7 +40,7 @@ namespace WorkloadTools.Listener
 
             try
             {
-                trace.InitializeAsReader(conn, TraceDefinition);
+                trace.InitializeAsReader(conn, Source);
 
                 Task.Factory.StartNew(() => ReadEvents());
 
@@ -54,6 +51,8 @@ namespace WorkloadTools.Listener
 
                 if (ex.InnerException != null)
                     logger.Error(ex.InnerException.Message);
+
+                throw;
             }
         }
 
@@ -76,6 +75,7 @@ namespace WorkloadTools.Listener
             stopped = true;
             try
             {
+                trace.Close();
                 trace.Stop();
             }
             catch (Exception)
@@ -101,16 +101,17 @@ namespace WorkloadTools.Listener
                             evt.Type = WorkloadEvent.EventType.BatchCompleted;
                         else
                             evt.Type = WorkloadEvent.EventType.Unknown;
-                        evt.ApplicationName = trace.GetValue("ApplicationName").ToString();
-                        evt.DatabaseName = trace.GetValue("DatabaseName").ToString();
-                        evt.HostName = trace.GetValue("HostName").ToString();
-                        evt.LoginName = trace.GetValue("LoginName").ToString();
-                        evt.SPID = Convert.ToInt32(trace.GetValue("SPID"));
-                        evt.Text = trace.GetValue("TextData").ToString();
-                        evt.Reads = (long)trace.GetValue("Reads");
-                        evt.Writes = (long)trace.GetValue("Writes");
-                        evt.CPU = (long)trace.GetValue("CPU");
-                        evt.Duration = (long)trace.GetValue("Duration");
+                        evt.ApplicationName = (string)trace.GetValue("ApplicationName");
+                        evt.DatabaseName = (string)trace.GetValue("DatabaseName");
+                        evt.HostName = (string)trace.GetValue("HostName");
+                        evt.LoginName = (string)trace.GetValue("LoginName");
+                        evt.SPID = (int?)trace.GetValue("SPID");
+                        evt.Text = (string)trace.GetValue("TextData");
+                        evt.Reads = (long?)trace.GetValue("Reads");
+                        evt.Writes = (long?)trace.GetValue("Writes");
+                        evt.CPU = (int?)trace.GetValue("CPU");
+                        evt.Duration = (long?)trace.GetValue("Duration");
+                        evt.StartTime = DateTime.Now;
 
                         if (!Filter.Evaluate(evt))
                             continue;

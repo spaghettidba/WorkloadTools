@@ -19,5 +19,10 @@ namespace WorkloadTools.Listener
         {
             throw new NotImplementedException();
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -16,7 +16,7 @@ namespace WorkloadTools
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing) {}
+        protected abstract void Dispose(bool disposing);
 
         public abstract WorkloadEvent Read();
 

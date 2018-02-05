@@ -20,7 +20,7 @@ namespace WorkloadTools
 
         public bool Evaluate(WorkloadEvent evt)
         {
-            if (evt.Type != WorkloadEvent.EventType.BatchCompleted || evt.Type != WorkloadEvent.EventType.RPCCompleted)
+            if (evt.Type != WorkloadEvent.EventType.BatchCompleted && evt.Type != WorkloadEvent.EventType.RPCCompleted)
                 return false;
 
             if (!(HasDatabaseFilter || HasLoginFilter || HasHostFilter || HasApplicationFilter))

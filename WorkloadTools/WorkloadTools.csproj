@@ -53,6 +53,7 @@
     <Compile Include="Consumer\ReplayConsumer.cs" />
     <Compile Include="Listener\SqlTraceWorkloadListener.cs" />
     <Compile Include="Listener\Trace\SqlConnectionInfoWrapper.cs" />
+    <Compile Include="Listener\Trace\TraceFileWrapper.cs" />
     <Compile Include="Listener\Trace\TraceServerWrapper.cs" />
     <Compile Include="SqlConnectionInfo.cs" />
     <Compile Include="WorkloadConsumer.cs" />
