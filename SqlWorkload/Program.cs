@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using WorkloadTools;
 using WorkloadTools.Consumer;
 using WorkloadTools.Listener;
+using WorkloadTools.Listener.ExtendedEvents;
+using WorkloadTools.Listener.Trace;
 
 namespace SqlWorkload
 {
@@ -57,18 +59,21 @@ namespace SqlWorkload
                 listener = new ProfilerWorkloadListener();
                 options.Source = System.IO.Path.GetFullPath(options.Source);
                 listener.Source = options.Source;
+                listener.Filter = new ProfilerEventFilter();
             }
             else if (options.ListenerType.ToLower() == "SqlTraceWorkloadListener".ToLower())
             {
                 listener = new SqlTraceWorkloadListener();
                 options.Source = System.IO.Path.GetFullPath(options.Source);
                 listener.Source = options.Source;
+                listener.Filter = new TraceEventFilter();
             }
             else if (options.ListenerType.ToLower() == "ExtendedEventsWorkloadListener".ToLower())
             {
                 listener = new ExtendedEventsWorkloadListener();
                 options.Source = System.IO.Path.GetFullPath(options.Source);
                 listener.Source = options.Source;
+                listener.Filter = new ExtendedEventsEventFilter();
             }
             else
             {
@@ -83,15 +88,12 @@ namespace SqlWorkload
                 UserName = options.SourceUserName,
                 Password = options.SourcePassword,
             };
-            
 
-            listener.Filter = new WorkloadEventFilter()
-            {
-                DatabaseFilter = options.DatabaseFilter,
-                ApplicationFilter = options.ApplicationFilter,
-                HostFilter = options.HostFilter,
-                LoginFilter = options.LoginFilter
-            };
+
+            listener.Filter.DatabaseFilter.EqualityPredicate = options.DatabaseFilter;
+            listener.Filter.ApplicationFilter.EqualityPredicate = options.ApplicationFilter;
+            listener.Filter.HostFilter.EqualityPredicate = options.HostFilter;
+            listener.Filter.LoginFilter.EqualityPredicate = options.LoginFilter;
 
 
             controller = new WorkloadController(listener);

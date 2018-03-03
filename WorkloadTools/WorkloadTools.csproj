@@ -48,12 +48,19 @@
     <Compile Include="Consumer\Analysis\WorkloadAnalyzer.cs" />
     <Compile Include="Consumer\Replay\ReplayCommand.cs" />
     <Compile Include="Consumer\Replay\ReplayWorker.cs" />
+    <Compile Include="FilterPredicate.cs" />
     <Compile Include="Listener\ExtendedEventsWorkloadListener.cs" />
+    <Compile Include="Listener\ExtendedEvents\ExtendedEventsEventFilter.cs" />
+    <Compile Include="Listener\ExtendedEvents\ExtendedEventsFilterPredicate.cs" />
     <Compile Include="Listener\ProfilerWorkloadListener.cs" />
     <Compile Include="Consumer\ReplayConsumer.cs" />
     <Compile Include="Listener\SqlTraceWorkloadListener.cs" />
+    <Compile Include="Listener\Trace\ProfilerEventFilter.cs" />
+    <Compile Include="Listener\Trace\ProfilerFilterPredicate.cs" />
     <Compile Include="Listener\Trace\SqlConnectionInfoWrapper.cs" />
+    <Compile Include="Listener\Trace\TraceEventFilter.cs" />
     <Compile Include="Listener\Trace\TraceFileWrapper.cs" />
+    <Compile Include="Listener\Trace\TraceFilterPredicate.cs" />
     <Compile Include="Listener\Trace\TraceServerWrapper.cs" />
     <Compile Include="SqlConnectionInfo.cs" />
     <Compile Include="WorkloadConsumer.cs" />
@@ -70,9 +77,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Listener\sqlworkload.sql">
+    <AdditionalFiles Include="Listener\sqlworkload.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    </AdditionalFiles>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

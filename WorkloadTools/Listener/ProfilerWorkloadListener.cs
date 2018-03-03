@@ -70,6 +70,7 @@ namespace WorkloadTools.Listener
 
         protected override void Dispose(bool disposing)
         {
+            if (stopped) return;
             // close the trace, if open
             // shut down the reader thread
             stopped = true;
@@ -136,6 +137,8 @@ namespace WorkloadTools.Listener
 
                 if (ex.InnerException != null)
                     logger.Error(ex.InnerException.Message);
+
+                Dispose();
             }
         }
 

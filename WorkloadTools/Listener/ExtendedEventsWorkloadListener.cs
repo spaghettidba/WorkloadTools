@@ -13,6 +13,11 @@ namespace WorkloadTools.Listener
         public override void Initialize()
         {
             throw new NotImplementedException();
+            // Push Down EventFilters
+            //traceSql += Environment.NewLine + Filter.ApplicationFilter.PushDown();
+            //traceSql += Environment.NewLine + Filter.DatabaseFilter.PushDown();
+            //traceSql += Environment.NewLine + Filter.HostFilter.PushDown();
+            //traceSql += Environment.NewLine + Filter.LoginFilter.PushDown();
         }
 
         public override WorkloadEvent Read()

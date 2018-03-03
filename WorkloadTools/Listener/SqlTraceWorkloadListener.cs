@@ -17,23 +17,23 @@ namespace WorkloadTools.Listener
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private static int DEFAULT_TRACE_SIZE_MB = 10;
-        private static string DEFAULT_DATA_SQL = @"
-            DECLARE @defaultData nvarchar(4000);
+        private static string DEFAULT_LOG_SQL = @"
+            DECLARE @defaultLog nvarchar(4000);
 
             EXEC master.dbo.xp_instance_regread
 	            N'HKEY_LOCAL_MACHINE',
 	            N'Software\Microsoft\MSSQLServer\MSSQLServer',
-	            N'DefaultData',
-	            @defaultData OUTPUT;
+	            N'DefaultLog',
+	            @defaultLog OUTPUT;
 
-            IF @defaultData IS NULL
+            IF @defaultLog IS NULL
             BEGIN
-	            SELECT @defaultData = REPLACE(physical_name,'master.mdf','') 
+	            SELECT @defaultLog = REPLACE(physical_name,'mastlog.ldf','') 
 	            FROM sys.master_files
-	            WHERE name = 'master';
+	            WHERE name = 'mastlog';
             END
 
-            SELECT @defaultData AS DefaultData;
+            SELECT @defaultLog AS DefaultLog;
         ";
 
         private int traceId = -1;
@@ -54,14 +54,25 @@ namespace WorkloadTools.Listener
                 {
                     traceSql = File.ReadAllText(Source);
 
-                    tracePath = GetSqlDefaultDataPath(conn);
-                    traceSql = String.Format(traceSql, tracePath  + "sqlworkload", DEFAULT_TRACE_SIZE_MB);
+                    tracePath = GetSqlDefaultLogPath(conn);
+                    traceSql = String.Format(traceSql, Path.Combine(tracePath  ,"sqlworkload"), DEFAULT_TRACE_SIZE_MB);
+
+                    // Push Down EventFilters
+                    traceSql += Environment.NewLine + Filter.ApplicationFilter.PushDown();
+                    traceSql += Environment.NewLine + Filter.DatabaseFilter.PushDown();
+                    traceSql += Environment.NewLine + Filter.HostFilter.PushDown();
+                    traceSql += Environment.NewLine + Filter.LoginFilter.PushDown();
                 }
                 catch (Exception e)
                 {
                     throw new ArgumentException("Cannot open the source script to start the sql trace", e);
                 }
 
+                int id = GetTraceId(conn, Path.Combine(tracePath, "sqlworkload"));
+                if(id > 0)
+                {
+                    StopTrace(conn, id);
+                }
 
                 SqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = traceSql;
@@ -72,11 +83,11 @@ namespace WorkloadTools.Listener
             }
         }
 
-        private string GetSqlDefaultDataPath(SqlConnection conn)
+        private string GetSqlDefaultLogPath(SqlConnection conn)
         {
             using (SqlCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = DEFAULT_DATA_SQL;
+                cmd.CommandText = DEFAULT_LOG_SQL;
                 return (string)cmd.ExecuteScalar();
             }
         }
@@ -103,59 +114,53 @@ namespace WorkloadTools.Listener
                     files.Sort();
                     string traceFile = files.ElementAt(0);
 
-                    using (FileStream fs = new FileStream(traceFile, FileMode.OpenOrCreate, FileAccess.Read))
+
+                    using (TraceFileWrapper reader = new TraceFileWrapper())
                     {
-                        while (!fs.CanRead)
-                        {
-                            Thread.Sleep(5);
-                        }
-                        using (TraceFileWrapper reader = new TraceFileWrapper())
-                        {
-                            reader.InitializeAsReader(traceFile);
+                        reader.InitializeAsReader(traceFile);
 
-                            while (reader.Read() && !stopped)
+                        while (reader.Read() && !stopped)
+                        {
+                            try
                             {
-                                try
-                                {
-                                    WorkloadEvent evt = new WorkloadEvent();
+                                WorkloadEvent evt = new WorkloadEvent();
 
-                                    if (reader.GetValue("EventClass").ToString() == "RPC:Completed")
-                                        evt.Type = WorkloadEvent.EventType.RPCCompleted;
-                                    else if (reader.GetValue("EventClass").ToString() == "SQL:BatchCompleted")
-                                        evt.Type = WorkloadEvent.EventType.BatchCompleted;
-                                    else
-                                        evt.Type = WorkloadEvent.EventType.Unknown;
-                                    evt.ApplicationName = (string)reader.GetValue("ApplicationName");
-                                    evt.DatabaseName = (string)reader.GetValue("DatabaseName");
-                                    evt.HostName = (string)reader.GetValue("HostName");
-                                    evt.LoginName = (string)reader.GetValue("LoginName");
-                                    evt.SPID = (int?)reader.GetValue("SPID");
-                                    evt.Text = (string)reader.GetValue("TextData");
-                                    evt.Reads = (long?)reader.GetValue("Reads");
-                                    evt.Writes = (long?)reader.GetValue("Writes");
-                                    evt.CPU = (int?)reader.GetValue("CPU");
-                                    evt.Duration = (long?)reader.GetValue("Duration");
-                                    evt.StartTime = DateTime.Now;
+                                if (reader.GetValue("EventClass").ToString() == "RPC:Completed")
+                                    evt.Type = WorkloadEvent.EventType.RPCCompleted;
+                                else if (reader.GetValue("EventClass").ToString() == "SQL:BatchCompleted")
+                                    evt.Type = WorkloadEvent.EventType.BatchCompleted;
+                                else
+                                    evt.Type = WorkloadEvent.EventType.Unknown;
+                                evt.ApplicationName = (string)reader.GetValue("ApplicationName");
+                                evt.DatabaseName = (string)reader.GetValue("DatabaseName");
+                                evt.HostName = (string)reader.GetValue("HostName");
+                                evt.LoginName = (string)reader.GetValue("LoginName");
+                                evt.SPID = (int?)reader.GetValue("SPID");
+                                evt.Text = (string)reader.GetValue("TextData");
+                                evt.Reads = (long?)reader.GetValue("Reads");
+                                evt.Writes = (long?)reader.GetValue("Writes");
+                                evt.CPU = (int?)reader.GetValue("CPU");
+                                evt.Duration = (long?)reader.GetValue("Duration");
+                                evt.StartTime = DateTime.Now;
 
-                                    if (!Filter.Evaluate(evt))
-                                        continue;
+                                if (!Filter.Evaluate(evt))
+                                    continue;
 
-                                    events.Enqueue(evt);
-                                }
-                                catch (Exception ex)
-                                {
-                                    logger.Error(ex.Message);
+                                events.Enqueue(evt);
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.Error(ex.Message);
 
-                                    if (ex.InnerException != null)
-                                        logger.Error(ex.InnerException.Message);
-                                }
+                                if (ex.InnerException != null)
+                                    logger.Error(ex.InnerException.Message);
+                            }
 
 
-                            } // while (Read)
+                        } // while (Read)
 
-                        } // using reader
-                        File.Delete(traceFile);
-                    }
+                    } // using reader
+                    File.Delete(traceFile);
                 } // while not stopped
             }
             catch (Exception ex)
@@ -164,28 +169,52 @@ namespace WorkloadTools.Listener
 
                 if (ex.InnerException != null)
                     logger.Error(ex.InnerException.Message);
+
+                Dispose();
             }
 
         }
 
         protected override void Dispose(bool disposing)
         {
-            stopped = true;
+            if (stopped) return;
 
+            stopped = true;
             using (SqlConnection conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
+                StopTrace(conn, traceId);
+            }
+        }
 
 
+        private void StopTrace(SqlConnection conn, int id)
+        {
                 SqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = String.Format(@"
                     exec sp_trace_setstatus {0}, 0;
                     exec sp_trace_setstatus {0}, 2;
-                ", traceId);
+                ", id);
                 cmd.ExecuteNonQuery();
+        }
 
-            }
+
+        private int GetTraceId(SqlConnection conn, string path)
+        {
+            string sql = @"
+                SELECT TOP(1) id
+                FROM (
+	                SELECT id FROM sys.traces WHERE path LIKE '{0}%'
+	                UNION ALL
+	                SELECT -1
+                ) AS i
+                ORDER BY id DESC
+            ";
+
+            SqlCommand cmd = conn.CreateCommand();
+            cmd.CommandText = String.Format(sql, path);
+            return (int)cmd.ExecuteScalar();
         }
     }
 }

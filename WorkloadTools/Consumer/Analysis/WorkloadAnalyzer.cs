@@ -83,7 +83,7 @@ namespace WorkloadTools.Consumer.Analysis
                     {
                         try
                         {
-                            logger.Error(e, "Uable to write workload analysis info to the destination database.");
+                            logger.Error(e, "Unable to write workload analysis info to the destination database.");
                         }
                         catch
                         {

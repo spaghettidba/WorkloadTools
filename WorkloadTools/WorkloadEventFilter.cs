@@ -5,17 +5,12 @@ using System.Text;
 
 namespace WorkloadTools
 {
-    public class WorkloadEventFilter
+    public abstract class WorkloadEventFilter
     {
-        public string ApplicationFilter { get; set; }
-        public bool HasApplicationFilter { get { return !String.IsNullOrEmpty(ApplicationFilter); } }
-        public string DatabaseFilter { get; set; }
-        public bool HasDatabaseFilter { get { return !String.IsNullOrEmpty(DatabaseFilter); } }
-        public string HostFilter { get; set; }
-        public bool HasHostFilter { get { return !String.IsNullOrEmpty(HostFilter); } }
-        public string LoginFilter { get; set; }
-        public bool HasLoginFilter { get { return !String.IsNullOrEmpty(LoginFilter); } }
-
+        public FilterPredicate ApplicationFilter { get; set; }
+        public FilterPredicate DatabaseFilter { get; set; }
+        public FilterPredicate HostFilter { get; set; }
+        public FilterPredicate LoginFilter { get; set; }
 
 
         public bool Evaluate(WorkloadEvent evt)
@@ -23,35 +18,41 @@ namespace WorkloadTools
             if (evt.Type != WorkloadEvent.EventType.BatchCompleted && evt.Type != WorkloadEvent.EventType.RPCCompleted)
                 return false;
 
-            if (!(HasDatabaseFilter || HasLoginFilter || HasHostFilter || HasApplicationFilter))
+            if (!(DatabaseFilter.IsPredicateSet || LoginFilter.IsPredicateSet || HostFilter.IsPredicateSet || ApplicationFilter.IsPredicateSet))
                 return true;
 
-            bool applicationFilterResults = !HasApplicationFilter;
-            bool databaseFilterResults = !HasDatabaseFilter;
-            bool loginFilterResults = !HasLoginFilter;
-            bool hostFilterResults = !HasHostFilter;
+            bool applicationFilterResults = !ApplicationFilter.IsPredicateSet || ApplicationFilter.IsPushedDown;
+            bool databaseFilterResults = !DatabaseFilter.IsPredicateSet || DatabaseFilter.IsPushedDown;
+            bool loginFilterResults = !LoginFilter.IsPredicateSet || LoginFilter.IsPushedDown;
+            bool hostFilterResults = !HostFilter.IsPredicateSet || HostFilter.IsPushedDown;
 
-            if (HasApplicationFilter)
+            if (ApplicationFilter.IsPredicateSet && !ApplicationFilter.IsPushedDown)
             {
-                applicationFilterResults = ApplicationFilter.Split(',').Contains(evt.ApplicationName, StringComparer.CurrentCultureIgnoreCase);
+                applicationFilterResults = ApplicationFilter.EqualityPredicate.Split(',').Contains(evt.ApplicationName, StringComparer.CurrentCultureIgnoreCase);
             }
 
-            if (HasDatabaseFilter)
+            if (DatabaseFilter.IsPredicateSet && !DatabaseFilter.IsPushedDown)
             {
-                databaseFilterResults = DatabaseFilter.Split(',').Contains(evt.DatabaseName, StringComparer.CurrentCultureIgnoreCase);
+                databaseFilterResults = DatabaseFilter.EqualityPredicate.Split(',').Contains(evt.DatabaseName, StringComparer.CurrentCultureIgnoreCase);
             }
 
-            if (HasLoginFilter)
+            if (LoginFilter.IsPredicateSet && !LoginFilter.IsPushedDown)
             {
-                loginFilterResults = LoginFilter.Split(',').Contains(evt.LoginName, StringComparer.CurrentCultureIgnoreCase);
+                loginFilterResults = LoginFilter.EqualityPredicate.Split(',').Contains(evt.LoginName, StringComparer.CurrentCultureIgnoreCase);
             }
 
-            if (HasHostFilter)
+            if (HostFilter.IsPredicateSet && !HostFilter.IsPushedDown)
             {
-                hostFilterResults = HostFilter.Split(',').Contains(evt.HostName, StringComparer.CurrentCultureIgnoreCase);
+                hostFilterResults = HostFilter.EqualityPredicate.Split(',').Contains(evt.HostName, StringComparer.CurrentCultureIgnoreCase);
             }
 
             return applicationFilterResults && databaseFilterResults && loginFilterResults && hostFilterResults;
         }
+
+        public void PushDown(FilterPredicate predicate)
+        {
+            predicate.PushDown();
+        }
+
     }
 }

@@ -38,6 +38,11 @@ namespace WorkloadTools
                     cons.Consume(evt);
                 }
             }
+            listener.Dispose();
+            foreach (var cons in consumers)
+            {
+                cons.Dispose();
+            }
         }
 
         public Task Start()
