@@ -35,10 +35,29 @@ namespace WorkloadTools.Listener
 
             SELECT @defaultLog AS DefaultLog;
         ";
+        private static int DEFAULT_TRACE_INTERVAL_SECONDS = 10;
+        private static int DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD = 5000;
+
+        public enum StreamSourceEnum
+        {
+            StreamFromFile,
+            StreamFromTDS
+        }
+
+        public enum EventClassEnum : int
+        {
+            RPC_Completed = 10,
+            SQL_BatchCompleted = 12
+        }
 
         private int traceId = -1;
         private string tracePath;
         private bool stopped;
+
+        // By default, stream from TDS
+        public StreamSourceEnum StreamSource { get; set; } = StreamSourceEnum.StreamFromTDS;
+
+
 
         private ConcurrentQueue<WorkloadEvent> events = new ConcurrentQueue<WorkloadEvent>();
 
@@ -54,14 +73,15 @@ namespace WorkloadTools.Listener
                 {
                     traceSql = File.ReadAllText(Source);
 
-                    tracePath = GetSqlDefaultLogPath(conn);
-                    traceSql = String.Format(traceSql, Path.Combine(tracePath  ,"sqlworkload"), DEFAULT_TRACE_SIZE_MB);
-
                     // Push Down EventFilters
-                    traceSql += Environment.NewLine + Filter.ApplicationFilter.PushDown();
-                    traceSql += Environment.NewLine + Filter.DatabaseFilter.PushDown();
-                    traceSql += Environment.NewLine + Filter.HostFilter.PushDown();
-                    traceSql += Environment.NewLine + Filter.LoginFilter.PushDown();
+                    string filters = "";
+                    filters += Environment.NewLine + Filter.ApplicationFilter.PushDown();
+                    filters += Environment.NewLine + Filter.DatabaseFilter.PushDown();
+                    filters += Environment.NewLine + Filter.HostFilter.PushDown();
+                    filters += Environment.NewLine + Filter.LoginFilter.PushDown();
+
+                    tracePath = GetSqlDefaultLogPath(conn);
+                    traceSql = String.Format(traceSql, DEFAULT_TRACE_SIZE_MB, Path.Combine(tracePath  ,"sqlworkload"), filters);
                 }
                 catch (Exception e)
                 {
@@ -78,7 +98,10 @@ namespace WorkloadTools.Listener
                 cmd.CommandText = traceSql;
                 traceId = (int)cmd.ExecuteScalar();
 
-                Task.Factory.StartNew(() => ReadEvents());
+                if(StreamSource == StreamSourceEnum.StreamFromFile)
+                    Task.Factory.StartNew(() => ReadEventsFromFile());
+                else if (StreamSource == StreamSourceEnum.StreamFromTDS)
+                    Task.Factory.StartNew(() => ReadEventsFromTDS());
 
             }
         }
@@ -98,12 +121,17 @@ namespace WorkloadTools.Listener
             WorkloadEvent result = null;
             while (!events.TryDequeue(out result))
             {
-                Thread.Sleep(10);
+                Thread.Sleep(5);
             }
             return result;
         }
 
-        private void ReadEvents()
+
+        // Read Workload events directly from the trace files
+        // on the server, via local path
+        // This method only works when the process is running
+        // on the same machine as the SQL Server
+        private void ReadEventsFromFile()
         {
             try
             {
@@ -174,6 +202,146 @@ namespace WorkloadTools.Listener
             }
 
         }
+
+
+
+        private void ReadEventsFromTDS()
+        {
+            string sqlReadTrace = @"
+                SELECT EventSequence
+	                ,Error
+	                ,TextData
+	                ,BinaryData
+	                ,DatabaseID
+	                ,HostName
+	                ,ApplicationName
+	                ,LoginName
+	                ,SPID
+	                ,Duration
+	                ,StartTime
+	                ,EndTime
+	                ,Reads
+	                ,Writes
+	                ,CPU
+	                ,EventClass
+	                ,DatabaseName
+                FROM fn_trace_gettable(@path, {0})
+            ";
+
+            string sqlPath = @"
+                SELECT path
+                FROM sys.traces
+                WHERE id = @traceId;
+            ";
+
+            long lastEvent = -1;
+            string lastTraceFile = "";
+
+            try
+            {
+                while (!stopped)
+                {
+                    using (SqlConnection conn = new SqlConnection())
+                    {
+                        conn.ConnectionString = ConnectionInfo.ConnectionString;
+                        conn.Open();
+
+                        SqlCommand cmdPath = conn.CreateCommand();
+                        cmdPath.CommandText = sqlPath;
+
+                        var paramTraceId = cmdPath.Parameters.Add("@traceId", System.Data.SqlDbType.Int);
+                        paramTraceId.Value = GetTraceId(conn, Path.Combine(tracePath, "sqlworkload"));
+
+                        string currentTraceFile = (string)cmdPath.ExecuteScalar();
+                        string filesParam = "1";
+                        string pathToTraceParam = currentTraceFile;
+
+                        // check if file has changed
+                        if (lastTraceFile != currentTraceFile && !String.IsNullOrEmpty(lastTraceFile))
+                        {
+                            // when the rollover file changes, read from the last read file
+                            // up to the end of all rollover files (this is what DEFAULT does)
+                            filesParam = "DEFAULT";
+                            pathToTraceParam = lastTraceFile;
+                        }
+                        lastTraceFile = currentTraceFile;
+
+                        String sql = String.Format(sqlReadTrace,filesParam);
+
+                        if(lastEvent > 0)
+                        {
+                            sql += "WHERE EventSequence > @lastEvent";
+                        }
+
+                        SqlCommand cmd = conn.CreateCommand();
+                        cmd.CommandText = sql;
+
+                        var paramPath = cmd.Parameters.Add("@path", System.Data.SqlDbType.NVarChar,255);
+                        paramPath.Value = pathToTraceParam;
+
+                        var paramLastEvent = cmd.Parameters.Add("@lastEvent", System.Data.SqlDbType.BigInt);
+                        paramLastEvent.Value = lastEvent;
+
+                        int rowsRead = 0;
+
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                if(reader["EventSequence"] != DBNull.Value)
+                                    lastEvent = (long)reader["EventSequence"];
+
+                                WorkloadEvent evt = new WorkloadEvent();
+
+                                if ((int)reader["EventClass"] == (int)EventClassEnum.RPC_Completed)
+                                    evt.Type = WorkloadEvent.EventType.RPCCompleted;
+                                else if ((int)reader["EventClass"] == (int)EventClassEnum.SQL_BatchCompleted)
+                                    evt.Type = WorkloadEvent.EventType.BatchCompleted;
+                                else
+                                {
+                                    evt.Type = WorkloadEvent.EventType.Unknown;
+                                    continue;
+                                }
+                                evt.ApplicationName = (string)reader["ApplicationName"];
+                                evt.DatabaseName = (string)reader["DatabaseName"];
+                                evt.HostName = (string)reader["HostName"];
+                                evt.LoginName = (string)reader["LoginName"];
+                                evt.SPID = (int?)reader["SPID"];
+                                evt.Text = (string)reader["TextData"];
+                                evt.Reads = (long?)reader["Reads"];
+                                evt.Writes = (long?)reader["Writes"];
+                                evt.CPU = (int?)reader["CPU"];
+                                evt.Duration = (long?)reader["Duration"];
+                                evt.StartTime = (DateTime)reader["StartTime"];
+
+                                if (!Filter.Evaluate(evt))
+                                    continue;
+
+                                events.Enqueue(evt);
+
+                                rowsRead++;
+                            }
+                        }
+
+                        // Wait before querying the trace file again
+                        if(rowsRead < DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD)
+                            Thread.Sleep(DEFAULT_TRACE_INTERVAL_SECONDS * 1000);
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex.Message);
+
+                if (ex.InnerException != null)
+                    logger.Error(ex.InnerException.Message);
+
+                Dispose();
+            }
+
+        }
+
 
         protected override void Dispose(bool disposing)
         {

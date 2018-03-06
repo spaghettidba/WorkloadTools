@@ -15,33 +15,7 @@ namespace WorkloadTools.Consumer.Analysis
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private string ConnectionString
-        {
-            get
-            {
-                int ConnectionTimeout = 15;
-                string s = "Server=" + ServerName + ";";
-                s += "Database=" + DatabaseName + ";";
-                if (String.IsNullOrEmpty(UserName))
-                {
-                    s += "Integrated Security = True;";
-                }
-                else
-                {
-                    s += "User Id=" + UserName + ";";
-                    s += "Password=" + Password + ";";
-                }
-                s += "Connection Timeout=" + ConnectionTimeout;
-                logger.Debug(s);
-                return s;
-            }
-        }
-
-        public string ServerName { get; set; }
-        public string DatabaseName { get; set; }
-        public string SchemaName { get; set; }
-        public string UserName { get; set; }
-        public string Password { get; set; }
+        public SqlConnectionInfo ConnectionInfo { get; set; }
         public int Interval { get; set; }
 
         private Dictionary<long, NormalizedQuery> normalizedQueries = new Dictionary<long, NormalizedQuery>();
@@ -226,7 +200,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             using (SqlConnection conn = new SqlConnection())
             {
-                conn.ConnectionString = ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
 
                 if (!TargetTableCreated)
@@ -253,7 +227,7 @@ namespace WorkloadTools.Consumer.Analysis
                                                     null))
                     {
 
-                        bulkCopy.DestinationTableName = "[" + SchemaName + "].[WorkloadDetails]";
+                        bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[WorkloadDetails]";
                         bulkCopy.BatchSize = 1000;
                         bulkCopy.BulkCopyTimeout = 300;
 
@@ -324,7 +298,7 @@ namespace WorkloadTools.Consumer.Analysis
                 INTO #{0}
                 FROM [{1}].[{0}];
             ";
-            sql = String.Format(sql, name, SchemaName);
+            sql = String.Format(sql, name, ConnectionInfo.SchemaName);
 
             using (SqlCommand cmd = conn.CreateCommand())
             {
@@ -360,7 +334,7 @@ namespace WorkloadTools.Consumer.Analysis
                     WHERE dst.[{0}_id] = src.[{0}_id]
                 );
             ";
-            sql = String.Format(sql, name.Substring(0, name.Length - 1), SchemaName);
+            sql = String.Format(sql, name.Substring(0, name.Length - 1), ConnectionInfo.SchemaName);
 
             using (SqlCommand cmd = conn.CreateCommand())
             {
@@ -379,7 +353,7 @@ namespace WorkloadTools.Consumer.Analysis
                 INTO #NormalizedQueries
                 FROM [{0}].[NormalizedQueries];
             ";
-            sql = String.Format(sql, SchemaName);
+            sql = String.Format(sql, ConnectionInfo.SchemaName);
 
             using (SqlCommand cmd = conn.CreateCommand())
             {
@@ -415,7 +389,7 @@ namespace WorkloadTools.Consumer.Analysis
                     WHERE dst.[sql_hash] = src.[sql_hash]
                 );
             ";
-            sql = String.Format(sql, SchemaName);
+            sql = String.Format(sql, ConnectionInfo.SchemaName);
 
             using (SqlCommand cmd = conn.CreateCommand())
             {
@@ -428,7 +402,7 @@ namespace WorkloadTools.Consumer.Analysis
         private int CreateInterval(SqlConnection conn)
         {
             string sql = @"INSERT INTO [{0}].[Intervals] (interval_id, end_time, duration_minutes) VALUES (@interval_id, @end_time, @duration_minutes); ";
-            sql = String.Format(sql, SchemaName);
+            sql = String.Format(sql, ConnectionInfo.SchemaName);
 
             // interval id is the number of seconds since 01/01/2000
             int interval_id = (int)DateTime.Now.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
@@ -549,14 +523,14 @@ namespace WorkloadTools.Consumer.Analysis
                 
             ";
 
-            sql = sql.Replace("{DatabaseName}", DatabaseName);
-            sql = sql.Replace("{SchemaName}", SchemaName);
+            sql = sql.Replace("{DatabaseName}", ConnectionInfo.DatabaseName);
+            sql = sql.Replace("{SchemaName}", ConnectionInfo.SchemaName);
 
             using (SqlConnection conn = new SqlConnection())
             {
-                conn.ConnectionString = ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
-                conn.ChangeDatabase(DatabaseName);
+                conn.ChangeDatabase(ConnectionInfo.DatabaseName);
 
                 SqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sql;

@@ -1,6 +1,5 @@
 ﻿using NLog;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -25,7 +24,16 @@ namespace WorkloadTools.Consumer.Replay
 
         private long commandCount = 0;
 
-        private ConcurrentQueue<ReplayCommand> Commands = new ConcurrentQueue<ReplayCommand>();
+        public int CommandCount
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get
+            {
+                return Commands.Count;
+            }
+        }
+
+        private Queue<ReplayCommand> Commands = new Queue<ReplayCommand>();
 
         private void InitializeConnection()
         {
@@ -38,12 +46,29 @@ namespace WorkloadTools.Consumer.Replay
 
         private string BuildConnectionString()
         {
-            ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
-            string connectionString = ConnectionInfo.ConnectionString;
+            string connectionString = "Data Source=" + ConnectionInfo.ServerName + ";";
+            if (String.IsNullOrEmpty(ConnectionInfo.DatabaseName))
+            {
+                connectionString += "Initial Catalog = master; ";
+            }
+            else
+            {
+                connectionString += "Initial Catalog = " + ConnectionInfo.DatabaseName + "; ";
+            }
+            if (String.IsNullOrEmpty(ConnectionInfo.UserName))
+            {
+                connectionString += "Integrated Security = SSPI; ";
+            }
+            else
+            {
+                connectionString += "User Id = " + ConnectionInfo.UserName + "; ";
+                connectionString += "Password = " + ConnectionInfo.Password + "; ";
+            }
+            connectionString += "Application Name=WorkloadTools;";
             return connectionString;
         }
 
-
+        [MethodImpl(MethodImplOptions.Synchronized)]
         public void ExecuteNextCommand()
         {
             ReplayCommand cmd = GetNextCommand();
@@ -55,48 +80,20 @@ namespace WorkloadTools.Consumer.Replay
         }
 
 
+        [MethodImpl(MethodImplOptions.Synchronized)]
         public ReplayCommand GetNextCommand()
         {
-            ReplayCommand result = null;
-            while(!Commands.TryDequeue(out result))
+            if (Commands.Count == 0)
             {
-                Thread.Sleep(1);
+                return null;
             }
-            return result;
+            return Commands.Dequeue();
         }
 
 
+        [MethodImpl(MethodImplOptions.Synchronized)]
         public void ExecuteCommand(ReplayCommand command)
         {
-            // skip reset connection commands
-            if (command.CommandText.Contains("sp_reset_connection"))
-                return;
-
-            // skip unprepare commands
-            if (command.CommandText.Contains("sp_unprepare "))
-                return;
-
-            // skip cursor fetch
-            if (command.CommandText.Contains("sp_cursorfetch "))
-                return;
-
-            // skip cursor close
-            if (command.CommandText.Contains("sp_cursorclose "))
-                return;
-
-            // skip sp_execute
-            if (command.CommandText.Contains("sp_execute "))
-                return;
-
-            // remove the handle from the sp_prepexec call
-            if (command.CommandText.Contains("sp_prepexec "))
-            {
-                int idx = command.CommandText.IndexOf("set @p1=");
-                if(idx > 0)
-                    command.CommandText = command.CommandText.Insert(idx, @"--");
-                command.CommandText += Environment.NewLine + "EXEC sp_unprepare @p1;";
-            }
-
             if (conn == null)
             {
                 try
@@ -119,18 +116,8 @@ namespace WorkloadTools.Consumer.Replay
 
             if ((conn.State == System.Data.ConnectionState.Closed) || (conn.State == System.Data.ConnectionState.Broken))
             {
-                conn.ConnectionString += ";MultipleActiveResultSets=true;";
                 conn.Open();
             }
-
-
-            // decode declaration
-            if (command.CommandText.Contains("sp_cursoropen "))
-            {
-                command.CommandText = DecodeCursor(command.CommandText, conn);
-            }
-
-
 
             try
             {
@@ -165,35 +152,13 @@ namespace WorkloadTools.Consumer.Replay
         }
 
 
-        private string DecodeCursor(string commandText, SqlConnection conn)
-        {
-            string result = commandText;
-
-            using (SqlCommand cmd = new SqlCommand(commandText.Replace("exec sp_cursoropen ", "SELECT "), conn))
-            {
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-
-                    if (reader.HasRows)
-                    {
-                        while (reader.Read())
-                        {
-                            result = reader.GetString(1);
-                        }
-                    }
-                }
-            }
-
-            return result;
-
-        }
-
+        [MethodImpl(MethodImplOptions.Synchronized)]
         public void AppendCommand(ReplayCommand cmd)
         {
             Commands.Enqueue(cmd);
         }
 
-
+        [MethodImpl(MethodImplOptions.Synchronized)]
         public void AppendCommand(string commandText, string databaseName)
         {
             Commands.Enqueue(new ReplayCommand() { CommandText = commandText, Database = databaseName });

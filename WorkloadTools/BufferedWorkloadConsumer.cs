@@ -31,7 +31,7 @@ namespace WorkloadTools
                 WorkloadEvent evt = null;
                 while (!Buffer.TryDequeue(out evt))
                 {
-                    Thread.Sleep(10);
+                    Thread.Sleep(1);
                 }
                 ConsumeBuffered(evt);
             }

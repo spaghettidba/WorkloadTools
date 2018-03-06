@@ -33,10 +33,10 @@ namespace WorkloadTools
             while (!stopped)
             {
                 var evt = listener.Read();
-                foreach(var cons in consumers)
+                Parallel.ForEach(consumers, (cons) =>
                 {
                     cons.Consume(evt);
-                }
+                });
             }
             listener.Dispose();
             foreach (var cons in consumers)

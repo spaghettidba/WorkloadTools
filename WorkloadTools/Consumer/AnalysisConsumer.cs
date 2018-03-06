@@ -21,7 +21,8 @@ namespace WorkloadTools.Consumer
             {
                 analyzer = new WorkloadAnalyzer()
                 {
-                    Interval = UploadIntervalSeconds
+                    Interval = UploadIntervalSeconds,
+                    ConnectionInfo = this.ConnectionInfo
                 };
             }
 

@@ -52,26 +52,23 @@ namespace SqlWorkload
             WorkloadListener listener = null;
             WorkloadController controller = null;
 
-            
+            options.Source = System.IO.Path.GetFullPath(options.Source);
 
             if (options.ListenerType.ToLower() == "ProfilerWorkloadListener".ToLower())
             {
                 listener = new ProfilerWorkloadListener();
-                options.Source = System.IO.Path.GetFullPath(options.Source);
                 listener.Source = options.Source;
                 listener.Filter = new ProfilerEventFilter();
             }
             else if (options.ListenerType.ToLower() == "SqlTraceWorkloadListener".ToLower())
             {
                 listener = new SqlTraceWorkloadListener();
-                options.Source = System.IO.Path.GetFullPath(options.Source);
                 listener.Source = options.Source;
                 listener.Filter = new TraceEventFilter();
             }
             else if (options.ListenerType.ToLower() == "ExtendedEventsWorkloadListener".ToLower())
             {
                 listener = new ExtendedEventsWorkloadListener();
-                options.Source = System.IO.Path.GetFullPath(options.Source);
                 listener.Source = options.Source;
                 listener.Filter = new ExtendedEventsEventFilter();
             }
@@ -172,7 +169,7 @@ namespace SqlWorkload
         [Option('P', "SourcePassword", HelpText = "Source Password")]
         public string SourcePassword { get; set; }
 
-        [Option('T', "TargetServerName", DefaultValue = ".", HelpText = "Target SQL Server instance")]
+        [Option('T', "TargetServerName", HelpText = "Target SQL Server instance")]
         public string TargetServerName { get; set; }
 
         [Option('V', "TargetUserName", HelpText = "Target User Name")]
