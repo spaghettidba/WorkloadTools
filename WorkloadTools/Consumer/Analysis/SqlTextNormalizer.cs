@@ -40,7 +40,8 @@ namespace WorkloadTools.Consumer.Analysis
         private static Regex _inClause = new Regex("IN\\s*\\(\\s*\\{.*\\}\\s*\\)", RegexOptions.Compiled | RegexOptions.Singleline);
         private static Regex _brackets = new Regex("(\\[|\\])", RegexOptions.Compiled);
 
-
+        private static bool TRUNCATE_TO_4000 = false;
+        private static bool TRUNCATE_TO_1024K = false;
 
         public string NormalizeSqlText(string sql, string eventClass, int spid)
         {
@@ -52,7 +53,7 @@ namespace WorkloadTools.Consumer.Analysis
         {
             if (sql == null)
                 return "";
-            if (sql.Length > 1024000)
+            if (TRUNCATE_TO_1024K  && sql.Length > 1024000)
                 return "{SQL>1MB}";
             bool flag1 = false;
             bool flag2 = false;
@@ -179,7 +180,7 @@ namespace WorkloadTools.Consumer.Analysis
         private string TruncateSql(string sql)
         {
             sql = sql.Trim();
-            if (sql.Length > 4000)
+            if (TRUNCATE_TO_4000 && sql.Length > 4000)
                 return sql.Substring(0, 4000);
             return sql;
         }

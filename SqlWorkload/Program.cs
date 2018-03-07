@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using WorkloadTools;
 using WorkloadTools.Consumer;
@@ -19,6 +20,7 @@ namespace SqlWorkload
     {
 
         private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static CancellationTokenSource source;
 
         static void Main(string[] args)
         {
@@ -129,9 +131,16 @@ namespace SqlWorkload
             }
 
 
-            Task t = controller.Start();
-            t.Wait(); //TODO: Add CancellationToken
+            Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
+                e.Cancel = true;
+                logger.Info("Received shutdown signal...");
+                controller.Stop();
+                source.CancelAfter(TimeSpan.FromSeconds(10)); // give a 10 seconds cancellation grace period 
+            };
 
+            Task t = processController(controller);
+            t.Wait();
+            logger.Info("Controller stopped.");
         }
 
 
@@ -149,7 +158,27 @@ namespace SqlWorkload
             }
         }
 
+
+        public static async Task processController(WorkloadController controller)
+        {
+            source = new CancellationTokenSource();
+            source.Token.Register(CancelNotification);
+            var completionSource = new TaskCompletionSource<object>();
+            source.Token.Register(() => completionSource.TrySetCanceled());
+            var task = Task.Factory.StartNew(() => controller.Run(), source.Token);
+            await Task.WhenAny(task, completionSource.Task);
+        }
+
+        public static void CancelNotification()
+        {
+            logger.Info("Shutdown complete.");
+        }
+
+
     }
+
+    
+
 
 
     class Options

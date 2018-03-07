@@ -27,7 +27,7 @@ namespace WorkloadTools
         }
 
 
-        private void Run()
+        public void Run()
         {
             listener.Initialize();
             while (!stopped)

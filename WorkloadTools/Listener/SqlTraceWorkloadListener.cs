@@ -354,6 +354,7 @@ namespace WorkloadTools.Listener
                 conn.Open();
                 StopTrace(conn, traceId);
             }
+            logger.Info("Trace with id={0} stopped successfully.", traceId);
         }
 
 

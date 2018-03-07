@@ -11,10 +11,11 @@ using System.Threading.Tasks;
 
 namespace WorkloadTools.Consumer.Replay
 {
-    class ReplayWorker
+    class ReplayWorker : IDisposable
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
         private static bool COMPUTE_AVERAGE_STATS = false;
+        private static bool CONSUME_RESULTS = true;
 
         private SqlConnection conn { get; set; }
 
@@ -35,6 +36,8 @@ namespace WorkloadTools.Consumer.Replay
                 return !Commands.IsEmpty;
             }
         }
+
+        public DateTime LastCommandTime { get; private set; }
 
         private long commandCount = 0;
         private long previousCommandCount = 0;
@@ -108,6 +111,8 @@ namespace WorkloadTools.Consumer.Replay
         [MethodImpl(MethodImplOptions.Synchronized)]
         public void ExecuteCommand(ReplayCommand command)
         {
+            LastCommandTime = DateTime.Now;
+
             // skip reset connection commands
             if (command.CommandText.Contains("sp_reset_connection"))
                 return;
@@ -180,9 +185,22 @@ namespace WorkloadTools.Consumer.Replay
                     conn.ChangeDatabase(command.Database);
                 }
 
-                SqlCommand cmd = new SqlCommand(command.CommandText);
-                cmd.Connection = conn;
-                cmd.ExecuteNonQuery();
+                using (SqlCommand cmd = new SqlCommand(command.CommandText))
+                {
+                    cmd.Connection = conn;
+                    if (CONSUME_RESULTS)
+                    {
+                        using(SqlDataReader reader = cmd.ExecuteReader())
+                        using (ResultSetConsumer consumer = new ResultSetConsumer(reader))
+                        {
+                            consumer.Consume();
+                        }
+                    }
+                    else
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                }
 
                 logger.Trace(String.Format("Worker [{0}] - SUCCES - \n{1}", Name, command.CommandText));
                 if (commandCount % 100 == 0)
@@ -252,6 +270,18 @@ namespace WorkloadTools.Consumer.Replay
         public void AppendCommand(string commandText, string databaseName)
         {
             Commands.Enqueue(new ReplayCommand() { CommandText = commandText, Database = databaseName });
+        }
+
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected void Dispose(bool disposing)
+        {
+            Stop();
         }
 
     }

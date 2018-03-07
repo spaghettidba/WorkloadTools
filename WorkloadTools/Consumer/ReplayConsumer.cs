@@ -15,6 +15,7 @@ namespace WorkloadTools.Consumer
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private const int SEMAPHORE_LIMIT = 32;
+        private const int WORKER_EXPIRY_TIMEOUT_MINUTES = 5;
         private static readonly Semaphore WorkLimiter = new Semaphore(SEMAPHORE_LIMIT, SEMAPHORE_LIMIT);
 
         public SqlConnectionInfo ConnectionInfo { get; set; }
@@ -23,6 +24,7 @@ namespace WorkloadTools.Consumer
         private ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
         private bool stopped = false;
         private Thread runner;
+        private Thread sweeper;
 
         public enum SynchronizationModeEnum
         {
@@ -88,13 +90,63 @@ namespace WorkloadTools.Consumer
                 runner.Start();
             }
 
+
+            if (sweeper == null)
+            {
+
+                sweeper = new Thread(new ThreadStart(
+                                delegate
+                                {
+                                    try
+                                    {
+                                        RunSweeper();
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        try { logger.Error(e, "Unhandled exception in TraceManager.RunSweeper"); }
+                                        catch { Console.WriteLine(e.Message); }
+                                    }
+                                }
+                                ));
+                sweeper.IsBackground = true;
+                sweeper.Start();
+            }
+
         }
 
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose();
             stopped = true;
+        }
+
+
+
+        // Sweeper thread: removes from the workers list all the workers
+        // that have not executed a command in the last 5 minutes
+        private void RunSweeper()
+        {
+            while (!stopped)
+            {
+                if (ReplayWorkers.IsEmpty)
+                {
+                    Thread.Sleep(100);
+                    continue;
+                }
+
+                foreach (ReplayWorker wrk in ReplayWorkers.Values)
+                {
+                    if (wrk.LastCommandTime < DateTime.Now.AddMinutes(-WORKER_EXPIRY_TIMEOUT_MINUTES))
+                    {
+                        ReplayWorker outWrk;
+                        ReplayWorkers.TryRemove(Int32.Parse(wrk.Name), out outWrk);
+                        outWrk.Dispose();
+                    }
+                }
+
+                Thread.Sleep(10000); // sleep 10 seconds
+            }
+            logger.Trace("Sweeper thread stopped.");
         }
 
 
@@ -112,7 +164,7 @@ namespace WorkloadTools.Consumer
                 try
                 {
                     //Parallel.ForEach(ReplayWorkers.Values, (ReplayWorker wrk) =>
-                    foreach(ReplayWorker wrk in ReplayWorkers.Values)
+                    foreach (ReplayWorker wrk in ReplayWorkers.Values)
                     {
                         if (stopped) return;
 
@@ -163,7 +215,7 @@ namespace WorkloadTools.Consumer
                                         wrk.Start();
                                     }
                                 }
-                                catch(Exception e)
+                                catch (Exception e)
                                 {
                                     logger.Error(e, "Unhandled exception in ReplayWorker.ExecuteCommand");
                                 }
@@ -194,8 +246,16 @@ namespace WorkloadTools.Consumer
 
             }
 
-        }
 
+            if (SynchronizationMode == SynchronizationModeEnum.None)
+            {
+                foreach (ReplayWorker wrk in ReplayWorkers.Values)
+                {
+                    wrk.Stop();
+                }
+            }
+            logger.Trace("Worker thread stopped.");
+        }
 
     }
 }

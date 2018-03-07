@@ -32,6 +32,8 @@ namespace WorkloadTools.Consumer.Analysis
         private SqlTextNormalizer normalizer = new SqlTextNormalizer();
         private bool TargetTableCreated = false;
 
+        private const int MAX_WRITE_RETRIES = 5;
+
         struct NormalizedQuery
         {
             public long Hash { get; set; }
@@ -51,7 +53,20 @@ namespace WorkloadTools.Consumer.Analysis
                 {
                     try
                     {
-                        WriteToServer();
+                        int numRetries = 0;
+                        try
+                        {
+                            while (numRetries++ < MAX_WRITE_RETRIES)
+                            {
+                                WriteToServer();
+                                numRetries = MAX_WRITE_RETRIES + 1;
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            if (numRetries > MAX_WRITE_RETRIES)
+                                throw;
+                        }
                     }
                     catch (Exception e)
                     {
