@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using WorkloadTools.Consumer.Replay;
 
 namespace WorkloadTools.Consumer
@@ -17,10 +18,19 @@ namespace WorkloadTools.Consumer
         private static readonly Semaphore WorkLimiter = new Semaphore(SEMAPHORE_LIMIT, SEMAPHORE_LIMIT);
 
         public SqlConnectionInfo ConnectionInfo { get; set; }
+        public SynchronizationModeEnum SynchronizationMode { get; set; } = SynchronizationModeEnum.None;
 
         private ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
         private bool stopped = false;
         private Thread runner;
+
+        public enum SynchronizationModeEnum
+        {
+            ThreadPools,
+            Tasks,
+            None
+        }
+
 
 
         public override void ConsumeBuffered(WorkloadEvent evt)
@@ -92,12 +102,7 @@ namespace WorkloadTools.Consumer
         {
             while (!stopped)
             {
-                int cnt = 0;
-                lock (ReplayWorkers)
-                {
-                    cnt = ReplayWorkers.Count;
-                }
-                if (cnt == 0)
+                if (ReplayWorkers.IsEmpty)
                 {
                     Thread.Sleep(100);
                     continue;
@@ -106,13 +111,15 @@ namespace WorkloadTools.Consumer
 
                 try
                 {
-                    lock (ReplayWorkers)
+                    //Parallel.ForEach(ReplayWorkers.Values, (ReplayWorker wrk) =>
+                    foreach(ReplayWorker wrk in ReplayWorkers.Values)
                     {
-                        foreach (ReplayWorker wrk in ReplayWorkers.Values)
-                        {
-                            if (stopped) return;
+                        if (stopped) return;
 
-                            if (wrk.CommandCount > 0)
+                        if (wrk.HasCommands)
+                        {
+
+                            if (SynchronizationMode == SynchronizationModeEnum.ThreadPools)
                             {
                                 try
                                 {
@@ -130,16 +137,55 @@ namespace WorkloadTools.Consumer
                                     WorkLimiter.Release();
                                 }
                             }
+                            else if (SynchronizationMode == SynchronizationModeEnum.Tasks)
+                            {
+                                try
+                                {
+                                    // Using a semaphore to avoid overwhelming the threadpool
+                                    // Without this precaution, the memory consumption goes to the roof
+                                    WorkLimiter.WaitOne();
 
+                                    // Start a new Task to run the statement
+                                    Task t = Task.Factory.StartNew(delegate { try { wrk.ExecuteNextCommand(); } catch (Exception e) { try { logger.Error(e, "Unhandled exception in ReplayWorker.ExecuteCommand"); } catch { Console.WriteLine(e.Message); } } });
+                                }
+                                finally
+                                {
+                                    // Release the semaphore
+                                    WorkLimiter.Release();
+                                }
+                            }
+                            else if (SynchronizationMode == SynchronizationModeEnum.None)
+                            {
+                                try
+                                {
+                                    if (!wrk.IsRunning)
+                                    {
+                                        wrk.Start();
+                                    }
+                                }
+                                catch(Exception e)
+                                {
+                                    logger.Error(e, "Unhandled exception in ReplayWorker.ExecuteCommand");
+                                }
+                            }
                         }
+                    };
+
+
+                    if (SynchronizationMode == SynchronizationModeEnum.None)
+                    {
+                        // Sleep 1 second before checking whether more workers
+                        // are available and not started
+                        Thread.Sleep(1000);
                     }
-
-                    // Sleep 1 millisecond after every execution of all the statements
-                    // queued in the ReplayWorkers. 
-                    // This sleep is absolutely necessary to avoid burning CPU when
-                    // all the ReplayWorkers do not contain any statements.
-
-                    Thread.Sleep(1);
+                    else
+                    {
+                        // Sleep 1 millisecond after every execution of all the statements
+                        // queued in the ReplayWorkers. 
+                        // This sleep is absolutely necessary to avoid burning CPU when
+                        // all the ReplayWorkers do not contain any statements.
+                        Thread.Sleep(1);
+                    }
                 }
                 catch (InvalidOperationException)
                 {

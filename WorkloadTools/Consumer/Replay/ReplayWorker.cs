@@ -7,12 +7,14 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace WorkloadTools.Consumer.Replay
 {
     class ReplayWorker
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static bool COMPUTE_AVERAGE_STATS = false;
 
         private SqlConnection conn { get; set; }
 
@@ -23,9 +25,24 @@ namespace WorkloadTools.Consumer.Replay
         public string Name { get; set; }
         public int SPID { get; set; }
 
+        private bool isRunning = false;
+        public bool IsRunning { get { return isRunning; } }
+
+        public bool HasCommands
+        {
+            get
+            {
+                return !Commands.IsEmpty;
+            }
+        }
+
         private long commandCount = 0;
+        private long previousCommandCount = 0;
+        private DateTime previousCPSComputeTime = DateTime.Now;
+        private List<int> commandsPerSecond = new List<int>();
 
         private ConcurrentQueue<ReplayCommand> Commands = new ConcurrentQueue<ReplayCommand>();
+        private bool stopped = false;
 
         private void InitializeConnection()
         {
@@ -41,6 +58,28 @@ namespace WorkloadTools.Consumer.Replay
             ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
             string connectionString = ConnectionInfo.ConnectionString;
             return connectionString;
+        }
+
+        public void Start()
+        {
+            Task.Factory.StartNew(() => { Run(); });
+        }
+
+
+        public void Run()
+        {
+            isRunning = true;
+            while (!stopped)
+            {
+                ExecuteNextCommand();
+            }
+        }
+
+
+        public void Stop()
+        {
+            stopped = true;
+            isRunning = false;
         }
 
 
@@ -66,6 +105,7 @@ namespace WorkloadTools.Consumer.Replay
         }
 
 
+        [MethodImpl(MethodImplOptions.Synchronized)]
         public void ExecuteCommand(ReplayCommand command)
         {
             // skip reset connection commands
@@ -146,7 +186,22 @@ namespace WorkloadTools.Consumer.Replay
 
                 logger.Trace(String.Format("Worker [{0}] - SUCCES - \n{1}", Name, command.CommandText));
                 if (commandCount % 100 == 0)
-                    logger.Info(String.Format("Worker [{0}] - {1} commands executed.", Name, commandCount.ToString()));
+                {
+                    var seconds = (DateTime.Now - previousCPSComputeTime).TotalSeconds;
+                    var cps = (commandCount - previousCommandCount) / ((seconds == 0) ? 1 : seconds);
+                    previousCPSComputeTime = DateTime.Now;
+                    previousCommandCount = commandCount;
+
+                    if (COMPUTE_AVERAGE_STATS)
+                    {
+                        commandsPerSecond.Add((int)cps);
+                        cps = commandsPerSecond.Average();
+                    }
+
+                    logger.Info(String.Format("Worker [{0}] - {1} commands executed.", Name, commandCount));
+                    logger.Info(String.Format("Worker [{0}] - {1} commands pending.", Name, Commands.Count));
+                    logger.Info(String.Format("Worker [{0}] - {1} commands per second.", Name, (int)cps));
+                }
             }
             catch (Exception e)
             {
