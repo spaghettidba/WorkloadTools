@@ -249,8 +249,18 @@ namespace WorkloadTools.Listener
                         SqlCommand cmdPath = conn.CreateCommand();
                         cmdPath.CommandText = sqlPath;
 
+                        if(traceId == -1)
+                        {
+                            traceId = GetTraceId(conn, Path.Combine(tracePath, "sqlworkload"));
+                            if (traceId == -1)
+                            {
+                                throw new InvalidOperationException("The SqlWorkload capture trace is not running.");
+                            }
+                        }
                         var paramTraceId = cmdPath.Parameters.Add("@traceId", System.Data.SqlDbType.Int);
-                        paramTraceId.Value = GetTraceId(conn, Path.Combine(tracePath, "sqlworkload"));
+                        paramTraceId.Value = traceId;
+
+
 
                         string currentTraceFile = (string)cmdPath.ExecuteScalar();
                         string filesParam = "1";
@@ -352,8 +362,6 @@ namespace WorkloadTools.Listener
 
         protected override void Dispose(bool disposing)
         {
-            if (stopped) return;
-
             stopped = true;
             using (SqlConnection conn = new SqlConnection())
             {
@@ -369,8 +377,15 @@ namespace WorkloadTools.Listener
         {
                 SqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = String.Format(@"
-                    exec sp_trace_setstatus {0}, 0;
-                    exec sp_trace_setstatus {0}, 2;
+                    IF EXISTS (
+                        SELECT *
+                        FROM sys.traces
+                        WHERE id = {0}
+                    )
+                    BEGIN
+                        EXEC sp_trace_setstatus {0}, 0;
+                        EXEC sp_trace_setstatus {0}, 2;
+                    END
                 ", id);
                 cmd.ExecuteNonQuery();
         }

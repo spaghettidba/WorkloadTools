@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,6 +12,7 @@ namespace WorkloadTools.Consumer.Analysis
 {
     public class SqlTextNormalizer
     {
+        private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private static Hashtable prepSql = new Hashtable();
 
@@ -43,13 +45,16 @@ namespace WorkloadTools.Consumer.Analysis
         private static bool TRUNCATE_TO_4000 = false;
         private static bool TRUNCATE_TO_1024K = false;
 
-        public NormalizedSqlText NormalizeSqlText(string sql, string eventClass, int spid)
+        public NormalizedSqlText NormalizeSqlText(string sql, int spid)
         {
-            return NormalizeSqlText(sql, eventClass, spid, true);
+            var result = NormalizeSqlText(sql, spid, true);
+            logger.Trace("NormalizeSqlText:[" + spid + "]: " + sql);
+            logger.Trace("NormalizeSqlText:[" + spid + "]: " + result.NormalizedText);
+            return result;
         }
 
 
-        public NormalizedSqlText NormalizeSqlText(string sql, string eventClass, int spid, bool spreadCsv)
+        public NormalizedSqlText NormalizeSqlText(string sql, int spid, bool spreadCsv)
         {
             NormalizedSqlText result = new NormalizedSqlText();
             result.OriginalText = sql;
@@ -78,117 +83,115 @@ namespace WorkloadTools.Consumer.Analysis
 
             sql = FixComments(sql);
             sql = _spaces.Replace(sql, " ").ToUpper(CultureInfo.InvariantCulture);
-            Match match1 = null;
-            if (eventClass == "RPCCompleted" || eventClass == "RPCStarted")
+
+
+            sql = _doubleApostrophe.Replace(sql, "{STR}");
+            Match matchPrepExecRpc = _prepExecRpc.Match(sql);
+            if (matchPrepExecRpc.Success)
             {
-                sql = _doubleApostrophe.Replace(sql, "{STR}");
-                Match match2 = _prepExecRpc.Match(sql);
-                if (match2.Success)
-                {
-                    sql = match2.Groups["statement"].ToString();
-                    result.Statement = sql;
-                    result.NormalizedText = sql;
-                }
-                Match match3 = _prepareSql.Match(sql);
-                if (match3.Success)
-                {
-                    if (match3.Groups["preptype"].ToString().ToLower() == "sp_prepare")
-                        flag2 = true;
-                    //num = !(match3.Groups["stmtnum"].ToString() == "NULL") ? Convert.ToInt32(match3.Groups["stmtnum"].ToString()) : 0;
-                    sql = match3.Groups["remaining"].ToString();
-                    Match match4 = _preppedSqlStatement.Match(sql);
-                    if (match4.Success)
-                    {
-                        sql = match4.Groups["statement"].ToString();
-                        sql = _doubleApostrophe.Replace(sql, "'${string}'");
-                        result.Statement = sql;
-                        result.NormalizedText = sql;
-                    }
-                    flag1 = true;
-                }
-                match1 = (Match)null;
-                Match match5 = _execPrepped.Match(sql);
-                if (match5.Success)
-                {
-                    num = Convert.ToInt32(match5.Groups["stmtnum"].ToString());
-                    if (prepSql.ContainsKey((object)(spid.ToString() + "_" + num.ToString())))
-                    {
-                        result.NormalizedText = TruncateSql("{PREPARED} " + prepSql[(object)(spid.ToString() + "_" + num.ToString())].ToString());
-                        return result;
-                    }
-                }
-                match1 = (Match)null;
-                Match match6 = _execUnprep.Match(sql);
-                if (match6.Success)
-                {
-                    num = Convert.ToInt32(match6.Groups["stmtnum"].ToString());
-                    string str = spid.ToString() + "_" + num.ToString();
-                    if (prepSql.ContainsKey((object)str))
-                    {
-                        sql = prepSql[(object)str].ToString();
-                        prepSql.Remove((object)(spid.ToString() + "_" + num.ToString()));
-                        match1 = (Match)null;
-                        result.NormalizedText = TruncateSql("{UNPREPARING} " + sql);
-                        return result;
-                    }
-                }
-                match1 = (Match)null;
+                sql = matchPrepExecRpc.Groups["statement"].ToString();
+                result.Statement = sql;
+                result.NormalizedText = sql;
             }
-            if (eventClass == "RPCCompleted" || eventClass == "RPCStarted")
+            Match matchPrepareSql = _prepareSql.Match(sql);
+            if (matchPrepareSql.Success)
             {
-                Match match2 = _cursor.Match(sql);
-                if (match2.Success)
+                if (matchPrepareSql.Groups["preptype"].ToString().ToLower() == "sp_prepare")
+                    flag2 = true;
+                //num = !(match3.Groups["stmtnum"].ToString() == "NULL") ? Convert.ToInt32(match3.Groups["stmtnum"].ToString()) : 0;
+                sql = matchPrepareSql.Groups["remaining"].ToString();
+                Match matchPreppedSqlStatement = _preppedSqlStatement.Match(sql);
+                if (matchPreppedSqlStatement.Success)
                 {
-                    sql = match2.Groups["statement"].ToString();
+                    sql = matchPreppedSqlStatement.Groups["statement"].ToString();
                     sql = _doubleApostrophe.Replace(sql, "'${string}'");
                     result.Statement = sql;
-                    result.NormalizedText =  "{CURSOR} " + sql;
-                }
-                Match match3 = _cursorPrepExec.Match(sql);
-                if (match3.Success)
-                {
-                    sql = match3.Groups["statement"].ToString();
-                    sql = _doubleApostrophe.Replace(sql, "'${string}'");
-                    result.Statement = sql;
-                    result.NormalizedText = "{CURSOR} " + sql;
-                }
-                Match match4 = _spExecuteSql.Match(sql);
-                if (match4.Success)
-                {
-                    sql = match4.Groups["statement"].ToString();
-                    result.Statement = sql;
                     result.NormalizedText = sql;
                 }
-                match1 = (Match)null;
-                Match match5 = _spExecuteSqlWithStatement.Match(sql);
-                if (match5.Success)
-                {
-                    sql = match5.Groups["statement"].ToString();
-                    result.Statement = sql;
-                    result.NormalizedText = sql;
-                }
-                match1 = (Match)null;
-                if (!_brackets.Match(sql).Success)
-                {
-                    Match match6 = _dbAndObjectName.Match(sql);
-                    if (match6.Success)
-                    {
-                        sql = match6.Groups["object"].ToString();
-                    }
-                    else
-                    {
-                        Match match7 = _objectName.Match(sql);
-                        if (match7.Success)
-                            sql = match7.Groups["object"].ToString();
-                    }
-                    if (sql == "SP_CURSOR" || sql == "SP_CURSORFETCH" || (sql == "SP_CURSORCLOSE" || sql == "SP_RESET_CONNECTION"))
-                    {
-                        match1 = (Match)null;
-                        return null;
-                    }
-                }
-                match1 = (Match)null;
+                flag1 = true;
             }
+
+            Match matchExecPrepped = _execPrepped.Match(sql);
+            if (matchExecPrepped.Success)
+            {
+                num = Convert.ToInt32(matchExecPrepped.Groups["stmtnum"].ToString());
+                if (prepSql.ContainsKey((object)(spid.ToString() + "_" + num.ToString())))
+                {
+                    result.NormalizedText = TruncateSql("{PREPARED} " + prepSql[(object)(spid.ToString() + "_" + num.ToString())].ToString());
+                    return result;
+                }
+            }
+
+            Match matchExecUnprep = _execUnprep.Match(sql);
+            if (matchExecUnprep.Success)
+            {
+                num = Convert.ToInt32(matchExecUnprep.Groups["stmtnum"].ToString());
+                string str = spid.ToString() + "_" + num.ToString();
+                if (prepSql.ContainsKey((object)str))
+                {
+                    sql = prepSql[(object)str].ToString();
+                    prepSql.Remove((object)(spid.ToString() + "_" + num.ToString()));
+
+                    result.NormalizedText = TruncateSql("{UNPREPARING} " + sql);
+                    return result;
+                }
+            }
+
+            
+           
+            Match matchCursor = _cursor.Match(sql);
+            if (matchCursor.Success)
+            {
+                sql = matchCursor.Groups["statement"].ToString();
+                sql = _doubleApostrophe.Replace(sql, "'${string}'");
+                result.Statement = sql;
+                result.NormalizedText =  "{CURSOR} " + sql;
+            }
+            Match matchCursorPrepexec = _cursorPrepExec.Match(sql);
+            if (matchCursorPrepexec.Success)
+            {
+                sql = matchCursorPrepexec.Groups["statement"].ToString();
+                sql = _doubleApostrophe.Replace(sql, "'${string}'");
+                result.Statement = sql;
+                result.NormalizedText = "{CURSOR} " + sql;
+            }
+            Match matchSpExecuteSql = _spExecuteSql.Match(sql);
+            if (matchSpExecuteSql.Success)
+            {
+                sql = matchSpExecuteSql.Groups["statement"].ToString();
+                result.Statement = sql;
+                result.NormalizedText = sql;
+            }
+
+            Match matchSpExecuteSqlWithStatement = _spExecuteSqlWithStatement.Match(sql);
+            if (matchSpExecuteSqlWithStatement.Success)
+            {
+                sql = matchSpExecuteSqlWithStatement.Groups["statement"].ToString();
+                result.Statement = sql;
+                result.NormalizedText = sql;
+            }
+
+            if (!_brackets.Match(sql).Success)
+            {
+                Match matchDbAndObjectName = _dbAndObjectName.Match(sql);
+                if (matchDbAndObjectName.Success)
+                {
+                    sql = matchDbAndObjectName.Groups["object"].ToString();
+                }
+                else
+                {
+                    Match matchObjectName = _objectName.Match(sql);
+                    if (matchObjectName.Success)
+                        sql = matchObjectName.Groups["object"].ToString();
+                }
+                if (sql == "SP_CURSOR" || sql == "SP_CURSORFETCH" || (sql == "SP_CURSORCLOSE" || sql == "SP_RESET_CONNECTION"))
+                {
+
+                    return null;
+                }
+            }
+
+            
             result.NormalizedText = _emptyString.Replace(result.NormalizedText, "{STR}");
             result.NormalizedText = _stringConstant.Replace(result.NormalizedText, "{STR}");
             result.NormalizedText = _unicodeConstant.Replace(result.NormalizedText, "{NSTR}");
@@ -206,7 +209,7 @@ namespace WorkloadTools.Consumer.Analysis
                 else
                     prepSql[(object)(spid.ToString() + "_" + num.ToString())] = (object)sql;
             }
-            match1 = (Match)null;
+
             if (flag2)
             {
                 result.NormalizedText = TruncateSql("{PREPARING} " + sql);

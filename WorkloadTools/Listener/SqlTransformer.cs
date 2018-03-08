@@ -2,26 +2,38 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using WorkloadTools.Consumer.Analysis;
 
 namespace WorkloadTools.Listener
 {
     public class SqlTransformer
     {
+
+        private static Regex _execPrepped = new Regex("^EXEC\\s+SP_EXECUTE\\s+(?<stmtnum>\\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static Regex _execUnprep = new Regex("EXEC\\s+SP_UNPREPARE\\s+(?<stmtnum>\\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static Regex _prepareSql = new Regex("EXEC\\s+(?<preptype>SP_PREP(ARE|EXEC))\\s+@P1\\s+OUTPUT,\\s*(NULL|(N\\'.+?\\')),\\s*N(?<remaining>.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
+        private static Regex _preppedSqlStatement = new Regex("^(')(?<statement>((?!\\1).|\\1{2})*)\\1", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static Regex _doubleApostrophe = new Regex("('')(?<string>.*?)('')", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
+
+
         public string Transform(string command)
         {
             // remove the handle from the sp_prepexec call
             if (command.Contains("sp_prepexec "))
             {
                 command = RemoveFirstP1(command);
-                command += " ; EXEC sp_unprepare @p1;";
+                if (!command.EndsWith("EXEC sp_unprepare @p1;"))
+                    command += " ; EXEC sp_unprepare @p1;";
             }
 
 
             //  remove the handle from the sp_cursoropen call
-            if (command.Contains("sp_cursoropen "))
+            else if (command.Contains("sp_cursoropen "))
             {
                 command = RemoveFirstP1(command);
-                command += " ; EXEC sp_cursorclose @p1;";
+                if (!command.EndsWith("EXEC sp_cursorclose @p1;"))
+                    command += " ; EXEC sp_cursorclose @p1;";
             }
             return command;
         }
@@ -35,8 +47,8 @@ namespace WorkloadTools.Listener
                 return true;
 
             // skip unprepare commands
-            if (command.Contains("sp_unprepare "))
-                return true;
+            //if (command.Contains("sp_unprepare "))
+            //    return true;
 
             // skip cursor fetch
             if (command.Contains("sp_cursorfetch "))
@@ -47,8 +59,8 @@ namespace WorkloadTools.Listener
                 return true;
 
             // skip sp_execute
-            if (command.Contains("sp_execute "))
-                return true;
+            //if (command.Contains("sp_execute "))
+            //    return true;
 
             return false;
         }
@@ -62,19 +74,75 @@ namespace WorkloadTools.Listener
                 StringBuilder sb = new StringBuilder(command);
 
                 // replace "set @p1=" with whitespace
-                for (int i = 0; i < 8; i++)
-                {
-                    sb[idx++] = ' ';
-                }
+                //for (int i = 0; i < 8; i++)
+                //{
+                //    sb[idx++] = ' ';
+                //}
+                idx += 8;
 
                 while (Char.IsNumber(sb[idx]))
                 {
-                    sb[idx] = ' ';
+                    sb[idx] = '0';
                     idx++;
                 }
                 command = sb.ToString();
             }
             return command;
         }
+
+
+        public NormalizedSqlText Normalize(string command)
+        {
+            NormalizedSqlText result = new NormalizedSqlText(command);
+
+            int num = 0;
+
+            Match match3 = _prepareSql.Match(command);
+            if (match3.Success)
+            {
+                if (match3.Groups["preptype"].ToString().ToLower() == "sp_prepare")
+                {
+                    num = !(match3.Groups["stmtnum"].ToString() == "NULL") ? Convert.ToInt32(match3.Groups["stmtnum"].ToString()) : 0;
+                    string sql = match3.Groups["remaining"].ToString();
+                    Match match4 = _preppedSqlStatement.Match(sql);
+                    if (match4.Success)
+                    {
+                        sql = match4.Groups["statement"].ToString();
+                        sql = _doubleApostrophe.Replace(sql, "'${string}'");
+                        result.Statement = sql;
+                        result.NormalizedText = RemoveFirstP1(result.OriginalText);
+                        result.Handle = num;
+                        result.CommandType = NormalizedSqlText.CommandTypeEnum.SP_PREPARE;
+                    }
+                }
+                return result;
+            }
+
+            Match match5 = _execPrepped.Match(command);
+            if (match5.Success)
+            {
+                num = Convert.ToInt32(match5.Groups["stmtnum"].ToString());
+                result.Handle = num;
+                result.Statement = "EXEC sp_execute";
+                result.NormalizedText = "EXEC sp_execute";
+                result.CommandType = NormalizedSqlText.CommandTypeEnum.SP_EXECUTE;
+                return result;
+            }
+
+            Match match6 = _execUnprep.Match(command);
+            if (match6.Success)
+            {
+                num = Convert.ToInt32(match6.Groups["stmtnum"].ToString());
+                result.Handle = num;
+                result.Statement = "EXEC sp_unprepare";
+                result.NormalizedText = "EXEC sp_unprepare";
+                result.CommandType = NormalizedSqlText.CommandTypeEnum.SP_UNPREPARE;
+                return result;
+            }
+
+
+            return result;
+        }
+
     }
 }

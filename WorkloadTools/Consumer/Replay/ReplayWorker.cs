@@ -8,6 +8,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using WorkloadTools.Consumer.Analysis;
+using WorkloadTools.Listener;
 
 namespace WorkloadTools.Consumer.Replay
 {
@@ -16,6 +18,8 @@ namespace WorkloadTools.Consumer.Replay
         private static Logger logger = LogManager.GetCurrentClassLogger();
         private static bool COMPUTE_AVERAGE_STATS = false;
         private static bool CONSUME_RESULTS = true;
+        private static int DEFAULT_QUERY_TIMEOUT = 30;
+        private static int WORKLOAD_INFO_COMMAND_COUNT = 200;
 
         private SqlConnection conn { get; set; }
 
@@ -46,6 +50,10 @@ namespace WorkloadTools.Consumer.Replay
 
         private ConcurrentQueue<ReplayCommand> Commands = new ConcurrentQueue<ReplayCommand>();
         private bool stopped = false;
+
+        private SqlTransformer transformer = new SqlTransformer();
+
+        private Dictionary<int, int> preparedStatements = new Dictionary<int, int>();
 
         private void InitializeConnection()
         {
@@ -140,8 +148,26 @@ namespace WorkloadTools.Consumer.Replay
             }
 
 
-            
+            // Extract the handle from the prepared statement
+            NormalizedSqlText nst = transformer.Normalize(command.CommandText);
 
+            if(nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_PREPARE)
+            {
+                command.CommandText = nst.NormalizedText;
+            }
+            else if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_UNPREPARE || nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_EXECUTE)
+            {
+                // look up the statement to unprepare in the dictionary
+                if (preparedStatements.ContainsKey(nst.Handle))
+                {
+                    command.CommandText = nst.NormalizedText + " " + preparedStatements[nst.Handle];
+
+                    if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_UNPREPARE)
+                        preparedStatements.Remove(nst.Handle);
+                }
+                else
+                    return; // statement not found: better return
+            }
 
 
             try
@@ -155,7 +181,17 @@ namespace WorkloadTools.Consumer.Replay
                 using (SqlCommand cmd = new SqlCommand(command.CommandText))
                 {
                     cmd.Connection = conn;
-                    if (CONSUME_RESULTS)
+                    cmd.CommandTimeout = DEFAULT_QUERY_TIMEOUT;
+
+                    if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_PREPARE)
+                    {
+                        int handle = (int)cmd.ExecuteScalar();
+                        if (!preparedStatements.ContainsKey(nst.Handle))
+                        {
+                            preparedStatements.Add(nst.Handle, handle);
+                        }
+                    }
+                    else if (CONSUME_RESULTS)
                     {
                         using(SqlDataReader reader = cmd.ExecuteReader())
                         using (ResultSetConsumer consumer = new ResultSetConsumer(reader))
@@ -170,7 +206,7 @@ namespace WorkloadTools.Consumer.Replay
                 }
 
                 logger.Trace(String.Format("Worker [{0}] - SUCCES - \n{1}", Name, command.CommandText));
-                if (commandCount % 100 == 0)
+                if (commandCount > 0 && commandCount % WORKLOAD_INFO_COMMAND_COUNT == 0)
                 {
                     var seconds = (DateTime.Now - previousCPSComputeTime).TotalSeconds;
                     var cps = (commandCount - previousCommandCount) / ((seconds == 0) ? 1 : seconds);

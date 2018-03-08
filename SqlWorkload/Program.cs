@@ -134,8 +134,8 @@ namespace SqlWorkload
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
                 e.Cancel = true;
                 logger.Info("Received shutdown signal...");
-                controller.Stop();
                 source.CancelAfter(TimeSpan.FromSeconds(10)); // give a 10 seconds cancellation grace period 
+                controller.Stop();
             };
 
             Task t = processController(controller);

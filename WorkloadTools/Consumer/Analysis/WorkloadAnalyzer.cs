@@ -54,18 +54,19 @@ namespace WorkloadTools.Consumer.Analysis
                     try
                     {
                         int numRetries = 0;
-                        try
+                        while (numRetries <= MAX_WRITE_RETRIES)
                         {
-                            while (numRetries++ < MAX_WRITE_RETRIES)
+                            try
                             {
                                 WriteToServer();
                                 numRetries = MAX_WRITE_RETRIES + 1;
                             }
-                        }
-                        catch (Exception)
-                        {
-                            if (numRetries > MAX_WRITE_RETRIES)
-                                throw;
+                            catch (Exception)
+                            {
+                                if (numRetries == MAX_WRITE_RETRIES)
+                                    throw;
+                            }
+                            numRetries++;
                         }
                     }
                     catch (Exception e)
@@ -73,6 +74,7 @@ namespace WorkloadTools.Consumer.Analysis
                         try
                         {
                             logger.Error(e, "Unable to write workload analysis info to the destination database.");
+                            logger.Error(e.Message);
                         }
                         catch
                         {
@@ -154,7 +156,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             DataRow row = rawData.NewRow();
 
-            string normSql = normalizer.NormalizeSqlText(evt.Text, evt.Type.ToString(), (int)evt.SPID).NormalizedText;
+            string normSql = normalizer.NormalizeSqlText(evt.Text, (int)evt.SPID).NormalizedText;
             long hash = normalizer.GetHashCode(normSql);
 
             if (!normalizedQueries.ContainsKey(hash))
