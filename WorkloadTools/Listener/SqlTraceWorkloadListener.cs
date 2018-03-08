@@ -284,6 +284,8 @@ namespace WorkloadTools.Listener
 
                         int rowsRead = 0;
 
+                        SqlTransformer transformer = new SqlTransformer();
+
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
                             while (reader.Read())
@@ -314,8 +316,13 @@ namespace WorkloadTools.Listener
                                 evt.Duration = (long?)reader["Duration"];
                                 evt.StartTime = (DateTime)reader["StartTime"];
 
+                                if (transformer.Skip(evt.Text))
+                                    continue;
+
                                 if (!Filter.Evaluate(evt))
                                     continue;
+
+                                evt.Text = transformer.Transform(evt.Text);
 
                                 events.Enqueue(evt);
 

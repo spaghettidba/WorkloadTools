@@ -57,6 +57,7 @@
     <Compile Include="Listener\ProfilerWorkloadListener.cs" />
     <Compile Include="Consumer\ReplayConsumer.cs" />
     <Compile Include="Listener\SqlTraceWorkloadListener.cs" />
+    <Compile Include="Listener\SqlTransformer.cs" />
     <Compile Include="Listener\Trace\ProfilerEventFilter.cs" />
     <Compile Include="Listener\Trace\ProfilerFilterPredicate.cs" />
     <Compile Include="Listener\Trace\SqlConnectionInfoWrapper.cs" />

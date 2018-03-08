@@ -113,35 +113,6 @@ namespace WorkloadTools.Consumer.Replay
         {
             LastCommandTime = DateTime.Now;
 
-            // skip reset connection commands
-            if (command.CommandText.Contains("sp_reset_connection"))
-                return;
-
-            // skip unprepare commands
-            if (command.CommandText.Contains("sp_unprepare "))
-                return;
-
-            // skip cursor fetch
-            if (command.CommandText.Contains("sp_cursorfetch "))
-                return;
-
-            // skip cursor close
-            if (command.CommandText.Contains("sp_cursorclose "))
-                return;
-
-            // skip sp_execute
-            if (command.CommandText.Contains("sp_execute "))
-                return;
-
-            // remove the handle from the sp_prepexec call
-            if (command.CommandText.Contains("sp_prepexec "))
-            {
-                int idx = command.CommandText.IndexOf("set @p1=");
-                if(idx > 0)
-                    command.CommandText = command.CommandText.Insert(idx, @"--");
-                command.CommandText += Environment.NewLine + "EXEC sp_unprepare @p1;";
-            }
-
             if (conn == null)
             {
                 try
@@ -169,11 +140,7 @@ namespace WorkloadTools.Consumer.Replay
             }
 
 
-            // decode declaration
-            if (command.CommandText.Contains("sp_cursoropen "))
-            {
-                command.CommandText = DecodeCursor(command.CommandText, conn);
-            }
+            
 
 
 
@@ -238,28 +205,6 @@ namespace WorkloadTools.Consumer.Replay
         }
 
 
-        private string DecodeCursor(string commandText, SqlConnection conn)
-        {
-            string result = commandText;
-
-            using (SqlCommand cmd = new SqlCommand(commandText.Replace("exec sp_cursoropen ", "SELECT "), conn))
-            {
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-
-                    if (reader.HasRows)
-                    {
-                        while (reader.Read())
-                        {
-                            result = reader.GetString(1);
-                        }
-                    }
-                }
-            }
-
-            return result;
-
-        }
 
         public void AppendCommand(ReplayCommand cmd)
         {
@@ -286,3 +231,4 @@ namespace WorkloadTools.Consumer.Replay
 
     }
 }
+

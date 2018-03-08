@@ -154,7 +154,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             DataRow row = rawData.NewRow();
 
-            string normSql = normalizer.NormalizeSqlText(evt.Text, evt.Type.ToString(), (int)evt.SPID);
+            string normSql = normalizer.NormalizeSqlText(evt.Text, evt.Type.ToString(), (int)evt.SPID).NormalizedText;
             long hash = normalizer.GetHashCode(normSql);
 
             if (!normalizedQueries.ContainsKey(hash))

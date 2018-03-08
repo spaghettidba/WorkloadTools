@@ -7,9 +7,9 @@ namespace WorkloadTools.Consumer.Analysis
 {
     public class NormalizedSqlText
     {
-        public String OriginalText { get; set; }
+        public string OriginalText { get; set; }
         public string Statement { get; set; }
-
+        public string NormalizedText { get; set; }
 
     }
 }
