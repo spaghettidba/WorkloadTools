@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <Product Id="*" Name="WorkloadTools" Language="1033" Version="1.0.0.0" Manufacturer="sqlconsulting.it" UpgradeCode="EF0F1905-E03F-4634-BB2E-3A5C3369AB23">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+    <MajorUpgrade AllowDowngrades="yes" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="REINSTALLMODE" Value="amus" />
+
+
+
+    <Feature Id="ProductFeature" Title="WorkloadTools" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="Listener" />
+    </Feature>
+
+    
+    
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="WorkloadTools">
+          <Directory Id="ListenerDir" Name="Listener" />
+        </Directory>
+      </Directory>
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="cmp_01" Guid="{01E755DC-697B-4DC8-9EA3-EFE8174E3785}">
+        <File Id="file_01" KeyPath="yes" Source="..\SqlWorkload\bin\Release\CommandLine.dll" />
+      </Component>
+      <Component Id="cmp_02" Guid="{47848146-5E06-48A4-B0D5-D3D422935C55}">
+        <File Id="file_02" KeyPath="yes" Source="..\SqlWorkload\bin\Release\CommandLine.xml" />
+      </Component>
+      <Component Id="cmp_03" Guid="{8696A5D6-596B-452F-AE1D-6A3DCFAC5835}">
+        <File Id="file_03" KeyPath="yes" Source="..\SqlWorkload\bin\Release\NLog.config" />
+      </Component>
+      <Component Id="cmp_04" Guid="{36EA6CE9-2C56-4595-A5C3-BC7C58FFBC75}">
+        <File Id="file_04" KeyPath="yes" Source="..\SqlWorkload\bin\Release\NLog.dll" />
+      </Component>
+      <Component Id="cmp_05" Guid="{A4510E74-CDB5-4796-9F66-5C84B42E0B9F}">
+        <File Id="file_05" KeyPath="yes" Source="..\SqlWorkload\bin\Release\NLog.xml" />
+      </Component>
+      <Component Id="cmp_06" Guid="{35B21019-5FFF-43AF-A1EB-FBB4E9EEC6EF}">
+        <File Id="file_06" KeyPath="yes" Source="..\SqlWorkload\bin\Release\SqlWorkload.exe" />
+      </Component>
+      <Component Id="cmp_07" Guid="{8824ED12-5B74-4A5B-B1B3-1CC63F3E6432}">
+        <File Id="file_07" KeyPath="yes" Source="..\SqlWorkload\bin\Release\SqlWorkload.exe.config" />
+      </Component>
+      <Component Id="cmp_08" Guid="{B7D557B2-9A0B-45A1-B72B-383D209074D8}">
+        <File Id="file_08" KeyPath="yes" Source="..\SqlWorkload\bin\Release\SqlWorkload.pdb" />
+      </Component>
+      <Component Id="cmp_09" Guid="{A5B6B546-6138-4151-80EB-06FACFFEC791}">
+        <File Id="file_09" KeyPath="yes" Source="..\SqlWorkload\bin\Release\WorkloadTools.dll" />
+      </Component>
+      <Component Id="cmp_10" Guid="{A6B0DC2D-717B-43F6-AF91-9DAC79F10CA3}">
+        <File Id="file_10" KeyPath="yes" Source="..\SqlWorkload\bin\Release\WorkloadTools.pdb" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="Listener" Directory="ListenerDir">
+      <Component Id="cmp_11" Guid="{3C9FC502-15ED-49AF-8383-DE024BB45C2F}">
+        <File Id="file_11" KeyPath="yes" Source="..\SqlWorkload\bin\Release\Listener\sqlworkload.sql" />
+      </Component>
+      <Component Id="cmp_12" Guid="{E0D0D6CD-1BD6-4B8D-A0D1-B3134905247C}">
+        <File Id="file_12" KeyPath="yes" Source="..\SqlWorkload\bin\Release\Listener\sqlworkload.tdf" />
+      </Component>
+    </ComponentGroup>
+    
+  </Fragment>
+</Wix>
