@@ -16,7 +16,7 @@ namespace WorkloadTools.Listener
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static int DEFAULT_TRACE_SIZE_MB = 10;
+        private static int DEFAULT_TRACE_SIZE_MB = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_SIZE_MB;
         private static string DEFAULT_LOG_SQL = @"
             DECLARE @defaultLog nvarchar(4000);
 
@@ -35,8 +35,8 @@ namespace WorkloadTools.Listener
 
             SELECT @defaultLog AS DefaultLog;
         ";
-        private static int DEFAULT_TRACE_INTERVAL_SECONDS = 10;
-        private static int DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD = 5000;
+        private static int DEFAULT_TRACE_INTERVAL_SECONDS = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_INTERVAL_SECONDS;
+        private static int DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD;
 
         public enum StreamSourceEnum
         {

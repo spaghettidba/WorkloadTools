@@ -14,8 +14,8 @@ namespace WorkloadTools.Consumer
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private const int SEMAPHORE_LIMIT = 32;
-        private const int WORKER_EXPIRY_TIMEOUT_MINUTES = 5;
+        private static readonly int SEMAPHORE_LIMIT = Properties.Settings.Default.ReplayConsumer_SEMAPHORE_LIMIT;
+        private static readonly int WORKER_EXPIRY_TIMEOUT_MINUTES = Properties.Settings.Default.ReplayConsumer_WORKER_EXPIRY_TIMEOUT_MINUTES;
         private static readonly Semaphore WorkLimiter = new Semaphore(SEMAPHORE_LIMIT, SEMAPHORE_LIMIT);
 
         public SqlConnectionInfo ConnectionInfo { get; set; }

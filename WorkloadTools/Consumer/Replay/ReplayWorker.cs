@@ -16,10 +16,10 @@ namespace WorkloadTools.Consumer.Replay
     class ReplayWorker : IDisposable
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
-        private static bool COMPUTE_AVERAGE_STATS = false;
-        private static bool CONSUME_RESULTS = true;
-        private static int DEFAULT_QUERY_TIMEOUT = 30;
-        private static int WORKLOAD_INFO_COMMAND_COUNT = 200;
+        private static bool COMPUTE_AVERAGE_STATS = Properties.Settings.Default.ReplayWorker_COMPUTE_AVERAGE_STATS;
+        private static bool CONSUME_RESULTS = Properties.Settings.Default.ReplayWorker_CONSUME_RESULTS;
+        private static int DEFAULT_QUERY_TIMEOUT_SECONDS = Properties.Settings.Default.ReplayWorker_DEFAULT_QUERY_TIMEOUT_SECONDS;
+        private static int WORKLOAD_INFO_COMMAND_COUNT = Properties.Settings.Default.ReplayWorker_WORKLOAD_INFO_COMMAND_COUNT;
 
         private SqlConnection conn { get; set; }
 
@@ -181,7 +181,7 @@ namespace WorkloadTools.Consumer.Replay
                 using (SqlCommand cmd = new SqlCommand(command.CommandText))
                 {
                     cmd.Connection = conn;
-                    cmd.CommandTimeout = DEFAULT_QUERY_TIMEOUT;
+                    cmd.CommandTimeout = DEFAULT_QUERY_TIMEOUT_SECONDS;
 
                     if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_PREPARE)
                     {

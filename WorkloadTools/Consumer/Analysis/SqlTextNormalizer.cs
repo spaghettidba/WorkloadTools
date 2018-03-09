@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using WorkloadTools.Properties;
 
 namespace WorkloadTools.Consumer.Analysis
 {
@@ -42,8 +43,8 @@ namespace WorkloadTools.Consumer.Analysis
         private static Regex _inClause = new Regex("IN\\s*\\(\\s*\\{.*\\}\\s*\\)", RegexOptions.Compiled | RegexOptions.Singleline);
         private static Regex _brackets = new Regex("(\\[|\\])", RegexOptions.Compiled);
 
-        private static bool TRUNCATE_TO_4000 = false;
-        private static bool TRUNCATE_TO_1024K = false;
+        private static bool TRUNCATE_TO_4000 = Settings.Default.SqlTextNormalizer_TRUNCATE_TO_4000;
+        private static bool TRUNCATE_TO_1024K = Settings.Default.SqlTextNormalizer_TRUNCATE_TO_1024K;
 
         public NormalizedSqlText NormalizeSqlText(string sql, int spid)
         {

@@ -65,6 +65,11 @@
     <Compile Include="Listener\Trace\TraceFileWrapper.cs" />
     <Compile Include="Listener\Trace\TraceFilterPredicate.cs" />
     <Compile Include="Listener\Trace\TraceServerWrapper.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
     <Compile Include="SqlConnectionInfo.cs" />
     <Compile Include="WorkloadConsumer.cs" />
     <Compile Include="WorkloadController.cs" />
@@ -74,10 +79,15 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="Listener\sqlworkload.tdf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Listener\sqlworkload.sql">

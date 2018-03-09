@@ -32,7 +32,7 @@ namespace WorkloadTools.Consumer.Analysis
         private SqlTextNormalizer normalizer = new SqlTextNormalizer();
         private bool TargetTableCreated = false;
 
-        private const int MAX_WRITE_RETRIES = 5;
+        private static int MAX_WRITE_RETRIES = Properties.Settings.Default.WorkloadAnalyzer_MAX_WRITE_RETRIES;
 
         struct NormalizedQuery
         {
