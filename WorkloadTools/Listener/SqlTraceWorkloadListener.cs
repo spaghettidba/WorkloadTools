@@ -17,6 +17,7 @@ namespace WorkloadTools.Listener
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private static int DEFAULT_TRACE_SIZE_MB = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_SIZE_MB;
+        private static int DEFAULT_TRACE_ROLLOVER_COUNT = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_ROLLOVER_COUNT;
         private static string DEFAULT_LOG_SQL = @"
             DECLARE @defaultLog nvarchar(4000);
 
@@ -81,7 +82,7 @@ namespace WorkloadTools.Listener
                     filters += Environment.NewLine + Filter.LoginFilter.PushDown();
 
                     tracePath = GetSqlDefaultLogPath(conn);
-                    traceSql = String.Format(traceSql, DEFAULT_TRACE_SIZE_MB, Path.Combine(tracePath  ,"sqlworkload"), filters);
+                    traceSql = String.Format(traceSql, DEFAULT_TRACE_SIZE_MB, DEFAULT_TRACE_ROLLOVER_COUNT, Path.Combine(tracePath  ,"sqlworkload"), filters);
                 }
                 catch (Exception e)
                 {

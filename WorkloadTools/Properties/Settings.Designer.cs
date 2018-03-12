@@ -130,5 +130,14 @@ namespace WorkloadTools.Properties {
                 return ((int)(this["SqlTraceWorkloadListener_DEFAULT_TRACE_SIZE_MB"]));
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        public int SqlTraceWorkloadListener_DEFAULT_TRACE_ROLLOVER_COUNT {
+            get {
+                return ((int)(this["SqlTraceWorkloadListener_DEFAULT_TRACE_ROLLOVER_COUNT"]));
+            }
+        }
     }
 }
