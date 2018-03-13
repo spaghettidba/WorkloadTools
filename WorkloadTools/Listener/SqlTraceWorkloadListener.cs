@@ -120,7 +120,7 @@ namespace WorkloadTools.Listener
         public override WorkloadEvent Read()
         {
             WorkloadEvent result = null;
-            while (!events.TryDequeue(out result))
+            while (!stopped && !events.TryDequeue(out result))
             {
                 Thread.Sleep(5);
             }

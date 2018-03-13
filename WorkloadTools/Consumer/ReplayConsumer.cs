@@ -22,7 +22,6 @@ namespace WorkloadTools.Consumer
         public SynchronizationModeEnum SynchronizationMode { get; set; } = SynchronizationModeEnum.None;
 
         private ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
-        private bool stopped = false;
         private Thread runner;
         private Thread sweeper;
 
@@ -136,13 +135,17 @@ namespace WorkloadTools.Consumer
 
                 foreach (ReplayWorker wrk in ReplayWorkers.Values)
                 {
-                    if (wrk.LastCommandTime < DateTime.Now.AddMinutes(-WORKER_EXPIRY_TIMEOUT_MINUTES))
+                    if (wrk.LastCommandTime < DateTime.Now.AddMinutes(-WORKER_EXPIRY_TIMEOUT_MINUTES) && ! wrk.HasCommands)
                     {
                         ReplayWorker outWrk;
                         ReplayWorkers.TryRemove(Int32.Parse(wrk.Name), out outWrk);
+                        logger.Info(String.Format("Disposing replay worker [{0}]",wrk.Name));
                         outWrk.Dispose();
                     }
                 }
+
+                logger.Info(String.Format("{0} registered active workers", ReplayWorkers.Count));
+                logger.Info(String.Format("{0} oldest command date", ReplayWorkers.Min(x => x.Value.LastCommandTime)));
 
                 Thread.Sleep(10000); // sleep 10 seconds
             }

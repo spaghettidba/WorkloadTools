@@ -97,7 +97,7 @@ namespace WorkloadTools.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
         public int ReplayConsumer_WORKER_EXPIRY_TIMEOUT_MINUTES {
             get {
                 return ((int)(this["ReplayConsumer_WORKER_EXPIRY_TIMEOUT_MINUTES"]));

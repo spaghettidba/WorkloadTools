@@ -10,7 +10,7 @@ namespace WorkloadTools
 {
     public abstract class BufferedWorkloadConsumer : WorkloadConsumer
     {
-        private bool stopped = false;
+        protected bool stopped = false;
         protected ConcurrentQueue<WorkloadEvent> Buffer { get; set; } = new ConcurrentQueue<WorkloadEvent>();
         protected Task BufferReader { get; set; }
 
@@ -29,9 +29,9 @@ namespace WorkloadTools
             while (!stopped)
             {
                 WorkloadEvent evt = null;
-                while (!Buffer.TryDequeue(out evt))
+                while (!stopped && !Buffer.TryDequeue(out evt))
                 {
-                    Thread.Sleep(1);
+                    Thread.Sleep(10);
                 }
                 ConsumeBuffered(evt);
             }

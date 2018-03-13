@@ -72,14 +72,9 @@ namespace WorkloadTools.Listener
             if (idx > 0)
             {
                 StringBuilder sb = new StringBuilder(command);
+                idx += 8; // move past "set @p1="
 
-                // replace "set @p1=" with whitespace
-                //for (int i = 0; i < 8; i++)
-                //{
-                //    sb[idx++] = ' ';
-                //}
-                idx += 8;
-
+                // replace numeric chars with 0s
                 while (Char.IsNumber(sb[idx]))
                 {
                     sb[idx] = '0';
@@ -102,7 +97,8 @@ namespace WorkloadTools.Listener
             {
                 if (match3.Groups["preptype"].ToString().ToLower() == "sp_prepare")
                 {
-                    num = !(match3.Groups["stmtnum"].ToString() == "NULL") ? Convert.ToInt32(match3.Groups["stmtnum"].ToString()) : 0;
+                    if(match3.Groups["stmtnum"].Success)
+                        num = !(match3.Groups["stmtnum"].ToString() == "NULL") ? Convert.ToInt32(match3.Groups["stmtnum"].ToString()) : 0;
                     string sql = match3.Groups["remaining"].ToString();
                     Match match4 = _preppedSqlStatement.Match(sql);
                     if (match4.Success)

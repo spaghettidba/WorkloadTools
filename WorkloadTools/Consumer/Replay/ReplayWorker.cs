@@ -89,6 +89,7 @@ namespace WorkloadTools.Consumer.Replay
 
         public void Stop()
         {
+            logger.Info(String.Format("Stopping worker [{0}]", Name));
             stopped = true;
             isRunning = false;
         }
@@ -108,9 +109,9 @@ namespace WorkloadTools.Consumer.Replay
         public ReplayCommand GetNextCommand()
         {
             ReplayCommand result = null;
-            while(!Commands.TryDequeue(out result))
+            while(!stopped && !Commands.TryDequeue(out result))
             {
-                Thread.Sleep(1);
+                Thread.Sleep(10);
             }
             return result;
         }
@@ -136,7 +137,7 @@ namespace WorkloadTools.Consumer.Replay
             }
 
 
-            while (conn.State == System.Data.ConnectionState.Connecting)
+            while (!stopped && conn.State == System.Data.ConnectionState.Connecting)
             {
                 Thread.Sleep(5);
             }
