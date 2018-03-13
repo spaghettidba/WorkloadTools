@@ -65,7 +65,7 @@ namespace WorkloadTools.Consumer
                 ReplayWorkers.TryAdd(session_id, rw);
                 rw.AppendCommand(command);
 
-                logger.Info(String.Format("Started new Replay Worker for session_id {0}", session_id));
+                logger.Info(String.Format("Worker [{0}] - Starting", session_id));
             }
 
             if(runner == null)
@@ -127,29 +127,43 @@ namespace WorkloadTools.Consumer
         {
             while (!stopped)
             {
-                if (ReplayWorkers.IsEmpty)
+                try
                 {
-                    Thread.Sleep(100);
-                    continue;
-                }
-
-                foreach (ReplayWorker wrk in ReplayWorkers.Values)
-                {
-                    if (wrk.LastCommandTime < DateTime.Now.AddMinutes(-WORKER_EXPIRY_TIMEOUT_MINUTES) && ! wrk.HasCommands)
+                    if (ReplayWorkers.IsEmpty)
                     {
-                        ReplayWorker outWrk;
-                        ReplayWorkers.TryRemove(Int32.Parse(wrk.Name), out outWrk);
-                        logger.Info(String.Format("Disposing replay worker [{0}]",wrk.Name));
-                        outWrk.Dispose();
+                        Thread.Sleep(100);
+                        continue;
                     }
-                }
 
-                logger.Info(String.Format("{0} registered active workers", ReplayWorkers.Count));
-                logger.Info(String.Format("{0} oldest command date", ReplayWorkers.Min(x => x.Value.LastCommandTime)));
+                    foreach (ReplayWorker wrk in ReplayWorkers.Values)
+                    {
+                        if (wrk.LastCommandTime < DateTime.Now.AddMinutes(-WORKER_EXPIRY_TIMEOUT_MINUTES) && !wrk.HasCommands)
+                        {
+                            RemoveWorker(wrk.Name);
+                        }
+                    }
+
+                    logger.Info(String.Format("{0} registered active workers", ReplayWorkers.Count));
+                    logger.Info(String.Format("{0} oldest command date", ReplayWorkers.Min(x => x.Value.LastCommandTime)));
+                }
+                catch (Exception e)
+                {
+                    logger.Warn(e.Message);
+                }
 
                 Thread.Sleep(10000); // sleep 10 seconds
             }
             logger.Trace("Sweeper thread stopped.");
+        }
+
+
+
+        private void RemoveWorker(string name)
+        {
+            ReplayWorker outWrk;
+            ReplayWorkers.TryRemove(Int32.Parse(name), out outWrk);
+            logger.Info(String.Format("Worker [{0}] - Disposing", name));
+            outWrk.Dispose();
         }
 
 

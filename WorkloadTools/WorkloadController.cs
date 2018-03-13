@@ -35,7 +35,12 @@ namespace WorkloadTools
             listener.Initialize();
             while (!stopped)
             {
+                if (!listener.IsRunning)
+                    Stop();
+
                 var evt = listener.Read();
+                if (evt == null)
+                    continue;
                 Parallel.ForEach(consumers, (cons) =>
                 {
                     cons.Consume(evt);
@@ -69,10 +74,13 @@ namespace WorkloadTools
             if (!disposed)
             {
                 disposed = true;
-                listener.Dispose();
+                if(listener != null)
+                    listener.Dispose();
+
                 foreach (var cons in consumers)
                 {
-                    cons.Dispose();
+                    if(cons != null)
+                        cons.Dispose();
                 }
             }
         }

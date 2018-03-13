@@ -29,10 +29,17 @@ namespace WorkloadTools
             while (!stopped)
             {
                 WorkloadEvent evt = null;
-                while (!stopped && !Buffer.TryDequeue(out evt))
+                while (!Buffer.TryDequeue(out evt))
                 {
+                    if (stopped)
+                        return;
+
                     Thread.Sleep(10);
                 }
+
+                if (evt == null)
+                    continue;
+
                 ConsumeBuffered(evt);
             }
         }

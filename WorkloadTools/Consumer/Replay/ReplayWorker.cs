@@ -33,6 +33,9 @@ namespace WorkloadTools.Consumer.Replay
         private bool isRunning = false;
         public bool IsRunning { get { return isRunning; } }
 
+        private Task runner = null;
+        private CancellationTokenSource tokenSource;
+
         public bool HasCommands
         {
             get
@@ -73,7 +76,11 @@ namespace WorkloadTools.Consumer.Replay
 
         public void Start()
         {
-            Task.Factory.StartNew(() => { Run(); });
+            tokenSource = new CancellationTokenSource();
+            var token = tokenSource.Token;
+
+            if (runner == null)
+                runner = Task.Factory.StartNew(() => { Run(); }, token);
         }
 
 
@@ -82,16 +89,28 @@ namespace WorkloadTools.Consumer.Replay
             isRunning = true;
             while (!stopped)
             {
-                ExecuteNextCommand();
+                try
+                {
+                    ExecuteNextCommand();
+                }
+                catch(Exception e)
+                {
+                    logger.Error(e.Message);
+                    logger.Error(e.StackTrace);
+                }
+
             }
         }
 
 
         public void Stop()
         {
-            logger.Info(String.Format("Stopping worker [{0}]", Name));
+            logger.Info(String.Format("Worker [{0}] - Stopping", Name));
             stopped = true;
             isRunning = false;
+            if(tokenSource != null)
+                tokenSource.Cancel();
+            logger.Info(String.Format("Worker [{0}] - Stopped", Name));
         }
 
 
@@ -109,8 +128,11 @@ namespace WorkloadTools.Consumer.Replay
         public ReplayCommand GetNextCommand()
         {
             ReplayCommand result = null;
-            while(!stopped && !Commands.TryDequeue(out result))
+            while(!Commands.TryDequeue(out result))
             {
+                if (stopped)
+                    return null;
+
                 Thread.Sleep(10);
             }
             return result;
@@ -136,13 +158,18 @@ namespace WorkloadTools.Consumer.Replay
                 }
             }
 
-
-            while (!stopped && conn.State == System.Data.ConnectionState.Connecting)
+            if (conn != null)
             {
-                Thread.Sleep(5);
+                while (conn.State == System.Data.ConnectionState.Connecting)
+                {
+                    if (stopped)
+                        break;
+
+                    Thread.Sleep(5);
+                }
             }
 
-            if ((conn.State == System.Data.ConnectionState.Closed) || (conn.State == System.Data.ConnectionState.Broken))
+            if (conn == null || (conn.State == System.Data.ConnectionState.Closed) || (conn.State == System.Data.ConnectionState.Broken))
             {
                 conn.ConnectionString += ";MultipleActiveResultSets=true;";
                 conn.Open();
@@ -264,6 +291,28 @@ namespace WorkloadTools.Consumer.Replay
         protected void Dispose(bool disposing)
         {
             Stop();
+            if (conn != null)
+            {
+                if (conn.State == System.Data.ConnectionState.Open)
+                    conn.Close();
+                conn.Dispose();
+                conn = null;
+            }
+            if (runner != null)
+            {
+                while(!(runner.IsCompleted || runner.IsFaulted || runner.IsCanceled))
+                {
+                    Thread.Sleep(5);
+                }
+                runner.Dispose();
+                runner = null;
+            }
+            if (tokenSource != null)
+            {
+                tokenSource.Dispose();
+                tokenSource = null;
+            }
+            logger.Trace(String.Format("Worker [{0}] - Disposed ", Name));
         }
 
     }

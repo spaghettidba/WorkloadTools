@@ -11,7 +11,10 @@ namespace WorkloadTools
         public string Source { get; set; }
         public WorkloadEventFilter Filter { get; set; }
 
+        protected bool stopped;
+
         public void Dispose() {
+            stopped = true;
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -21,5 +24,7 @@ namespace WorkloadTools
         public abstract WorkloadEvent Read();
 
         public abstract void Initialize();
+
+        public bool IsRunning { get { return !stopped; } }
     }
 }

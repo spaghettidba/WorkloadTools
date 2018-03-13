@@ -53,12 +53,9 @@ namespace WorkloadTools.Listener
 
         private int traceId = -1;
         private string tracePath;
-        private bool stopped;
 
         // By default, stream from TDS
         public StreamSourceEnum StreamSource { get; set; } = StreamSourceEnum.StreamFromTDS;
-
-
 
         private ConcurrentQueue<WorkloadEvent> events = new ConcurrentQueue<WorkloadEvent>();
 
@@ -120,8 +117,11 @@ namespace WorkloadTools.Listener
         public override WorkloadEvent Read()
         {
             WorkloadEvent result = null;
-            while (!stopped && !events.TryDequeue(out result))
+            while (!events.TryDequeue(out result))
             {
+                if (stopped)
+                    return null;
+
                 Thread.Sleep(5);
             }
             return result;
@@ -263,7 +263,16 @@ namespace WorkloadTools.Listener
 
 
 
-                        string currentTraceFile = (string)cmdPath.ExecuteScalar();
+                        string currentTraceFile = null;
+                        try
+                        {
+                            currentTraceFile = (string)cmdPath.ExecuteScalar();
+                        }
+                        catch(Exception e)
+                        {
+                            logger.Error(e.StackTrace);
+                            throw;
+                        }
                         string filesParam = "1";
                         string pathToTraceParam = currentTraceFile;
 
@@ -315,12 +324,17 @@ namespace WorkloadTools.Listener
                                     evt.Type = WorkloadEvent.EventType.Unknown;
                                     continue;
                                 }
-                                evt.ApplicationName = (string)reader["ApplicationName"];
-                                evt.DatabaseName = (string)reader["DatabaseName"];
-                                evt.HostName = (string)reader["HostName"];
-                                evt.LoginName = (string)reader["LoginName"];
+                                if (reader["ApplicationName"] != DBNull.Value)
+                                    evt.ApplicationName = (string)reader["ApplicationName"];
+                                if(reader["DatabaseName"] != DBNull.Value)
+                                    evt.DatabaseName = (string)reader["DatabaseName"];
+                                if (reader["HostName"] != DBNull.Value)
+                                    evt.HostName = (string)reader["HostName"];
+                                if (reader["LoginName"] != DBNull.Value)
+                                    evt.LoginName = (string)reader["LoginName"];
                                 evt.SPID = (int?)reader["SPID"];
-                                evt.Text = (string)reader["TextData"];
+                                if (reader["TextData"] != DBNull.Value)
+                                    evt.Text = (string)reader["TextData"];
                                 evt.Reads = (long?)reader["Reads"];
                                 evt.Writes = (long?)reader["Writes"];
                                 evt.CPU = (int?)reader["CPU"];
@@ -351,6 +365,7 @@ namespace WorkloadTools.Listener
             catch (Exception ex)
             {
                 logger.Error(ex.Message);
+                logger.Error(ex.StackTrace);
 
                 if (ex.InnerException != null)
                     logger.Error(ex.InnerException.Message);
