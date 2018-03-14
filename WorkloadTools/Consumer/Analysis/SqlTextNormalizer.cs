@@ -48,10 +48,18 @@ namespace WorkloadTools.Consumer.Analysis
 
         public NormalizedSqlText NormalizeSqlText(string sql, int spid)
         {
-            var result = NormalizeSqlText(sql, spid, true);
-            logger.Trace("NormalizeSqlText:[" + spid + "]: " + sql);
-            logger.Trace("NormalizeSqlText:[" + spid + "]: " + result.NormalizedText);
-            return result;
+            try
+            {
+                var result = NormalizeSqlText(sql, spid, true);
+                logger.Trace("NormalizeSqlText:[" + spid + "]: " + sql);
+                if (result != null)
+                    logger.Trace("NormalizeSqlText:[" + spid + "]: " + result.NormalizedText);
+                return result;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
 
@@ -68,6 +76,9 @@ namespace WorkloadTools.Consumer.Analysis
                 result.Statement = "";
                 return result;
             }
+
+            sql = sql.Trim();
+
             if (TRUNCATE_TO_1024K  && sql.Length > 1024000)
             {
                 result.Statement = "{SQL>1MB}";
@@ -79,7 +90,7 @@ namespace WorkloadTools.Consumer.Analysis
             bool flag2 = false;
             int num = 0;
 
-            if (sql == "sp_reset_connection")
+            if ((sql == "sp_reset_connection") || (sql == "exec sp_reset_connection"))
                 return null;
 
             sql = FixComments(sql);

@@ -13,7 +13,8 @@ namespace WorkloadTools.Consumer.Analysis
             SP_PREPARE,
             SP_UNPREPARE,
             SP_CURSOR,
-            OTHER
+            OTHER,
+            SP_RESET_CONNECTION
         }
 
 

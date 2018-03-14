@@ -16,7 +16,6 @@ namespace WorkloadTools.Listener
 
         private ConcurrentQueue<WorkloadEvent> events = new ConcurrentQueue<WorkloadEvent>();
         private TraceServerWrapper trace;
-        private bool stopped = false;
 
         public override void Initialize()
         {

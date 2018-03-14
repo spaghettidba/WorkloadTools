@@ -43,8 +43,8 @@ namespace WorkloadTools.Listener
         public bool Skip(string command)
         {
             // skip reset connection commands
-            if (command.Contains("sp_reset_connection"))
-                return true;
+            //if (command.Contains("sp_reset_connection"))
+            //    return true;
 
             // skip unprepare commands
             //if (command.Contains("sp_unprepare "))
@@ -91,6 +91,13 @@ namespace WorkloadTools.Listener
             NormalizedSqlText result = new NormalizedSqlText(command);
 
             int num = 0;
+
+            if (command.Contains("sp_reset_connection"))
+            {
+                result.CommandType = NormalizedSqlText.CommandTypeEnum.SP_RESET_CONNECTION;
+                return result;
+            }
+                
 
             Match match3 = _prepareSql.Match(command);
             if (match3.Success)

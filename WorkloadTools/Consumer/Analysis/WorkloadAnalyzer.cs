@@ -137,6 +137,7 @@ namespace WorkloadTools.Consumer.Analysis
                     catch (Exception e)
                     {
                         logger.Error(e.Message);
+                        logger.Error(e.StackTrace);
                     }
                 });
                 Worker.IsBackground = true;
@@ -156,7 +157,17 @@ namespace WorkloadTools.Consumer.Analysis
 
             DataRow row = rawData.NewRow();
 
-            string normSql = normalizer.NormalizeSqlText(evt.Text, (int)evt.SPID).NormalizedText;
+            string normSql = null;
+            var norm = normalizer.NormalizeSqlText(evt.Text, (int)evt.SPID);
+
+            if (norm != null)
+                normSql = norm.NormalizedText;
+            else
+                return;
+
+            if (normSql == null)
+                return;
+
             long hash = normalizer.GetHashCode(normSql);
 
             if (!normalizedQueries.ContainsKey(hash))

@@ -52,6 +52,8 @@ namespace WorkloadTools.Consumer.Replay
         private List<int> commandsPerSecond = new List<int>();
 
         private ConcurrentQueue<ReplayCommand> Commands = new ConcurrentQueue<ReplayCommand>();
+
+        public bool IsStopped { get { return stopped; } }
         private bool stopped = false;
 
         private SqlTransformer transformer = new SqlTransformer();
@@ -103,14 +105,25 @@ namespace WorkloadTools.Consumer.Replay
         }
 
 
+
         public void Stop()
         {
-            logger.Info(String.Format("Worker [{0}] - Stopping", Name));
+            Stop(true);
+        }
+
+
+        public void Stop(bool withLog)
+        {
+            if(withLog)
+                logger.Info(String.Format("Worker [{0}] - Stopping", Name));
+
             stopped = true;
             isRunning = false;
             if(tokenSource != null)
                 tokenSource.Cancel();
-            logger.Info(String.Format("Worker [{0}] - Stopped", Name));
+
+            if (withLog)
+                logger.Info(String.Format("Worker [{0}] - Stopped", Name));
         }
 
 
@@ -179,7 +192,12 @@ namespace WorkloadTools.Consumer.Replay
             // Extract the handle from the prepared statement
             NormalizedSqlText nst = transformer.Normalize(command.CommandText);
 
-            if(nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_PREPARE)
+            if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_RESET_CONNECTION)
+            {
+                Stop(false);
+                return;
+            }
+            else if(nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_PREPARE)
             {
                 command.CommandText = nst.NormalizedText;
             }

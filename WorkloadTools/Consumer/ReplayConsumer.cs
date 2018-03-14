@@ -185,6 +185,11 @@ namespace WorkloadTools.Consumer
                     {
                         if (stopped) return;
 
+                        if (wrk.IsStopped)
+                        {
+                            RemoveWorker(wrk.Name);
+                        }
+
                         if (wrk.HasCommands)
                         {
 
