@@ -213,6 +213,8 @@ namespace WorkloadTools.Consumer.Replay
 
                     if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_PREPARE)
                     {
+                        if (cmd.CommandText == null)
+                            return;
                         int handle = (int)cmd.ExecuteScalar();
                         if (!preparedStatements.ContainsKey(nst.Handle))
                         {
@@ -252,7 +254,7 @@ namespace WorkloadTools.Consumer.Replay
                     logger.Info(String.Format("Worker [{0}] - {1} commands per second.", Name, (int)cps));
                 }
             }
-            catch (Exception e)
+            catch(SqlException e)
             {
                 if (StopOnError)
                 {
@@ -264,6 +266,19 @@ namespace WorkloadTools.Consumer.Replay
                     logger.Trace(String.Format("Worker [{0}] - Error: {1}", Name, command.CommandText));
                     logger.Warn(String.Format("Worker [{0}] - Error: {1}", Name, e.Message));
                     logger.Trace(e.StackTrace);
+                }
+            }
+            catch (Exception e)
+            {
+                if (StopOnError)
+                {
+                    logger.Error(String.Format("Worker[{0}] - Error: \n{1}", Name, command.CommandText));
+                    throw;
+                }
+                else
+                {
+                    logger.Error(String.Format("Worker [{0}] - Error: {1}", Name, e.Message));
+                    logger.Error(e.StackTrace);
                 }
             }
         }
