@@ -233,10 +233,18 @@ namespace WorkloadTools.Consumer.Replay
                     {
                         if (cmd.CommandText == null)
                             return;
-                        int handle = (int)cmd.ExecuteScalar();
-                        if (!preparedStatements.ContainsKey(nst.Handle))
+                        int handle = -1;
+                        try
                         {
-                            preparedStatements.Add(nst.Handle, handle);
+                            handle = (int)cmd.ExecuteScalar();
+                            if (!preparedStatements.ContainsKey(nst.Handle))
+                            {
+                                preparedStatements.Add(nst.Handle, handle);
+                            }
+                        }
+                        catch (NullReferenceException)
+                        {
+                            throw;
                         }
                     }
                     else if (CONSUME_RESULTS)

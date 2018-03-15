@@ -89,11 +89,10 @@ namespace SqlWorkload
             };
 
 
-            listener.Filter.DatabaseFilter.EqualityPredicate = options.DatabaseFilter;
-            listener.Filter.ApplicationFilter.EqualityPredicate = options.ApplicationFilter;
-            listener.Filter.HostFilter.EqualityPredicate = options.HostFilter;
-            listener.Filter.LoginFilter.EqualityPredicate = options.LoginFilter;
-
+            listener.Filter.DatabaseFilter.PredicateValue = options.DatabaseFilter;
+            listener.Filter.ApplicationFilter.PredicateValue = options.ApplicationFilter;
+            listener.Filter.HostFilter.PredicateValue = options.HostFilter;
+            listener.Filter.LoginFilter.PredicateValue = options.LoginFilter;
 
             controller = new WorkloadController(listener);
 
