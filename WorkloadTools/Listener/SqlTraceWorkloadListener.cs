@@ -283,6 +283,24 @@ namespace WorkloadTools.Listener
                             // up to the end of all rollover files (this is what DEFAULT does)
                             filesParam = "DEFAULT";
                             pathToTraceParam = lastTraceFile;
+
+                            // Check if the previous file still exists
+                            using (SqlCommand cmd = conn.CreateCommand())
+                            {
+                                cmd.CommandText = String.Format(@"
+                                    SET NOCOUNT ON;
+                                    DECLARE @t TABLE (FileExists bit, FileIsADicrectory bit, ParentDirectoryExists bit);
+                                    INSERT @t
+                                    EXEC xp_fileexist '{0}';
+                                    SELECT FileExists FROM @t;
+                                ",lastTraceFile);
+
+                                if (!(bool)cmd.ExecuteScalar())
+                                {
+                                    pathToTraceParam = Path.Combine(tracePath, "sqlworkload.trc");
+                                }
+                            }
+
                         }
                         lastTraceFile = currentTraceFile;
 
@@ -293,71 +311,74 @@ namespace WorkloadTools.Listener
                             sql += "WHERE EventSequence > @lastEvent";
                         }
 
-                        SqlCommand cmd = conn.CreateCommand();
-                        cmd.CommandText = sql;
-
-                        var paramPath = cmd.Parameters.Add("@path", System.Data.SqlDbType.NVarChar,255);
-                        paramPath.Value = pathToTraceParam;
-
-                        var paramLastEvent = cmd.Parameters.Add("@lastEvent", System.Data.SqlDbType.BigInt);
-                        paramLastEvent.Value = lastEvent;
-
-                        int rowsRead = 0;
-
-                        SqlTransformer transformer = new SqlTransformer();
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        using (SqlCommand cmd = conn.CreateCommand())
                         {
-                            while (reader.Read())
+                            cmd.CommandText = sql;
+
+                            var paramPath = cmd.Parameters.Add("@path", System.Data.SqlDbType.NVarChar, 255);
+                            paramPath.Value = pathToTraceParam;
+
+                            var paramLastEvent = cmd.Parameters.Add("@lastEvent", System.Data.SqlDbType.BigInt);
+                            paramLastEvent.Value = lastEvent;
+
+                            int rowsRead = 0;
+
+                            SqlTransformer transformer = new SqlTransformer();
+
+                            using (SqlDataReader reader = cmd.ExecuteReader())
                             {
-                                if(reader["EventSequence"] != DBNull.Value)
-                                    lastEvent = (long)reader["EventSequence"];
-
-                                WorkloadEvent evt = new WorkloadEvent();
-
-                                if ((int)reader["EventClass"] == (int)EventClassEnum.RPC_Completed)
-                                    evt.Type = WorkloadEvent.EventType.RPCCompleted;
-                                else if ((int)reader["EventClass"] == (int)EventClassEnum.SQL_BatchCompleted)
-                                    evt.Type = WorkloadEvent.EventType.BatchCompleted;
-                                else
+                                while (reader.Read())
                                 {
-                                    evt.Type = WorkloadEvent.EventType.Unknown;
-                                    continue;
+                                    if (reader["EventSequence"] != DBNull.Value)
+                                        lastEvent = (long)reader["EventSequence"];
+
+                                    WorkloadEvent evt = new WorkloadEvent();
+
+                                    if ((int)reader["EventClass"] == (int)EventClassEnum.RPC_Completed)
+                                        evt.Type = WorkloadEvent.EventType.RPCCompleted;
+                                    else if ((int)reader["EventClass"] == (int)EventClassEnum.SQL_BatchCompleted)
+                                        evt.Type = WorkloadEvent.EventType.BatchCompleted;
+                                    else
+                                    {
+                                        evt.Type = WorkloadEvent.EventType.Unknown;
+                                        continue;
+                                    }
+                                    if (reader["ApplicationName"] != DBNull.Value)
+                                        evt.ApplicationName = (string)reader["ApplicationName"];
+                                    if (reader["DatabaseName"] != DBNull.Value)
+                                        evt.DatabaseName = (string)reader["DatabaseName"];
+                                    if (reader["HostName"] != DBNull.Value)
+                                        evt.HostName = (string)reader["HostName"];
+                                    if (reader["LoginName"] != DBNull.Value)
+                                        evt.LoginName = (string)reader["LoginName"];
+                                    evt.SPID = (int?)reader["SPID"];
+                                    if (reader["TextData"] != DBNull.Value)
+                                        evt.Text = (string)reader["TextData"];
+                                    evt.Reads = (long?)reader["Reads"];
+                                    evt.Writes = (long?)reader["Writes"];
+                                    evt.CPU = (int?)reader["CPU"];
+                                    evt.Duration = (long?)reader["Duration"];
+                                    evt.StartTime = (DateTime)reader["StartTime"];
+
+                                    if (transformer.Skip(evt.Text))
+                                        continue;
+
+                                    if (!Filter.Evaluate(evt))
+                                        continue;
+
+                                    evt.Text = transformer.Transform(evt.Text);
+
+                                    events.Enqueue(evt);
+
+                                    rowsRead++;
                                 }
-                                if (reader["ApplicationName"] != DBNull.Value)
-                                    evt.ApplicationName = (string)reader["ApplicationName"];
-                                if(reader["DatabaseName"] != DBNull.Value)
-                                    evt.DatabaseName = (string)reader["DatabaseName"];
-                                if (reader["HostName"] != DBNull.Value)
-                                    evt.HostName = (string)reader["HostName"];
-                                if (reader["LoginName"] != DBNull.Value)
-                                    evt.LoginName = (string)reader["LoginName"];
-                                evt.SPID = (int?)reader["SPID"];
-                                if (reader["TextData"] != DBNull.Value)
-                                    evt.Text = (string)reader["TextData"];
-                                evt.Reads = (long?)reader["Reads"];
-                                evt.Writes = (long?)reader["Writes"];
-                                evt.CPU = (int?)reader["CPU"];
-                                evt.Duration = (long?)reader["Duration"];
-                                evt.StartTime = (DateTime)reader["StartTime"];
-
-                                if (transformer.Skip(evt.Text))
-                                    continue;
-
-                                if (!Filter.Evaluate(evt))
-                                    continue;
-
-                                evt.Text = transformer.Transform(evt.Text);
-
-                                events.Enqueue(evt);
-
-                                rowsRead++;
                             }
-                        }
 
-                        // Wait before querying the trace file again
-                        if(rowsRead < DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD)
-                            Thread.Sleep(DEFAULT_TRACE_INTERVAL_SECONDS * 1000);
+                            // Wait before querying the trace file again
+                            if (rowsRead < DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD)
+                                Thread.Sleep(DEFAULT_TRACE_INTERVAL_SECONDS * 1000);
+
+                        }
 
                     }
                 }
