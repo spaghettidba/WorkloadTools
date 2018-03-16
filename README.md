@@ -22,25 +22,25 @@ SqlWorkload is a command line tool to start workload collection, analyze the col
 
 `--TargetPassword` Password
 
-`--ApplicationFilter` Name of a single application to filter
+`--ApplicationFilter` Name of a single application to filter. Prepend the "^" character to exclude the value (e.g. "^sqlcmd.exe" excludes sqlcmd.exe)
 
-`--DatabaseFilter` Name of a single database to filter 
+`--DatabaseFilter` Name of a single database to filter. Prepend the "^" character to exclude the value.
 
-`--HostFilter` Name of a single host to filter
+`--HostFilter` Name of a single host to filter. Prepend the "^" character to exclude the value.
 
-`--LoginFilter` Name of a single login to filter 
+`--LoginFilter` Name of a single login to filter. Prepend the "^" character to exclude the value.
 
 `--StatsServer` Name of the SQL Server instance to use to log the statistics
 
 `--StatsDatabase` Name of the database to store the statistics
 
-`--StatsSchema` Name of the schema to store the statistics
+`--StatsSchema` Name of the schema to store the statistics. If missing, the schema will be created.
 
 `--StatsInterval` Interval in minutes between each dump of the workload statistics
 
-`--StatsUserName` sa 
+`--StatsUserName` Username to authenticate to the statistics database 
 
-`--StatsPassword` P4$$w0rd!
+`--StatsPassword` Password to authenticate to the statistics database
 
 
 # Example:
