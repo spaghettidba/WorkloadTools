@@ -6,7 +6,7 @@ SqlWorkload is a command line tool to start workload collection, analyze the col
 
 *Command line switches*
 
-`--ListenerType` `SqlTraceWorkloadListener | ProfilerWorkloadListener | ExtendedEventsWorkloadListener`
+`--ListenerType` `SqlTraceWorkloadListener | ProfilerWorkloadListener | ExtendedEventsWorkloadListener` Listener type. Only SqlTraceWorkloadListener works for the moment.
 
 `--Source` Path to the source of the workload capture. Can be a trace definition (`Listener\sqlworkload.tdf`) or a trace script (`Listener\sqlworkload.sql`) 
 
@@ -16,7 +16,7 @@ SqlWorkload is a command line tool to start workload collection, analyze the col
 
 `--SourcePassword` Password
 
-`--TargetServerName` Name of the target SQL Server instance
+`--TargetServerName` Name of the target SQL Server instance. If omitted, no replay will be performed. 
 
 `--TargetUserName` User name to connect to SQL Server with SQL authentication. Will use Windows authentication if empty or missing.
 
@@ -30,7 +30,7 @@ SqlWorkload is a command line tool to start workload collection, analyze the col
 
 `--LoginFilter` Name of a single login to filter. Prepend the "^" character to exclude the value.
 
-`--StatsServer` Name of the SQL Server instance to use to log the statistics
+`--StatsServer` Name of the SQL Server instance to use to log the statistics. If omitted, no workload analysis will be performed.
 
 `--StatsDatabase` Name of the database to store the statistics
 
