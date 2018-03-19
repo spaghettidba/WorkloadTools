@@ -71,7 +71,6 @@ namespace WorkloadTools.Consumer.Replay
 
         private string BuildConnectionString()
         {
-            ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
             string connectionString = ConnectionInfo.ConnectionString;
             return connectionString;
         }
@@ -161,6 +160,11 @@ namespace WorkloadTools.Consumer.Replay
             {
                 try
                 {
+                    ConnectionInfo.ApplicationName = command.ApplicationName;
+                    if (String.IsNullOrEmpty(ConnectionInfo.ApplicationName))
+                    {
+                        ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
+                    }
                     InitializeConnection();
                 }
                 catch (SqlException se)

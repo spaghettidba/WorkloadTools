@@ -42,7 +42,8 @@ namespace WorkloadTools.Consumer
             ReplayCommand command = new ReplayCommand()
             {
                 CommandText = evt.Text,
-                Database = evt.DatabaseName
+                Database = evt.DatabaseName,
+                ApplicationName = evt.ApplicationName
             };
 
             int session_id = -1;
