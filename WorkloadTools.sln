@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkloadTools", "WorkloadTo
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Setup", "Setup\Setup.wixproj", "{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}"
 EndProject
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "WorkloadToolsDB", "WorkloadToolsDB\WorkloadToolsDB.sqlproj", "{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,6 +44,18 @@ Global
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|Any CPU.ActiveCfg = Release|x86
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|x86.ActiveCfg = Release|x86
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|x86.Build.0 = Release|x86
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Debug|x86.Build.0 = Debug|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Debug|x86.Deploy.0 = Debug|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Release|x86.ActiveCfg = Release|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Release|x86.Build.0 = Release|Any CPU
+		{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}.Release|x86.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

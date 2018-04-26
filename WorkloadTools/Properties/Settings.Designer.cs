@@ -139,5 +139,14 @@ namespace WorkloadTools.Properties {
                 return ((int)(this["SqlTraceWorkloadListener_DEFAULT_TRACE_ROLLOVER_COUNT"]));
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ReplayWorker_MIMIC_APPLICATION_NAME {
+            get {
+                return ((bool)(this["ReplayWorker_MIMIC_APPLICATION_NAME"]));
+            }
+        }
     }
 }

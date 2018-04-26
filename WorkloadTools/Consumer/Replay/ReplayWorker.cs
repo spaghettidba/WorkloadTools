@@ -20,6 +20,7 @@ namespace WorkloadTools.Consumer.Replay
         private static bool CONSUME_RESULTS = Properties.Settings.Default.ReplayWorker_CONSUME_RESULTS;
         private static int DEFAULT_QUERY_TIMEOUT_SECONDS = Properties.Settings.Default.ReplayWorker_DEFAULT_QUERY_TIMEOUT_SECONDS;
         private static int WORKLOAD_INFO_COMMAND_COUNT = Properties.Settings.Default.ReplayWorker_WORKLOAD_INFO_COMMAND_COUNT;
+        private static bool MIMIC_APPLICATION_NAME = Properties.Settings.Default.ReplayWorker_MIMIC_APPLICATION_NAME;
 
         private SqlConnection conn { get; set; }
 
@@ -160,10 +161,14 @@ namespace WorkloadTools.Consumer.Replay
             {
                 try
                 {
-                    ConnectionInfo.ApplicationName = command.ApplicationName;
-                    if (String.IsNullOrEmpty(ConnectionInfo.ApplicationName))
+                    ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
+                    if (MIMIC_APPLICATION_NAME)
                     {
-                        ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
+                        ConnectionInfo.ApplicationName = command.ApplicationName;
+                        if (String.IsNullOrEmpty(ConnectionInfo.ApplicationName))
+                        {
+                            ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
+                        }
                     }
                     InitializeConnection();
                 }

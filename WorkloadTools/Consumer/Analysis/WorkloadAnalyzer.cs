@@ -176,25 +176,25 @@ namespace WorkloadTools.Consumer.Analysis
             }
 
             int appId = -1;
-            if (!applications.TryGetValue(evt.ApplicationName, out appId))
+            if (evt.ApplicationName != null && !applications.TryGetValue(evt.ApplicationName, out appId))
             {
                 applications.Add(evt.ApplicationName, appId = applications.Count);
             }
 
             int dbId = -1;
-            if (!databases.TryGetValue(evt.DatabaseName, out dbId))
+            if (evt.DatabaseName != null && !databases.TryGetValue(evt.DatabaseName, out dbId))
             {
                 databases.Add(evt.DatabaseName, dbId = databases.Count);
             }
 
             int hostId = -1;
-            if (!hosts.TryGetValue(evt.HostName, out hostId))
+            if (evt.HostName != null && !hosts.TryGetValue(evt.HostName, out hostId))
             {
                 hosts.Add(evt.HostName, hostId = hosts.Count);
             }
 
             int loginId = -1;
-            if (!logins.TryGetValue(evt.LoginName, out loginId))
+            if (evt.LoginName != null && !logins.TryGetValue(evt.LoginName, out loginId))
             {
                 logins.Add(evt.LoginName, loginId = logins.Count);
             }
