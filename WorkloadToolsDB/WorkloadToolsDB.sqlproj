@@ -61,5 +61,36 @@
   <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
   <ItemGroup>
     <Folder Include="Properties" />
+    <Folder Include="replay\" />
+    <Folder Include="replay\Tables\" />
+    <Folder Include="baseline\" />
+    <Folder Include="baseline\Tables\" />
+    <Folder Include="dbo\" />
+    <Folder Include="dbo\Views\" />
+    <Folder Include="replay\Views\" />
+    <Folder Include="baseline\Views\" />
+    <Folder Include="Security\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="replay\Tables\NormalizedQueries.sql" />
+    <Build Include="replay\Tables\Intervals.sql" />
+    <Build Include="replay\Tables\Logins.sql" />
+    <Build Include="replay\Tables\Hosts.sql" />
+    <Build Include="replay\Tables\Databases.sql" />
+    <Build Include="replay\Tables\Applications.sql" />
+    <Build Include="replay\Tables\WorkloadDetails.sql" />
+    <Build Include="baseline\Tables\NormalizedQueries.sql" />
+    <Build Include="baseline\Tables\Intervals.sql" />
+    <Build Include="baseline\Tables\Logins.sql" />
+    <Build Include="baseline\Tables\Hosts.sql" />
+    <Build Include="baseline\Tables\Databases.sql" />
+    <Build Include="baseline\Tables\Applications.sql" />
+    <Build Include="baseline\Tables\WorkloadDetails.sql" />
+    <Build Include="dbo\Views\WorkloadOverView.sql" />
+    <Build Include="dbo\Views\AllCorrelatedData.sql" />
+    <Build Include="replay\Views\AllData.sql" />
+    <Build Include="baseline\Views\AllData.sql" />
+    <Build Include="Security\replay.sql" />
+    <Build Include="Security\baseline.sql" />
   </ItemGroup>
 </Project>
