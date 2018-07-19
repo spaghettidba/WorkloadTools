@@ -34,10 +34,15 @@ namespace WorkloadTools.Consumer
 
 
 
-        public override void ConsumeBuffered(WorkloadEvent evt)
+        public override void ConsumeBuffered(WorkloadEvent evnt)
         {
-            if (evt.Type != WorkloadEvent.EventType.RPCCompleted && evt.Type != WorkloadEvent.EventType.BatchCompleted)
+            if (!(evnt is ExecutionWorkloadEvent))
                 return;
+
+            if (evnt.Type != WorkloadEvent.EventType.RPCCompleted && evnt.Type != WorkloadEvent.EventType.BatchCompleted)
+                return;
+
+            ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
 
             ReplayCommand command = new ReplayCommand()
             {

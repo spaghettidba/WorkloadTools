@@ -32,6 +32,9 @@ namespace WorkloadTools.Consumer.Analysis
         private SqlTextNormalizer normalizer = new SqlTextNormalizer();
         private bool TargetTableCreated = false;
 
+        private DataTable counterData;
+        private DataTable waitsData;
+
         private static int MAX_WRITE_RETRIES = Properties.Settings.Default.WorkloadAnalyzer_MAX_WRITE_RETRIES;
 
         struct NormalizedQuery
@@ -103,7 +106,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         public void Add(WorkloadEvent evt)
         {
-            if (String.IsNullOrEmpty(evt.Text))
+            if (evt is ExecutionWorkloadEvent && String.IsNullOrEmpty(((ExecutionWorkloadEvent)evt).Text))
                 return;
 
             lock (_internalQueue)
@@ -148,7 +151,47 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
+
+
         private void _internalAdd(WorkloadEvent evt)
+        {
+            if (evt is ExecutionWorkloadEvent)
+                _internalAdd((ExecutionWorkloadEvent)evt);
+            if (evt is CounterWorkloadEvent)
+                _internalAdd((CounterWorkloadEvent)evt);
+            if (evt is WaitStatsWorkloadEvent)
+                _internalAdd((WaitStatsWorkloadEvent)evt);
+        }
+
+
+        private void _internalAdd(WaitStatsWorkloadEvent evt)
+        {
+            //TODO: implement
+        }
+
+
+        private void _internalAdd(CounterWorkloadEvent evt)
+        {
+            if (counterData == null)
+            {
+                counterData = new DataTable();
+
+                counterData.Columns.Add("event_time", typeof(DateTime));
+                counterData.Columns.Add("counter_name", typeof(string));
+                counterData.Columns.Add("counter_value", typeof(float));
+            }
+
+            DataRow row = counterData.NewRow();
+
+            row.SetField("event_time", evt.StartTime);
+            row.SetField("counter_name", evt.Name.ToString());
+            row.SetField("counter_value", evt.Value);
+
+            counterData.Rows.Add(row);
+        }
+
+
+        private void _internalAdd(ExecutionWorkloadEvent evt)
         {
             if (rawData == null)
             {
@@ -204,7 +247,7 @@ namespace WorkloadTools.Consumer.Analysis
             row.SetField("database_id", dbId);
             row.SetField("host_id", hostId);
             row.SetField("login_id", loginId);
-            row.SetField("event_time", DateTime.Now);
+            row.SetField("event_time", evt.StartTime);
             row.SetField("cpu_ms", evt.CPU);
             row.SetField("reads", evt.Reads);
             row.SetField("writes", evt.Writes);
@@ -245,6 +288,10 @@ namespace WorkloadTools.Consumer.Analysis
                 WriteDictionary(logins, conn, "logins");
                 WriteNormalizedQueries(normalizedQueries, conn);
 
+
+                //
+                // WRITE EXECUTION DETAILS
+                //
                 lock (rawData)
                 {
                     using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
@@ -310,6 +357,48 @@ namespace WorkloadTools.Consumer.Analysis
                         logger.Info(String.Format("{0} rows written", numRows));
                     }
                     rawData.Rows.Clear();
+                }
+
+
+                //
+                // WRITE PERFORMANCE COUNTERS
+                //
+                lock (counterData)
+                {
+                    using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+                                                    SqlBulkCopyOptions.KeepIdentity |
+                                                    SqlBulkCopyOptions.FireTriggers |
+                                                    SqlBulkCopyOptions.CheckConstraints |
+                                                    SqlBulkCopyOptions.TableLock,
+                                                    null))
+                    {
+
+                        bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[PerformanceCounters]";
+                        bulkCopy.BatchSize = 1000;
+                        bulkCopy.BulkCopyTimeout = 300;
+
+
+                        var Table = from t in counterData.AsEnumerable()
+                                    group t by new
+                                    {
+                                        counter_name = t.Field<string>("counter_name")
+                                    }
+                                    into grp
+                                    select new
+                                    {
+                                        interval_id = current_interval_id,
+
+                                        grp.Key.counter_name,
+
+                                        min_counter_value = grp.Min(t => t.Field<float>("counter_value")),
+                                        max_counter_value = grp.Max(t => t.Field<float>("counter_value")),
+                                        avg_counter_value = grp.Average(t => t.Field<float>("counter_value"))
+                                    };
+
+                        bulkCopy.WriteToServer(ToDataTable(Table));
+                        logger.Info("Performance counters written");
+                    }
+                    counterData.Rows.Clear();
                 }
 
             }
@@ -477,7 +566,7 @@ namespace WorkloadTools.Consumer.Analysis
                 CREATE TABLE [{SchemaName}].[WorkloadDetails](
 	                [interval_id] [int] NOT NULL,
 
-	                [sql_hash] [bigint] NULL,
+	                [sql_hash] [bigint] NOT NULL,
 	                [application_id] [int] NOT NULL,
 	                [database_id] [int] NOT NULL,
 	                [host_id] [int] NOT NULL,
@@ -503,7 +592,16 @@ namespace WorkloadTools.Consumer.Analysis
                     [max_duration_ms] [int] NULL,
                     [sum_duration_ms] [int] NULL,
 
-                    [execution_count] [int] NULL
+                    [execution_count] [int] NULL,
+
+                    CONSTRAINT PK_WorkloadDetails PRIMARY KEY CLUSTERED (
+                        [interval_id], 
+                        [sql_hash], 
+                        [application_id], 
+                        [database_id], 
+                        [host_id], 
+                        [login_id]
+                    )
                 )
 
 
@@ -540,7 +638,7 @@ namespace WorkloadTools.Consumer.Analysis
                 CREATE TABLE [{SchemaName}].[Intervals] (
 	                [interval_id] [int] NOT NULL PRIMARY KEY,
 	                [end_time] [datetime] NOT NULL,
-	                [duration_minutes] [int] NOT NULL 
+	                [duration_minutes] [int] NOT NULL
                 )
 
                 IF OBJECT_ID('{SchemaName}.NormalizedQueries') IS NULL
@@ -550,7 +648,17 @@ namespace WorkloadTools.Consumer.Analysis
 	                [normalized_text] [nvarchar](max) NOT NULL,
                     [example_text] [nvarchar](max) NULL
                 )
-                
+
+                IF OBJECT_ID('{SchemaName}.PerformanceCounters') IS NULL
+
+                CREATE TABLE [{SchemaName}].[PerformanceCounters](
+	                [interval_id] [int] NOT NULL,
+                    [counter_name] [varchar(255)] NOT NULL,
+                    [min_counter_value] [float] NOT NULL,
+                    [max_counter_value] [float] NOT NULL,
+                    [avg_counter_value] [float] NOT NULL
+                )
+
             ";
 
             sql = sql.Replace("{DatabaseName}", ConnectionInfo.DatabaseName);

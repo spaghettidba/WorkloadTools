@@ -96,11 +96,18 @@ namespace WorkloadTools.Listener
                 cmd.CommandText = traceSql;
                 traceId = (int)cmd.ExecuteScalar();
 
+                // Initialize the source of execution related events
                 if(StreamSource == StreamSourceEnum.StreamFromFile)
                     Task.Factory.StartNew(() => ReadEventsFromFile());
                 else if (StreamSource == StreamSourceEnum.StreamFromTDS)
                     Task.Factory.StartNew(() => ReadEventsFromTDS());
 
+
+                // Initialize the source of performance counters events
+                Task.Factory.StartNew(() => ReadPerfCountersEvents());
+
+                // Initialize the source of wait stats events
+                Task.Factory.StartNew(() => ReadWaitStatsEvents());
             }
         }
 
@@ -152,7 +159,7 @@ namespace WorkloadTools.Listener
                         {
                             try
                             {
-                                WorkloadEvent evt = new WorkloadEvent();
+                                ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
 
                                 if (reader.GetValue("EventClass").ToString() == "RPC:Completed")
                                     evt.Type = WorkloadEvent.EventType.RPCCompleted;
@@ -332,7 +339,7 @@ namespace WorkloadTools.Listener
                                     if (reader["EventSequence"] != DBNull.Value)
                                         lastEvent = (long)reader["EventSequence"];
 
-                                    WorkloadEvent evt = new WorkloadEvent();
+                                    ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
 
                                     if ((int)reader["EventClass"] == (int)EventClassEnum.RPC_Completed)
                                         evt.Type = WorkloadEvent.EventType.RPCCompleted;
@@ -444,5 +451,92 @@ namespace WorkloadTools.Listener
             cmd.CommandText = String.Format(sql, path);
             return (int)cmd.ExecuteScalar();
         }
+
+
+        // Collects some performance counters
+        private void ReadPerfCountersEvents()
+        {
+            try
+            {
+                while (!stopped)
+                {
+                    CounterWorkloadEvent evt = new CounterWorkloadEvent();
+                    evt.Type = WorkloadEvent.EventType.PerformanceCounter;
+                    evt.StartTime = DateTime.Now;
+                    evt.Name = CounterWorkloadEvent.CounterNameEnum.AVG_CPU_USAGE;
+                    evt.Value = GetLastCPUUsage();
+
+                    events.Enqueue(evt);
+
+                    Thread.Sleep(60000); // 1 minute
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex.Message);
+                logger.Error(ex.StackTrace);
+
+                if (ex.InnerException != null)
+                    logger.Error(ex.InnerException.Message);
+            }
+        }
+
+
+        private int GetLastCPUUsage()
+        {
+
+            using (SqlConnection conn = new SqlConnection())
+            {
+                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.Open();
+                // Calculate CPU usage during the last minute interval
+                string sql = @"
+                    WITH ts_now(ts_now) AS (
+	                    SELECT cpu_ticks/(cpu_ticks/ms_ticks) FROM sys.dm_os_sys_info WITH (NOLOCK)
+                    ),
+                    CPU_Usage AS (
+	                    SELECT TOP(256) SQLProcessUtilization, 
+				                       DATEADD(ms, -1 * (ts_now.ts_now - [timestamp]), GETDATE()) AS [Event_Time] 
+	                    FROM (
+		                    SELECT record.value('(./Record/@id)[1]', 'int') AS record_id, 
+			                    record.value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]', 'int') 
+			                    AS [SystemIdle], 
+			                    record.value('(./Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int') 
+			                    AS [SQLProcessUtilization], [timestamp] 
+		                    FROM (
+			                    SELECT [timestamp], CONVERT(xml, record) AS [record] 
+			                    FROM sys.dm_os_ring_buffers WITH (NOLOCK)
+			                    WHERE ring_buffer_type = N'RING_BUFFER_SCHEDULER_MONITOR' 
+				                    AND record LIKE N'%<SystemHealth>%'
+		                    ) AS x
+	                    ) AS y 
+	                    CROSS JOIN ts_now
+                    )
+                    SELECT 
+                        AVG(SQLProcessUtilization) AS avg_CPU_percent
+                    FROM CPU_Usage
+                    WHERE [Event_Time] > DATEADD(minute, -1, GETDATE())
+                    OPTION (RECOMPILE);
+                ";
+
+                int avg_CPU_percent = -1;
+
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = sql;
+                    avg_CPU_percent = (int)cmd.ExecuteScalar();
+                }
+
+                return avg_CPU_percent;
+            }
+        }
+
+
+
+        public void ReadWaitStatsEvents()
+        {
+
+        }
+
     }
 }

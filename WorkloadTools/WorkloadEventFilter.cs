@@ -13,8 +13,14 @@ namespace WorkloadTools
         public FilterPredicate LoginFilter { get; set; }
 
 
-        public bool Evaluate(WorkloadEvent evt)
+        public bool Evaluate(WorkloadEvent evnt)
         {
+            // don't filter events that are not supposed to be filtered
+            if (!(evnt is ExecutionWorkloadEvent))
+                return true;
+
+            ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
+
             if (evt.Type != WorkloadEvent.EventType.BatchCompleted && evt.Type != WorkloadEvent.EventType.RPCCompleted)
                 return false;
 

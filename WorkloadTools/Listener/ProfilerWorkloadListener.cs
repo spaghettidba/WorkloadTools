@@ -93,7 +93,7 @@ namespace WorkloadTools.Listener
                 {
                     try
                     {
-                        WorkloadEvent evt = new WorkloadEvent();
+                        ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
 
                         if (trace.GetValue("EventClass").ToString() == "RPC:Completed")
                             evt.Type = WorkloadEvent.EventType.RPCCompleted;

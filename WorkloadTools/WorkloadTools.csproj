@@ -50,6 +50,8 @@
     <Compile Include="Consumer\Replay\ReplayCommand.cs" />
     <Compile Include="Consumer\Replay\ReplayWorker.cs" />
     <Compile Include="Consumer\Replay\ResultSetConsumer.cs" />
+    <Compile Include="CounterWorkloadEvent.cs" />
+    <Compile Include="ExecutionWorkloadEvent.cs" />
     <Compile Include="FilterPredicate.cs" />
     <Compile Include="Listener\ExtendedEventsWorkloadListener.cs" />
     <Compile Include="Listener\ExtendedEvents\ExtendedEventsEventFilter.cs" />
@@ -71,6 +73,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="SqlConnectionInfo.cs" />
+    <Compile Include="WaitStatsWorkloadEvent.cs" />
     <Compile Include="WorkloadConsumer.cs" />
     <Compile Include="WorkloadController.cs" />
     <Compile Include="WorkloadEvent.cs" />
