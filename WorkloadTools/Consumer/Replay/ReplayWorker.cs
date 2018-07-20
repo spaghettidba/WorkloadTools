@@ -291,6 +291,12 @@ namespace WorkloadTools.Consumer.Replay
             }
             catch(SqlException e)
             {
+                // handle timeouts
+                if (e.Number == -2)
+                {
+                    RaiseTimeoutEvent(command.CommandText, conn);
+                }
+
                 if (StopOnError)
                 {
                     logger.Error(String.Format("Worker[{0}] - Error: \n{1}", Name, command.CommandText));
@@ -318,7 +324,21 @@ namespace WorkloadTools.Consumer.Replay
             }
         }
 
+        private void RaiseTimeoutEvent(string commandText, SqlConnection conn)
+        {
+            // This event is used by the SqlTraceWorkloadListener to identify timeout events
+            // ExtendedEventsWorkloadListener does not need this event, because the Attention
+            // event already contains the text of the command
+            string sql = "EXEC sp_trace_generateevent @eventid = 82, @userinfo = @userinfo, @userdata = @userdata;";
 
+            using (SqlCommand cmd = new SqlCommand(sql))
+            {
+                cmd.Connection = conn;
+                cmd.Parameters.AddWithValue("@userinfo", "WorkloadTools.Timeout["+ DEFAULT_QUERY_TIMEOUT_SECONDS +"]");
+                cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(commandText));
+                cmd.ExecuteNonQuery();
+            }
+        }
 
         public void AppendCommand(ReplayCommand cmd)
         {

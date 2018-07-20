@@ -32,28 +32,37 @@ namespace WorkloadTools
 
         public void Run()
         {
-            listener.Initialize();
-            while (!stopped)
-            {
-                if (!listener.IsRunning)
-                    Stop();
 
-                var evt = listener.Read();
-                if (evt == null)
-                    continue;
-                Parallel.ForEach(consumers, (cons) =>
-                {
-                    cons.Consume(evt);
-                });
-            }
-            if (!disposed)
+            try
             {
-                disposed = true;
-                listener.Dispose();
-                foreach (var cons in consumers)
+                listener.Initialize();
+                while (!stopped)
                 {
-                    cons.Dispose();
+                    if (!listener.IsRunning)
+                        Stop();
+
+                    var evt = listener.Read();
+                    if (evt == null)
+                        continue;
+                    Parallel.ForEach(consumers, (cons) =>
+                    {
+                        cons.Consume(evt);
+                    });
                 }
+                if (!disposed)
+                {
+                    disposed = true;
+                    listener.Dispose();
+                    foreach (var cons in consumers)
+                    {
+                        cons.Dispose();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                logger.Error("Uncaught Exception");
+                logger.Error(e.StackTrace);
             }
         }
 

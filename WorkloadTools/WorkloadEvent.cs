@@ -13,6 +13,7 @@ namespace WorkloadTools
             RPCStarted,
             BatchCompleted,
             PerformanceCounter,
+            Timeout,
             WAIT_stats,
             Unknown
         }

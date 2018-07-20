@@ -50,7 +50,8 @@ namespace WorkloadTools.Listener
         public enum EventClassEnum : int
         {
             RPC_Completed = 10,
-            SQL_BatchCompleted = 12
+            SQL_BatchCompleted = 12,
+            Timeout = 82
         }
 
         private int traceId = -1;
@@ -343,10 +344,18 @@ namespace WorkloadTools.Listener
 
                                     ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
 
-                                    if ((int)reader["EventClass"] == (int)EventClassEnum.RPC_Completed)
+                                    int eventClass = (int)reader["EventClass"];
+
+
+                                    if (eventClass == (int)EventClassEnum.RPC_Completed)
                                         evt.Type = WorkloadEvent.EventType.RPCCompleted;
-                                    else if ((int)reader["EventClass"] == (int)EventClassEnum.SQL_BatchCompleted)
+                                    else if (eventClass == (int)EventClassEnum.SQL_BatchCompleted)
                                         evt.Type = WorkloadEvent.EventType.BatchCompleted;
+                                    else if (eventClass == (int)EventClassEnum.Timeout)
+                                    {
+                                        if (reader["TextData"].ToString().StartsWith("WorkloadTools.Timeout["))
+                                            evt.Type = WorkloadEvent.EventType.Timeout;
+                                    }
                                     else
                                     {
                                         evt.Type = WorkloadEvent.EventType.Unknown;
@@ -363,11 +372,26 @@ namespace WorkloadTools.Listener
                                     evt.SPID = (int?)reader["SPID"];
                                     if (reader["TextData"] != DBNull.Value)
                                         evt.Text = (string)reader["TextData"];
-                                    evt.Reads = (long?)reader["Reads"];
-                                    evt.Writes = (long?)reader["Writes"];
-                                    evt.CPU = (int?)reader["CPU"];
-                                    evt.Duration = (long?)reader["Duration"];
+                                   
                                     evt.StartTime = (DateTime)reader["StartTime"];
+
+                                    if(evt.Type == WorkloadEvent.EventType.Timeout)
+                                    {
+                                        if (reader["BinaryData"] != DBNull.Value)
+                                        {
+                                            byte[] bytes = (byte[])reader["BinaryData"];
+                                            evt.Text = Encoding.Unicode.GetString(bytes);
+                                        }
+                                        evt.Duration = ExtractTimeoutDuration(reader["TextData"]);
+                                        evt.CPU = Convert.ToInt32(evt.Duration);
+                                    }
+                                    else
+                                    {
+                                        evt.Reads = (long?)reader["Reads"];
+                                        evt.Writes = (long?)reader["Writes"];
+                                        evt.CPU = (int?)reader["CPU"];
+                                        evt.Duration = (long?)reader["Duration"];
+                                    }
 
                                     if (transformer.Skip(evt.Text))
                                         continue;
@@ -405,6 +429,17 @@ namespace WorkloadTools.Listener
 
         }
 
+        private long? ExtractTimeoutDuration(object textData)
+        {
+            long result = 30;
+            if(textData != DBNull.Value)
+            {
+                string description = (string)textData;
+                string durationAsString = new String(description.Where(Char.IsDigit).ToArray());
+                result = Convert.ToInt64(durationAsString);
+            }
+            return result * 1000 * 1000;
+        }
 
         protected override void Dispose(bool disposing)
         {
