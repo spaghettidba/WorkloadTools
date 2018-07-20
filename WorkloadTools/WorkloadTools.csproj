@@ -73,6 +73,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="SqlConnectionInfo.cs" />
+    <Compile Include="Util\DataUtils.cs" />
     <Compile Include="WaitStatsWorkloadEvent.cs" />
     <Compile Include="WorkloadConsumer.cs" />
     <Compile Include="WorkloadController.cs" />

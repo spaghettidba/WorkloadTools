@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using WorkloadTools.Util;
 
 namespace WorkloadTools.Consumer.Analysis
 {
@@ -64,8 +65,11 @@ namespace WorkloadTools.Consumer.Analysis
                                 WriteToServer();
                                 numRetries = MAX_WRITE_RETRIES + 1;
                             }
-                            catch (Exception)
+                            catch (Exception ex)
                             {
+                                logger.Warn("Unable to write workload analysis.");
+                                logger.Warn(ex.Message);
+
                                 if (numRetries == MAX_WRITE_RETRIES)
                                     throw;
                             }
@@ -77,7 +81,7 @@ namespace WorkloadTools.Consumer.Analysis
                         try
                         {
                             logger.Error(e, "Unable to write workload analysis info to the destination database.");
-                            logger.Error(e.Message);
+                            logger.Error(e.StackTrace);
                         }
                         catch
                         {
@@ -166,7 +170,14 @@ namespace WorkloadTools.Consumer.Analysis
 
         private void _internalAdd(WaitStatsWorkloadEvent evt)
         {
-            //TODO: implement
+            if (waitsData == null)
+            {
+                waitsData = evt.Waits;
+            }
+            else
+            {
+                waitsData.Merge(evt.Waits);
+            }
         }
 
 
@@ -280,132 +291,193 @@ namespace WorkloadTools.Consumer.Analysis
                     TargetTableCreated = true;
                 }
 
-                int current_interval_id = CreateInterval(conn);
+                var tran = conn.BeginTransaction();
 
-                WriteDictionary(applications, conn, "applications");
-                WriteDictionary(databases, conn, "databases");
-                WriteDictionary(hosts, conn, "hosts");
-                WriteDictionary(logins, conn, "logins");
-                WriteNormalizedQueries(normalizedQueries, conn);
-
-
-                //
-                // WRITE EXECUTION DETAILS
-                //
-                lock (rawData)
+                try
                 {
-                    using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
-                                                    SqlBulkCopyOptions.KeepIdentity |
-                                                    SqlBulkCopyOptions.FireTriggers |
-                                                    SqlBulkCopyOptions.CheckConstraints |
-                                                    SqlBulkCopyOptions.TableLock,
-                                                    null))
-                    {
+                    int current_interval_id = CreateInterval(conn, tran);
 
-                        bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[WorkloadDetails]";
-                        bulkCopy.BatchSize = 1000;
-                        bulkCopy.BulkCopyTimeout = 300;
+                    WriteDictionary(applications, conn, tran, "applications");
+                    WriteDictionary(databases, conn, tran, "databases");
+                    WriteDictionary(hosts, conn, tran, "hosts");
+                    WriteDictionary(logins, conn, tran, "logins");
+                    WriteNormalizedQueries(normalizedQueries, conn, tran);
 
+                    WriteExecutionDetails(conn, tran, current_interval_id);
+                    WritePerformanceCounters(conn, tran, current_interval_id);
+                    WriteWaitsData(conn, tran, current_interval_id);
 
-                        var Table = from t in rawData.AsEnumerable()
-                                    group t by new
-                                    {
-                                        sql_hash = t.Field<long>("sql_hash"),
-                                        application_id = t.Field<int>("application_id"),
-                                        database_id = t.Field<int>("database_id"),
-                                        host_id = t.Field<int>("host_id"),
-                                        login_id = t.Field<int>("login_id")
-                                    }
-                                    into grp
-                                    select new
-                                    {
-                                        interval_id = current_interval_id,
-
-                                        grp.Key.sql_hash,
-                                        grp.Key.application_id,
-                                        grp.Key.database_id,
-                                        grp.Key.host_id,
-                                        grp.Key.login_id,
-
-                                        avg_cpu_ms = grp.Average(t => t.Field<long>("cpu_ms")),
-                                        min_cpu_ms = grp.Min(t => t.Field<long>("cpu_ms")),
-                                        max_cpu_ms = grp.Max(t => t.Field<long>("cpu_ms")),
-                                        sum_cpu_ms = grp.Sum(t => t.Field<long>("cpu_ms")),
-
-                                        avg_reads = grp.Average(t => t.Field<long>("reads")),
-                                        min_reads = grp.Min(t => t.Field<long>("reads")),
-                                        max_reads = grp.Max(t => t.Field<long>("reads")),
-                                        sum_reads = grp.Sum(t => t.Field<long>("reads")),
-
-                                        avg_writes = grp.Average(t => t.Field<long>("writes")),
-                                        min_writes = grp.Min(t => t.Field<long>("writes")),
-                                        max_writes = grp.Max(t => t.Field<long>("writes")),
-                                        sum_writes = grp.Sum(t => t.Field<long>("writes")),
-
-                                        avg_duration_ms = grp.Average(t => t.Field<long>("duration_ms")),
-                                        min_duration_ms = grp.Min(t => t.Field<long>("duration_ms")),
-                                        max_duration_ms = grp.Max(t => t.Field<long>("duration_ms")),
-                                        sum_duration_ms = grp.Sum(t => t.Field<long>("duration_ms")),
-
-                                        execution_count = grp.Count()
-                                    };
-
-                        bulkCopy.WriteToServer(ToDataTable(Table));
-                        numRows = rawData.Rows.Count;
-                        logger.Info(String.Format("{0} rows aggregated", numRows));
-                        numRows = Table.Count();
-                        logger.Info(String.Format("{0} rows written", numRows));
-                    }
-                    rawData.Rows.Clear();
+                    tran.Commit();
                 }
-
-
-                //
-                // WRITE PERFORMANCE COUNTERS
-                //
-                lock (counterData)
+                catch(Exception e)
                 {
-                    using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
-                                                    SqlBulkCopyOptions.KeepIdentity |
-                                                    SqlBulkCopyOptions.FireTriggers |
-                                                    SqlBulkCopyOptions.CheckConstraints |
-                                                    SqlBulkCopyOptions.TableLock,
-                                                    null))
-                    {
-
-                        bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[PerformanceCounters]";
-                        bulkCopy.BatchSize = 1000;
-                        bulkCopy.BulkCopyTimeout = 300;
-
-
-                        var Table = from t in counterData.AsEnumerable()
-                                    group t by new
-                                    {
-                                        counter_name = t.Field<string>("counter_name")
-                                    }
-                                    into grp
-                                    select new
-                                    {
-                                        interval_id = current_interval_id,
-
-                                        grp.Key.counter_name,
-
-                                        min_counter_value = grp.Min(t => t.Field<float>("counter_value")),
-                                        max_counter_value = grp.Max(t => t.Field<float>("counter_value")),
-                                        avg_counter_value = grp.Average(t => t.Field<float>("counter_value"))
-                                    };
-
-                        bulkCopy.WriteToServer(ToDataTable(Table));
-                        logger.Info("Performance counters written");
-                    }
-                    counterData.Rows.Clear();
+                    tran.Rollback();
+                    throw;
                 }
 
             }
 
         }
 
-        private void WriteDictionary(Dictionary<string, int> values, SqlConnection conn, string name)
+        private void WriteWaitsData(SqlConnection conn, SqlTransaction tran, int current_interval_id)
+        {
+            lock (waitsData)
+            {
+                using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+                                                SqlBulkCopyOptions.KeepIdentity |
+                                                SqlBulkCopyOptions.FireTriggers |
+                                                SqlBulkCopyOptions.CheckConstraints |
+                                                SqlBulkCopyOptions.TableLock,
+                                                tran))
+                {
+
+                    bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[WaitStats]";
+                    bulkCopy.BatchSize = 1000;
+                    bulkCopy.BulkCopyTimeout = 300;
+
+
+                    var Table = from t in waitsData.AsEnumerable()
+                                group t by new
+                                {
+                                    wait_type = t.Field<string>("wait_type")
+                                }
+                                into grp
+                                select new
+                                {
+                                    interval_id = current_interval_id,
+
+                                    grp.Key.wait_type,
+
+                                    wait_sec = grp.Sum(t => t.Field<double>("wait_sec")),
+                                    resource_sec = grp.Sum(t => t.Field<double>("resource_sec")),
+                                    signal_sec = grp.Sum(t => t.Field<double>("signal_sec")),
+                                    wait_count = grp.Sum(t => t.Field<int>("wait_count"))
+                                };
+
+                    bulkCopy.WriteToServer(DataUtils.ToDataTable(Table));
+                    logger.Info("Wait stats written");
+                }
+                waitsData.Rows.Clear();
+            }
+        }
+
+        private void WritePerformanceCounters(SqlConnection conn, SqlTransaction tran, int current_interval_id)
+        {
+            lock (counterData)
+            {
+                using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+                                                SqlBulkCopyOptions.KeepIdentity |
+                                                SqlBulkCopyOptions.FireTriggers |
+                                                SqlBulkCopyOptions.CheckConstraints |
+                                                SqlBulkCopyOptions.TableLock,
+                                                tran))
+                {
+
+                    bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[PerformanceCounters]";
+                    bulkCopy.BatchSize = 1000;
+                    bulkCopy.BulkCopyTimeout = 300;
+
+
+                    var Table = from t in counterData.AsEnumerable()
+                                group t by new
+                                {
+                                    counter_name = t.Field<string>("counter_name")
+                                }
+                                into grp
+                                select new
+                                {
+                                    interval_id = current_interval_id,
+
+                                    grp.Key.counter_name,
+
+                                    min_counter_value = grp.Min(t => t.Field<float>("counter_value")),
+                                    max_counter_value = grp.Max(t => t.Field<float>("counter_value")),
+                                    avg_counter_value = grp.Average(t => t.Field<float>("counter_value"))
+                                };
+
+                    bulkCopy.WriteToServer(DataUtils.ToDataTable(Table));
+                    logger.Info("Performance counters written");
+                }
+                counterData.Rows.Clear();
+            }
+        }
+
+        private void WriteExecutionDetails(SqlConnection conn, SqlTransaction tran, int current_interval_id)
+        {
+            int numRows;
+
+            if(rawData == null)
+                PrepareDataTable();
+
+            lock (rawData)
+            {
+                using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+                                                SqlBulkCopyOptions.KeepIdentity |
+                                                SqlBulkCopyOptions.FireTriggers |
+                                                SqlBulkCopyOptions.CheckConstraints |
+                                                SqlBulkCopyOptions.TableLock,
+                                                tran))
+                {
+
+                    bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[WorkloadDetails]";
+                    bulkCopy.BatchSize = 1000;
+                    bulkCopy.BulkCopyTimeout = 300;
+
+
+                    var Table = from t in rawData.AsEnumerable()
+                                group t by new
+                                {
+                                    sql_hash = t.Field<long>("sql_hash"),
+                                    application_id = t.Field<int>("application_id"),
+                                    database_id = t.Field<int>("database_id"),
+                                    host_id = t.Field<int>("host_id"),
+                                    login_id = t.Field<int>("login_id")
+                                }
+                                into grp
+                                select new
+                                {
+                                    interval_id = current_interval_id,
+
+                                    grp.Key.sql_hash,
+                                    grp.Key.application_id,
+                                    grp.Key.database_id,
+                                    grp.Key.host_id,
+                                    grp.Key.login_id,
+
+                                    avg_cpu_ms = grp.Average(t => t.Field<long>("cpu_ms")),
+                                    min_cpu_ms = grp.Min(t => t.Field<long>("cpu_ms")),
+                                    max_cpu_ms = grp.Max(t => t.Field<long>("cpu_ms")),
+                                    sum_cpu_ms = grp.Sum(t => t.Field<long>("cpu_ms")),
+
+                                    avg_reads = grp.Average(t => t.Field<long>("reads")),
+                                    min_reads = grp.Min(t => t.Field<long>("reads")),
+                                    max_reads = grp.Max(t => t.Field<long>("reads")),
+                                    sum_reads = grp.Sum(t => t.Field<long>("reads")),
+
+                                    avg_writes = grp.Average(t => t.Field<long>("writes")),
+                                    min_writes = grp.Min(t => t.Field<long>("writes")),
+                                    max_writes = grp.Max(t => t.Field<long>("writes")),
+                                    sum_writes = grp.Sum(t => t.Field<long>("writes")),
+
+                                    avg_duration_ms = grp.Average(t => t.Field<long>("duration_ms")),
+                                    min_duration_ms = grp.Min(t => t.Field<long>("duration_ms")),
+                                    max_duration_ms = grp.Max(t => t.Field<long>("duration_ms")),
+                                    sum_duration_ms = grp.Sum(t => t.Field<long>("duration_ms")),
+
+                                    execution_count = grp.Count()
+                                };
+
+                    bulkCopy.WriteToServer(DataUtils.ToDataTable(Table));
+                    numRows = rawData.Rows.Count;
+                    logger.Info(String.Format("{0} rows aggregated", numRows));
+                    numRows = Table.Count();
+                    logger.Info(String.Format("{0} rows written", numRows));
+                }
+                rawData.Rows.Clear();
+            }
+        }
+
+        private void WriteDictionary(Dictionary<string, int> values, SqlConnection conn, SqlTransaction tran, string name)
         {
 
             // create a temporary table
@@ -419,6 +491,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             using (SqlCommand cmd = conn.CreateCommand())
             {
+                cmd.Transaction = tran;
                 cmd.CommandText = sql;
                 cmd.ExecuteNonQuery();
             }
@@ -429,13 +502,13 @@ namespace WorkloadTools.Consumer.Analysis
                                                                 SqlBulkCopyOptions.FireTriggers |
                                                                 SqlBulkCopyOptions.CheckConstraints |
                                                                 SqlBulkCopyOptions.TableLock,
-                                                                null))
+                                                                tran))
             {
 
                 bulkCopy.DestinationTableName = "#" + name;
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
-                bulkCopy.WriteToServer(ToDataTable(from t in values select new { t.Value, t.Key }));
+                bulkCopy.WriteToServer(DataUtils.ToDataTable(from t in values select new { t.Value, t.Key }));
 
             }
 
@@ -455,13 +528,14 @@ namespace WorkloadTools.Consumer.Analysis
 
             using (SqlCommand cmd = conn.CreateCommand())
             {
+                cmd.Transaction = tran;
                 cmd.CommandText = sql;
                 cmd.ExecuteNonQuery();
             }
         }
 
 
-        private void WriteNormalizedQueries(Dictionary<long, NormalizedQuery> values, SqlConnection conn)
+        private void WriteNormalizedQueries(Dictionary<long, NormalizedQuery> values, SqlConnection conn, SqlTransaction tran)
         {
             // create a temporary table
 
@@ -474,6 +548,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             using (SqlCommand cmd = conn.CreateCommand())
             {
+                cmd.Transaction = tran;
                 cmd.CommandText = sql;
                 cmd.ExecuteNonQuery();
             }
@@ -484,13 +559,13 @@ namespace WorkloadTools.Consumer.Analysis
                                                                 SqlBulkCopyOptions.FireTriggers |
                                                                 SqlBulkCopyOptions.CheckConstraints |
                                                                 SqlBulkCopyOptions.TableLock,
-                                                                null))
+                                                                tran))
             {
 
                 bulkCopy.DestinationTableName = "#NormalizedQueries";
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
-                bulkCopy.WriteToServer(ToDataTable(from t in values select new { t.Value.Hash, t.Value.NormalizedText, t.Value.ExampleText }));
+                bulkCopy.WriteToServer(DataUtils.ToDataTable(from t in values select new { t.Value.Hash, t.Value.NormalizedText, t.Value.ExampleText }));
 
             }
 
@@ -510,13 +585,14 @@ namespace WorkloadTools.Consumer.Analysis
 
             using (SqlCommand cmd = conn.CreateCommand())
             {
+                cmd.Transaction = tran;
                 cmd.CommandText = sql;
                 cmd.ExecuteNonQuery();
             }
         }
 
 
-        private int CreateInterval(SqlConnection conn)
+        private int CreateInterval(SqlConnection conn, SqlTransaction tran)
         {
             string sql = @"INSERT INTO [{0}].[Intervals] (interval_id, end_time, duration_minutes) VALUES (@interval_id, @end_time, @duration_minutes); ";
             sql = String.Format(sql, ConnectionInfo.SchemaName);
@@ -526,6 +602,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             using (SqlCommand cmd = conn.CreateCommand())
             {
+                cmd.Transaction = tran;
                 cmd.CommandText = sql;
                 cmd.Parameters.AddWithValue("@interval_id", interval_id);
                 cmd.Parameters.AddWithValue("@end_time", DateTime.Now);
@@ -653,10 +730,21 @@ namespace WorkloadTools.Consumer.Analysis
 
                 CREATE TABLE [{SchemaName}].[PerformanceCounters](
 	                [interval_id] [int] NOT NULL,
-                    [counter_name] [varchar(255)] NOT NULL,
+                    [counter_name] [varchar](255) NOT NULL,
                     [min_counter_value] [float] NOT NULL,
                     [max_counter_value] [float] NOT NULL,
                     [avg_counter_value] [float] NOT NULL
+                )
+
+                IF OBJECT_ID('{SchemaName}.WaitStats') IS NULL
+
+                CREATE TABLE [{SchemaName}].[WaitStats](
+	                [interval_id] [int] NOT NULL,
+                    [wait_type] [varchar](255) NOT NULL,
+                    [wait_sec] [float] NOT NULL,
+                    [resource_sec] [float] NOT NULL,
+                    [signal_sec] [float] NOT NULL,
+                    [wait_count] [int] NOT NULL
                 )
 
             ";
@@ -676,69 +764,6 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
-
-
-
-        /// <summary>
-        /// Convert a List{T} to a DataTable.
-        /// </summary>
-        private DataTable ToDataTable<T>(IEnumerable<T> items)
-        {
-            var tb = new DataTable(typeof(T).Name);
-
-            PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-            foreach (PropertyInfo prop in props)
-            {
-                Type t = GetCoreType(prop.PropertyType);
-                tb.Columns.Add(prop.Name, t);
-            }
-
-
-            foreach (T item in items)
-            {
-                var values = new object[props.Length];
-
-                for (int i = 0; i < props.Length; i++)
-                {
-                    values[i] = props[i].GetValue(item, null);
-                }
-
-                tb.Rows.Add(values);
-            }
-
-            return tb;
-        }
-
-        /// <summary>
-        /// Determine of specified type is nullable
-        /// </summary>
-        public static bool IsNullable(Type t)
-        {
-            return !t.IsValueType || (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>));
-        }
-
-        /// <summary>
-        /// Return underlying type if type is Nullable otherwise return the type
-        /// </summary>
-        public static Type GetCoreType(Type t)
-        {
-            if (t != null && IsNullable(t))
-            {
-                if (!t.IsValueType)
-                {
-                    return t;
-                }
-                else
-                {
-                    return Nullable.GetUnderlyingType(t);
-                }
-            }
-            else
-            {
-                return t;
-            }
-        }
 
     }
 }
