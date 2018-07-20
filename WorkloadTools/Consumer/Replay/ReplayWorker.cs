@@ -72,7 +72,7 @@ namespace WorkloadTools.Consumer.Replay
 
         private string BuildConnectionString()
         {
-            string connectionString = ConnectionInfo.ConnectionString;
+            string connectionString = ConnectionInfo.ConnectionString + "; max pool size=500"; 
             return connectionString;
         }
 
