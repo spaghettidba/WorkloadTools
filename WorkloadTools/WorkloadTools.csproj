@@ -30,6 +30,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.SqlServer.XE.Core">
+      <HintPath>..\..\..\Program Files (x86)\Microsoft SQL Server\140\Tools\Binn\ManagementStudio\Microsoft.SqlServer.XE.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.SqlServer.XEvent.Linq, Version=12.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Program Files (x86)\Microsoft SQL Server\140\Tools\Binn\ManagementStudio\Microsoft.SqlServer.XEvent.Linq.dll</HintPath>
+    </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.12\lib\net40\NLog.dll</HintPath>
     </Reference>
@@ -53,12 +60,12 @@
     <Compile Include="CounterWorkloadEvent.cs" />
     <Compile Include="ExecutionWorkloadEvent.cs" />
     <Compile Include="FilterPredicate.cs" />
-    <Compile Include="Listener\ExtendedEventsWorkloadListener.cs" />
+    <Compile Include="Listener\ExtendedEvents\ExtendedEventsWorkloadListener.cs" />
     <Compile Include="Listener\ExtendedEvents\ExtendedEventsEventFilter.cs" />
     <Compile Include="Listener\ExtendedEvents\ExtendedEventsFilterPredicate.cs" />
-    <Compile Include="Listener\ProfilerWorkloadListener.cs" />
+    <Compile Include="Listener\Trace\ProfilerWorkloadListener.cs" />
     <Compile Include="Consumer\ReplayConsumer.cs" />
-    <Compile Include="Listener\SqlTraceWorkloadListener.cs" />
+    <Compile Include="Listener\Trace\SqlTraceWorkloadListener.cs" />
     <Compile Include="Listener\SqlTransformer.cs" />
     <Compile Include="Listener\Trace\ProfilerEventFilter.cs" />
     <Compile Include="Listener\Trace\ProfilerFilterPredicate.cs" />
@@ -84,7 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="Listener\sqlworkload.tdf">
+    <None Include="Listener\Trace\sqlworkload.tdf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
@@ -94,9 +101,12 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Listener\sqlworkload.sql">
+    <None Include="Listener\ExtendedEvents\sqlworkload.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    </None>
+    <None Include="Listener\Trace\sqlworkload.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

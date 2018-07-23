@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WorkloadTools.Listener.Trace;
 
-namespace WorkloadTools.Listener
+namespace WorkloadTools.Listener.Trace
 {
     public class ProfilerWorkloadListener : WorkloadListener
     {

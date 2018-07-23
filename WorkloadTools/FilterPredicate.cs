@@ -61,5 +61,38 @@ namespace WorkloadTools
         {
             return value.Replace("'", "''");
         }
+
+        public static string ComparisonOperatorAsString(FilterComparisonOperator op)
+        {
+            string result = String.Empty;
+            switch (op)
+            {
+                case FilterComparisonOperator.Equal:
+                    result = "=";
+                    break;
+                case FilterComparisonOperator.Not_Equal:
+                    result = "<>";
+                    break;
+                case FilterComparisonOperator.Greater_Than:
+                    result = ">";
+                    break;
+                case FilterComparisonOperator.Less_Than:
+                    result = "<";
+                    break;
+                case FilterComparisonOperator.Greater_Than_Or_Equal:
+                    result = ">=";
+                    break;
+                case FilterComparisonOperator.Less_Than_Or_Equal:
+                    result = "<=";
+                    break;
+                case FilterComparisonOperator.LIKE:
+                    result = "LIKE";
+                    break;
+                case FilterComparisonOperator.NOT_LIKE:
+                    result = "NOT LIKE";
+                    break;
+            }
+            return result;
+        }
     }
 }

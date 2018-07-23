@@ -278,7 +278,6 @@ namespace WorkloadTools.Consumer.Analysis
         {
             logger.Trace("Writing Workload Analysis data");
 
-            int numRows;
 
             using (SqlConnection conn = new SqlConnection())
             {
@@ -309,7 +308,7 @@ namespace WorkloadTools.Consumer.Analysis
 
                     tran.Commit();
                 }
-                catch(Exception e)
+                catch(Exception)
                 {
                     tran.Rollback();
                     throw;
