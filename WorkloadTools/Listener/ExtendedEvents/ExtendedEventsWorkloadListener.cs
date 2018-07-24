@@ -29,17 +29,35 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                     // Push Down EventFilters
                     string filters = String.Empty;
-                    filters += (filters == String.Empty)?String.Empty:" AND " + Filter.ApplicationFilter.PushDown();
-                    filters += (filters == String.Empty)?String.Empty:" AND " + Filter.DatabaseFilter.PushDown();
-                    filters += (filters == String.Empty)?String.Empty:" AND " + Filter.HostFilter.PushDown();
-                    filters += (filters == String.Empty)?String.Empty:" AND " + Filter.LoginFilter.PushDown();
+
+                    string appFilter = Filter.ApplicationFilter.PushDown();
+                    string dbFilter = Filter.DatabaseFilter.PushDown();
+                    string hostFilter = Filter.HostFilter.PushDown();
+                    string loginFilter = Filter.LoginFilter.PushDown();
+
+                    if (appFilter != String.Empty)
+                    {
+                        filters += ((filters == String.Empty) ? String.Empty : " AND ") + appFilter;
+                    }
+                    if (dbFilter != String.Empty)
+                    {
+                        filters += ((filters == String.Empty) ? String.Empty : " AND ") + dbFilter;
+                    }
+                    if (hostFilter != String.Empty)
+                    {
+                        filters += ((filters == String.Empty) ? String.Empty : " AND ") + hostFilter;
+                    }
+                    if (loginFilter != String.Empty)
+                    {
+                        filters += ((filters == String.Empty) ? String.Empty : " AND ") + loginFilter;
+                    }
 
                     if(filters != String.Empty)
                     {
                         filters = "WHERE " + filters;
                     }
 
-                    String.Format(sessionSql, filters);
+                    sessionSql = String.Format(sessionSql, filters);
                     
                 }
                 catch (Exception e)
@@ -51,7 +69,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 cmd.CommandText = sessionSql;
                 cmd.ExecuteNonQuery();
 
-                ReadEventsFromStream();
+                Task.Factory.StartNew(() => ReadEventsFromStream());
 
                 //Initialize the source of performance counters events
                 Task.Factory.StartNew(() => ReadPerfCountersEvents());
@@ -139,7 +157,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     }
                     else if (evt.Name == "attention")
                     {
-                        commandText = evt.Fields["sql_text"].Value.ToString();
+                        commandText = evt.Actions["sql_text"].Value.ToString();
                         evnt.Type = WorkloadEvent.EventType.Timeout;
                     }
                     else
@@ -157,26 +175,24 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     if (evt.Actions["server_principal_name"].Value != null)
                         evnt.LoginName = (string)evt.Actions["server_principal_name"].Value;
                     if (evt.Actions["session_id"].Value != null)
-                        evnt.SPID = (int)evt.Actions["session_id"].Value;
+                        evnt.SPID = Convert.ToInt32(evt.Actions["session_id"].Value);
                     if (commandText != null)
                         evnt.Text = commandText;
 
-                    if (evt.Actions["session_id"].Value != null)
-                        evnt.StartTime = (DateTime)evt.Actions["session_id"].Value;
 
-                    evnt.StartTime = evt.Timestamp.DateTime;
+                    evnt.StartTime = evt.Timestamp.LocalDateTime;
 
                     if (evnt.Type == WorkloadEvent.EventType.Timeout)
                     {
-                        evnt.Duration = (int)evt.Fields["duration"].Value;
+                        evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
                         evnt.CPU = Convert.ToInt32(evnt.Duration / 1000);
                     }
                     else
                     {
-                        evnt.Reads = (long?)evt.Fields["logical_reads"].Value;
-                        evnt.Writes = (long?)evt.Fields["writes"].Value;
-                        evnt.CPU = (int?)evt.Fields["cpu_time"].Value;
-                        evnt.Duration = (long?)evt.Fields["duration"].Value;
+                        evnt.Reads = Convert.ToInt64(evt.Fields["logical_reads"].Value);
+                        evnt.Writes = Convert.ToInt64(evt.Fields["writes"].Value);
+                        evnt.CPU = Convert.ToInt32(evt.Fields["cpu_time"].Value);
+                        evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
                     }
 
                     if (transformer.Skip(evnt.Text))
