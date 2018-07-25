@@ -4,11 +4,11 @@
 
 SqlWorkload is a command line tool to start workload collection, analyze the collected data and replay the workload to a target machine, all in REALTIME.
 
-*Command line switches*
+## Command line switches
 
-`--ListenerType` `SqlTraceWorkloadListener | ProfilerWorkloadListener | ExtendedEventsWorkloadListener` Listener type. Only SqlTraceWorkloadListener works for the moment.
+`--ListenerType` `SqlTraceWorkloadListener | ProfilerWorkloadListener | ExtendedEventsWorkloadListener` Listener type. 
 
-`--Source` Path to the source of the workload capture. Can be a trace definition (`Listener\sqlworkload.tdf`) or a trace script (`Listener\sqlworkload.sql`) 
+`--Source` Path to the source of the workload capture. Can be a trace definition (`Listener\Trace\sqlworkload.tdf`), a trace script (`Listener\Trace\sqlworkload.sql`) or an Extended Events session creation script (`Listener\ExtendedEvents\sqlworkload.sql`)
 
 `--SourceServerName` Name of the source SQL Server instance
 
@@ -42,9 +42,9 @@ SqlWorkload is a command line tool to start workload collection, analyze the col
 
 `--StatsPassword` Password to authenticate to the statistics database
 
+## Example
 
-# Example:
+```text
+SqlWorkload.exe --ListenerType SqlTraceWorkloadListener --Source Listener\Trace\sqlworkload.sql --SourceServerName SQLDEMO\SQL2014 --SourceUserName sa --SourcePassword P4$$w0rd! --TargetServerName SQLDEMO\SQL2016 --TargetUserName sa --TargetPassword P4$$w0rd! --DatabaseFilter DS3 --StatsServer SQLDEMO\SQL2014 --StatsDatabase RTR --StatsInterval 1 --StatsUserName sa --StatsPassword P4$$w0rd!
+```
 
-```
---ListenerType SqlTraceWorkloadListener --Source Listener\sqlworkload.sql --SourceServerName SQLDEMO\SQL2014 --SourceUserName sa --SourcePassword P4$$w0rd! --TargetServerName SQLDEMO\SQL2016 --TargetUserName sa --TargetPassword P4$$w0rd! --DatabaseFilter DS3 --StatsServer SQLDEMO\SQL2014 --StatsDatabase RTR --StatsInterval 1 --StatsUserName sa --StatsPassword P4$$w0rd!
-```
