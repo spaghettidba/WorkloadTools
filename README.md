@@ -48,3 +48,26 @@ SqlWorkload is a command line tool to start workload collection, analyze the col
 SqlWorkload.exe --ListenerType SqlTraceWorkloadListener --Source Listener\Trace\sqlworkload.sql --SourceServerName SQLDEMO\SQL2014 --SourceUserName sa --SourcePassword P4$$w0rd! --TargetServerName SQLDEMO\SQL2016 --TargetUserName sa --TargetPassword P4$$w0rd! --DatabaseFilter DS3 --StatsServer SQLDEMO\SQL2014 --StatsDatabase RTR --StatsInterval 1 --StatsUserName sa --StatsPassword P4$$w0rd!
 ```
 
+## Screenshots
+
+Here are some screenshots of the PowerBI report included with the tool. It can be hooked to the statistics database via Direct Query
+
+### Overview of the analysis
+
+The top filters can be used to restrict the analysis to a particular database  or application or host name.
+
+The time slicer can filter the charts to a particular date.
+
+![SqlWorkload analysis Overview](./Images/SqlWorkloadOverview.png "Overview")
+
+### Regressed Queries
+
+This table shows the queries that have regressed in the replay compared to the baseline.
+
+![SqlWorkload regressed queries](./Images/SqlWorkloadRegresses.png "RegressedQueries")
+
+### Regressed Queries
+
+Drilling on one the regressed queries will bring you to the query detail page, where you can see the text of the query (but not copy it to the clipboard - thanks PowerBI) and the stats broken down by application name, database name, host name and login name.
+
+![SqlWorkload query detail](./Images/SqlWorkloadDetail.png "Detail")
