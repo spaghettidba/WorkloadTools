@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WorkloadTools;
+using WorkloadTools.Config;
 using WorkloadTools.Consumer;
 using WorkloadTools.Listener;
 using WorkloadTools.Listener.ExtendedEvents;
@@ -50,94 +51,20 @@ namespace SqlWorkload
 
         static void Run(Options options)
         {
+            options.ConfigurationFile = System.IO.Path.GetFullPath(options.ConfigurationFile);
+            logger.Info(String.Format("Reading configuration from '{0}'", options.ConfigurationFile));
 
-            WorkloadListener listener = null;
-            WorkloadController controller = null;
-
-            options.Source = System.IO.Path.GetFullPath(options.Source);
-
-            if (options.ListenerType.ToLower() == "ProfilerWorkloadListener".ToLower())
-            {
-                listener = new ProfilerWorkloadListener();
-                listener.Source = options.Source;
-                listener.Filter = new ProfilerEventFilter();
-            }
-            else if (options.ListenerType.ToLower() == "SqlTraceWorkloadListener".ToLower())
-            {
-                listener = new SqlTraceWorkloadListener();
-                listener.Source = options.Source;
-                listener.Filter = new TraceEventFilter();
-            }
-            else if (options.ListenerType.ToLower() == "ExtendedEventsWorkloadListener".ToLower())
-            {
-                listener = new ExtendedEventsWorkloadListener();
-                listener.Source = options.Source;
-                listener.Filter = new ExtendedEventsEventFilter();
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException("The Listener has to be a registered Listener type");
-            }
-
-
-            listener.ConnectionInfo = new SqlConnectionInfo()
-            {
-                ServerName = options.SourceServerName,
-                DatabaseName = "master",
-                UserName = options.SourceUserName,
-                Password = options.SourcePassword,
-            };
-
-
-            listener.Filter.DatabaseFilter.PredicateValue = options.DatabaseFilter;
-            listener.Filter.ApplicationFilter.PredicateValue = options.ApplicationFilter;
-            listener.Filter.HostFilter.PredicateValue = options.HostFilter;
-            listener.Filter.LoginFilter.PredicateValue = options.LoginFilter;
-
-            controller = new WorkloadController(listener);
-
-            // Register the Replay Consumer
-            if(!String.IsNullOrEmpty(options.TargetServerName))
-            {
-                controller.RegisterConsumer(new ReplayConsumer()
-                {
-                    ConnectionInfo = new SqlConnectionInfo()
-                    {
-                        ServerName = options.TargetServerName,
-                        DatabaseName = "master",
-                        UserName = options.TargetUserName,
-                        Password = options.TargetPassword
-                    }
-                });
-            }
-
-            // Register the Analysis Consumer
-            if (!String.IsNullOrEmpty(options.StatsServer))
-            {
-                controller.RegisterConsumer(new AnalysisConsumer()
-                {
-                    ConnectionInfo = new SqlConnectionInfo()
-                    {
-                        ServerName = options.StatsServer,
-                        DatabaseName = options.StatsDatabase,
-                        SchemaName = options.StatsSchema,
-                        UserName = options.StatsUserName,
-                        Password = options.StatsPassword
-                    },
-                    UploadIntervalSeconds = options.StatsInterval
-                });
-                
-            }
-
+            SqlWorkloadConfig config = SqlWorkloadConfig.LoadFromFile(options.ConfigurationFile);
+            config.Controller.Listener.Source = System.IO.Path.GetFullPath(config.Controller.Listener.Source);
 
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
                 e.Cancel = true;
                 logger.Info("Received shutdown signal...");
                 source.CancelAfter(TimeSpan.FromSeconds(10)); // give a 10 seconds cancellation grace period 
-                controller.Stop();
+                config.Controller.Stop();
             };
 
-            Task t = processController(controller);
+            Task t = processController(config.Controller);
             t.Wait();
             logger.Info("Controller stopped.");
         }
@@ -176,65 +103,14 @@ namespace SqlWorkload
 
     }
 
-    
+
 
 
 
     class Options
     {
-        [Option("ListenerType", Required = true, HelpText = "Class name of the Listener")]
-        public string ListenerType { get; set; }
-
-        [Option("Source", DefaultValue = "sqlworkload.tdf", HelpText = "Path to the Trace Definition file / Trace SQL script / XE session script")]
-        public string Source { get; set; }
-
-        [Option('S', "SourceServerName", Required = true, DefaultValue = ".", HelpText = "Source SQL Server instance")]
-        public string SourceServerName { get; set; }
-
-        [Option('U', "SourceUserName", HelpText = "Source User Name")]
-        public string SourceUserName { get; set; }
-
-        [Option('P', "SourcePassword", HelpText = "Source Password")]
-        public string SourcePassword { get; set; }
-
-        [Option('T', "TargetServerName", HelpText = "Target SQL Server instance")]
-        public string TargetServerName { get; set; }
-
-        [Option('V', "TargetUserName", HelpText = "Target User Name")]
-        public string TargetUserName { get; set; }
-
-        [Option('Q', "TargetPassword", HelpText = "Target Password")]
-        public string TargetPassword { get; set; }
-
-        [Option('A', "ApplicationFilter", HelpText = "Application Name filter. Accepts comma separated lists.")]
-        public string ApplicationFilter { get; set; }
-
-        [Option('D', "DatabaseFilter", HelpText = "Database Name filter. Accepts comma separated lists.")]
-        public string DatabaseFilter { get; set; }
-
-        [Option('H', "HostFilter", HelpText = "Host Name filter. Accepts comma separated lists.")]
-        public string HostFilter { get; set; }
-
-        [Option('L', "LoginFilter", HelpText = "Login Name filter. Accepts comma separated lists.")]
-        public string LoginFilter { get; set; }
-
-        [Option("StatsServer", HelpText = "SQL Server instance for workload statistics output")]
-        public string StatsServer { get; set; }
-
-        [Option("StatsDatabase", HelpText = "Database stats output")]
-        public string StatsDatabase { get; set; }
-
-        [Option("StatsUserName", HelpText = "UserName for stats output")]
-        public string StatsUserName { get; set; }
-
-        [Option("StatsPassword", HelpText = "Password for stats output")]
-        public string StatsPassword { get; set; }
-
-        [Option("StatsSchema", DefaultValue = "dbo", HelpText = "Schema name for stats output")]
-        public string StatsSchema { get; set; }
-
-        [Option("StatsInterval", HelpText = "Interval, in minutes, for stats output")]
-        public int StatsInterval { get; set; }
+        [Option('F', "File", DefaultValue = "SqlWorkload.json", HelpText = "Configuration file")]
+        public string ConfigurationFile { get; set; }
 
         [ParserState]
         public IParserState LastParserState { get; set; }
@@ -245,6 +121,7 @@ namespace SqlWorkload
             return HelpText.AutoBuild(this,
               (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
         }
+    
     }
 
 }

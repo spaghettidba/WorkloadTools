@@ -2,50 +2,120 @@
 
 *WorkloadTools is a collection of tools to collect, analyze and replay workloads on a SQL Server instance.*
 
-SqlWorkload is a command line tool to start workload collection, analyze the collected data and replay the workload to a target machine, all in REALTIME.
+## SqlWorkload
 
-## Command line switches
+SqlWorkload is a command line tool to start workload collection, analyze the collected data and replay the workload to a target machine, all in real-time.
 
-`--ListenerType` `SqlTraceWorkloadListener | ProfilerWorkloadListener | ExtendedEventsWorkloadListener` Listener type. 
+SqlWorkload can connect to a SQL Server instance and capture execution related events via SqlTrace or Extended Events. These events are processed and passed to "consumers" that can replay the events to a target instance in real-time and analyze the statements. 
+All the batches are "normalized" (parameters and constants are stripped away) and metrics are calculated on each normalized batch, like cpu, duration, reads and writes.
 
-`--Source` Path to the source of the workload capture. Can be a trace definition (`Listener\Trace\sqlworkload.tdf`), a trace script (`Listener\Trace\sqlworkload.sql`) or an Extended Events session creation script (`Listener\ExtendedEvents\sqlworkload.sql`)
+During the analysis, additional metrics are captured and saved regularly to the analysis database:
 
-`--SourceServerName` Name of the source SQL Server instance
+- cpu usage
+- wait stats
 
-`--SourceUserName` User name to connect to SQL Server with SQL authentication. Will use Windows authentication if empty or missing.
+### Replaying and analyzing a production workload in test
 
-`--SourcePassword` Password
+If you want to compare the execution of the same workload on two different machines, you can point a first instance of SqlWorkload to your production server: SqlWorkload will analyze the workload and write the metrics to a database of your choice.
+It will also replay the workload to a test server, where you can point a second instance of SqlWorkload to obtain the same metrics. This second instance of SqlWorkload will not perform the replay, but it will only perform the workload analysis and write it to the same database where you stored the metrics relative to production (possibly on a different schema).
 
-`--TargetServerName` Name of the target SQL Server instance. If omitted, no replay will be performed. 
+Once you have captured and replayed the workload for a representative enough time, you can stop the two instances of SqlWorkload and analyze the data using the included PowerBI report.
 
-`--TargetUserName` User name to connect to SQL Server with SQL authentication. Will use Windows authentication if empty or missing.
+### Command line switches
 
-`--TargetPassword` Password
+SqlWorkload accepts a single command line switch:
 
-`--ApplicationFilter` Name of a single application to filter. Prepend the "^" character to exclude the value (e.g. "^sqlcmd.exe" excludes sqlcmd.exe)
+`--File` Path to the `.JSON` configuration file
 
-`--DatabaseFilter` Name of a single database to filter. Prepend the "^" character to exclude the value.
+In fact, SqlWorkload supports a moltitude of parameters and specifying them all in the command line can become really tedious. For this reason, SqlWorkload supports `.JSON` configuration files.
 
-`--HostFilter` Name of a single host to filter. Prepend the "^" character to exclude the value.
+Here is the list of the parameters that can be supplied in the configuration file:
 
-`--LoginFilter` Name of a single login to filter. Prepend the "^" character to exclude the value.
+```JSON
+{
+    // This section is fixed
+    "Controller": {
 
-`--StatsServer` Name of the SQL Server instance to use to log the statistics. If omitted, no workload analysis will be performed.
+        // The Listener section describes how to capture the events
+        "Listener":
+        {
+            // The main parameter here is the class type of the Listener
+            // At the moment, three Listener types are supported
+            // - ExtendedEventsWorkloadListener
+            // - SqlTraceWorkloadListener
+            // - ProfilerWorkloadListener
+            "__type": "ExtendedEventsWorkloadListener",
 
-`--StatsDatabase` Name of the database to store the statistics
+            // For each Listener type you can supply your own script
+            // to customize the SqlTrace definition of the XE session
+            // definition. If you omit this parameter, the default
+            // definition will be used, which is fine 99% of the time.
+            "Source": "Listener\\ExtendedEvents\\sqlworkload.sql",
 
-`--StatsSchema` Name of the schema to store the statistics. If missing, the schema will be created.
+            // The ConnectionInfo describes how to connect the Listener
+            "ConnectionInfo":
+            {
+                "ServerName": "SQLDEMO\\SQL2014",
+                // If you omit the UserName/Password, Windows authentication
+                // will be used
+                "UserName": "sa",
+                "Password": "P4$$w0rd!"
+            },
 
-`--StatsInterval` Interval in minutes between each dump of the workload statistics
+            // Filters: for the workload
+            // These are not mandatory, you can omit them
+            // if you don't need to filter.
+            // Prepend the '^' character to exclude the value
+            "DatabaseFilter": "DS3",
+            "ApplicationFilter" : "SomeAppName",
+            "HostFilter" : "MyComputer",
+            "LoginFilter": "sa"
+        },
 
-`--StatsUserName` Username to authenticate to the statistics database 
+        // This section contains the list of the consumers
+        // The list can contain 0 to N consumers of different types
+        "Consumers":
+        [
+            {
+                // This is the type of the consumer
+                // Two types are available at the moment:
+                // - ReplayConsumer
+                // - AnalysisConsumer
+                "__type": "ReplayConsumer",
 
-`--StatsPassword` Password to authenticate to the statistics database
+                // The same considerations for ConnectionInfo
+                // valid for the Listener apply here as well
+                "ConnectionInfo":
+                {
+                    "ServerName": "SQLDEMO\\SQL2016",
+                    "DatabaseName": "DS3",
+                    "UserName": "sa",
+                    "Password": "P4$$w0rd!"
+                }
+            },
+            {
+                // Here is another example with the AnalysisConsumer
+                "__type": "AnalysisConsumer",
 
-## Example
+                // ConnectionInfo
+                "ConnectionInfo": 
+                {
+                    "ServerName": "SQLDEMO\\SQL2016",
+                    "DatabaseName": "DS3",
+                    // This "SchemaName" parameter is important, because it 
+                    // decides where the analysis data is written to
+                    "SchemaName": "baseline",
+                    "UserName": "sa",
+                    "Password": "P4$$w0rd!"
+                },
 
-```text
-SqlWorkload.exe --ListenerType SqlTraceWorkloadListener --Source Listener\Trace\sqlworkload.sql --SourceServerName SQLDEMO\SQL2014 --SourceUserName sa --SourcePassword P4$$w0rd! --TargetServerName SQLDEMO\SQL2016 --TargetUserName sa --TargetPassword P4$$w0rd! --DatabaseFilter DS3 --StatsServer SQLDEMO\SQL2014 --StatsDatabase RTR --StatsInterval 1 --StatsUserName sa --StatsPassword P4$$w0rd!
+                // This decides how often the metrics are aggregated and 
+                // written to the target database
+                "UploadIntervalSeconds": 60
+            }
+        ]
+    }
+}
 ```
 
 ## Screenshots
@@ -66,7 +136,7 @@ This table shows the queries that have regressed in the replay compared to the b
 
 ![SqlWorkload regressed queries](./Images/SqlWorkloadRegresses.png "RegressedQueries")
 
-### Regressed Queries
+### Query Detail
 
 Drilling on one the regressed queries will bring you to the query detail page, where you can see the text of the query (but not copy it to the clipboard - thanks PowerBI) and the stats broken down by application name, database name, host name and login name.
 

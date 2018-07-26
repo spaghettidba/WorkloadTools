@@ -15,6 +15,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
+
+        public ExtendedEventsWorkloadListener()
+        {
+            Filter = new ExtendedEventsEventFilter();
+            Source = "Listener\\ExtendedEvents\\sqlworkload.sql";
+        }
+
         public override void Initialize()
         {
             using (SqlConnection conn = new SqlConnection())

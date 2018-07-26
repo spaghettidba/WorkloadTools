@@ -8,8 +8,8 @@ namespace WorkloadTools
     public class SqlConnectionInfo
     {
         public string ServerName { get; set; }
-        public string DatabaseName { get; set; }
-        public string SchemaName { get; set; }
+        public string DatabaseName { get; set; } = "master";
+        public string SchemaName { get; set; } = "dbo";
         public bool UseIntegratedSecurity { get; set; }
         public string UserName { get; set; }
         public string Password { get; set; }

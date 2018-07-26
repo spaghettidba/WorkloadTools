@@ -29,6 +29,9 @@ namespace WorkloadTools
             NOT_LIKE = 7
         }
 
+        public FilterPredicate()
+        {
+        }
 
 
         public FilterColumnName ColumnName { get; set; }

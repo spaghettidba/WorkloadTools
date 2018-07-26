@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace WorkloadTools
+namespace WorkloadTools.Consumer
 {
     public abstract class WorkloadConsumer : IDisposable
     {

@@ -443,25 +443,25 @@ namespace WorkloadTools.Consumer.Analysis
                                     grp.Key.host_id,
                                     grp.Key.login_id,
 
-                                    avg_cpu_ms = grp.Average(t => t.Field<long>("cpu_ms")),
-                                    min_cpu_ms = grp.Min(t => t.Field<long>("cpu_ms")),
-                                    max_cpu_ms = grp.Max(t => t.Field<long>("cpu_ms")),
-                                    sum_cpu_ms = grp.Sum(t => t.Field<long>("cpu_ms")),
+                                    avg_cpu_ms = grp.Average(t => t.Field<long?>("cpu_ms")),
+                                    min_cpu_ms = grp.Min(t => t.Field<long?>("cpu_ms")),
+                                    max_cpu_ms = grp.Max(t => t.Field<long?>("cpu_ms")),
+                                    sum_cpu_ms = grp.Sum(t => t.Field<long?>("cpu_ms")),
 
-                                    avg_reads = grp.Average(t => t.Field<long>("reads")),
-                                    min_reads = grp.Min(t => t.Field<long>("reads")),
-                                    max_reads = grp.Max(t => t.Field<long>("reads")),
-                                    sum_reads = grp.Sum(t => t.Field<long>("reads")),
+                                    avg_reads = grp.Average(t => t.Field<long?>("reads")),
+                                    min_reads = grp.Min(t => t.Field<long?>("reads")),
+                                    max_reads = grp.Max(t => t.Field<long?>("reads")),
+                                    sum_reads = grp.Sum(t => t.Field<long?>("reads")),
 
-                                    avg_writes = grp.Average(t => t.Field<long>("writes")),
-                                    min_writes = grp.Min(t => t.Field<long>("writes")),
-                                    max_writes = grp.Max(t => t.Field<long>("writes")),
-                                    sum_writes = grp.Sum(t => t.Field<long>("writes")),
+                                    avg_writes = grp.Average(t => t.Field<long?>("writes")),
+                                    min_writes = grp.Min(t => t.Field<long?>("writes")),
+                                    max_writes = grp.Max(t => t.Field<long?>("writes")),
+                                    sum_writes = grp.Sum(t => t.Field<long?>("writes")),
 
-                                    avg_duration_ms = grp.Average(t => t.Field<long>("duration_ms")),
-                                    min_duration_ms = grp.Min(t => t.Field<long>("duration_ms")),
-                                    max_duration_ms = grp.Max(t => t.Field<long>("duration_ms")),
-                                    sum_duration_ms = grp.Sum(t => t.Field<long>("duration_ms")),
+                                    avg_duration_ms = grp.Average(t => t.Field<long?>("duration_ms")),
+                                    min_duration_ms = grp.Min(t => t.Field<long?>("duration_ms")),
+                                    max_duration_ms = grp.Max(t => t.Field<long?>("duration_ms")),
+                                    sum_duration_ms = grp.Sum(t => t.Field<long?>("duration_ms")),
 
                                     execution_count = grp.Count()
                                 };

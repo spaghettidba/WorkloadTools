@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WorkloadTools.Consumer.Replay;
 
-namespace WorkloadTools.Consumer
+namespace WorkloadTools.Consumer.Replay
 {
     public class ReplayConsumer : BufferedWorkloadConsumer
     {

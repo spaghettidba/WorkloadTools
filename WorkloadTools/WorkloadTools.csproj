@@ -32,6 +32,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DouglasCrockford.JsMin, Version=1.1.3.0, Culture=neutral, PublicKeyToken=99147aa1108448b7, processorArchitecture=MSIL">
+      <HintPath>..\packages\DouglasCrockford.JsMin.1.1.3\lib\net40-client\DouglasCrockford.JsMin.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.SqlServer.AzureStorageEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.AzureStorageEnum.dll</HintPath>
       <Private>True</Private>
@@ -165,6 +168,10 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.SQLite, Version=1.0.108.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Data.SQLite.Core.1.0.108.0\lib\net40\System.Data.SQLite.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -172,14 +179,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Consumer\AnalysisConsumer.cs" />
-    <Compile Include="BufferedWorkloadConsumer.cs" />
+    <Compile Include="Config\SqlWorkloadConfig.cs" />
+    <Compile Include="Config\SqlWorkloadConfigTypeResolver.cs" />
+    <Compile Include="Consumer\Analysis\AnalysisConsumer.cs" />
+    <Compile Include="Consumer\BufferedWorkloadConsumer.cs" />
     <Compile Include="Consumer\Analysis\NormalizedSqlText.cs" />
     <Compile Include="Consumer\Analysis\SqlTextNormalizer.cs" />
     <Compile Include="Consumer\Analysis\WorkloadAnalyzer.cs" />
     <Compile Include="Consumer\Replay\ReplayCommand.cs" />
     <Compile Include="Consumer\Replay\ReplayWorker.cs" />
     <Compile Include="Consumer\Replay\ResultSetConsumer.cs" />
+    <Compile Include="Consumer\WorkloadFile\WorkloadFile.cs" />
+    <Compile Include="Consumer\WorkloadFile\WorkloadFileWriterConsumer.cs" />
     <Compile Include="CounterWorkloadEvent.cs" />
     <Compile Include="ExecutionWorkloadEvent.cs" />
     <Compile Include="FilterPredicate.cs" />
@@ -187,7 +198,7 @@
     <Compile Include="Listener\ExtendedEvents\ExtendedEventsEventFilter.cs" />
     <Compile Include="Listener\ExtendedEvents\ExtendedEventsFilterPredicate.cs" />
     <Compile Include="Listener\Trace\ProfilerWorkloadListener.cs" />
-    <Compile Include="Consumer\ReplayConsumer.cs" />
+    <Compile Include="Consumer\Replay\ReplayConsumer.cs" />
     <Compile Include="Listener\Trace\SqlTraceWorkloadListener.cs" />
     <Compile Include="Listener\SqlTransformer.cs" />
     <Compile Include="Listener\Trace\ProfilerEventFilter.cs" />
@@ -205,7 +216,7 @@
     <Compile Include="SqlConnectionInfo.cs" />
     <Compile Include="Util\DataUtils.cs" />
     <Compile Include="WaitStatsWorkloadEvent.cs" />
-    <Compile Include="WorkloadConsumer.cs" />
+    <Compile Include="Consumer\WorkloadConsumer.cs" />
     <Compile Include="WorkloadController.cs" />
     <Compile Include="WorkloadEvent.cs" />
     <Compile Include="WorkloadEventFilter.cs" />
@@ -214,6 +225,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="Config\Sample.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Listener\Trace\sqlworkload.tdf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -239,5 +253,7 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\build\net40\Microsoft.SqlServer.SqlManagementObjects.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\build\net40\Microsoft.SqlServer.SqlManagementObjects.targets'))" />
+    <Error Condition="!Exists('..\packages\System.Data.SQLite.Core.1.0.108.0\build\net40\System.Data.SQLite.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.Data.SQLite.Core.1.0.108.0\build\net40\System.Data.SQLite.Core.targets'))" />
   </Target>
+  <Import Project="..\packages\System.Data.SQLite.Core.1.0.108.0\build\net40\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.108.0\build\net40\System.Data.SQLite.Core.targets')" />
 </Project>

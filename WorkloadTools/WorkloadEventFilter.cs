@@ -13,6 +13,10 @@ namespace WorkloadTools
         public FilterPredicate LoginFilter { get; set; }
 
 
+        public WorkloadEventFilter()
+        {
+        }
+
         public bool Evaluate(WorkloadEvent evnt)
         {
             // don't filter events that are not supposed to be filtered

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using WorkloadTools.Consumer;
 
 namespace WorkloadTools
 {
@@ -12,39 +13,33 @@ namespace WorkloadTools
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private WorkloadListener listener;
-        private List<WorkloadConsumer> consumers = new List<WorkloadConsumer>();
+        public WorkloadListener Listener { get; set; }
+        public List<WorkloadConsumer> Consumers = new List<WorkloadConsumer>();
+
         private bool stopped = false;
         private bool disposed = false;
         private const int MAX_DISPOSE_TIMEOUT_SECONDS = 5;
 
 
-        public WorkloadController(WorkloadListener listener)
+        public WorkloadController()
         {
-            this.listener = listener;
         }
-
-        public void RegisterConsumer(WorkloadConsumer consumer)
-        {
-            consumers.Add(consumer);
-        }
-
 
         public void Run()
         {
 
             try
             {
-                listener.Initialize();
+                Listener.Initialize();
                 while (!stopped)
                 {
-                    if (!listener.IsRunning)
+                    if (!Listener.IsRunning)
                         Stop();
 
-                    var evt = listener.Read();
+                    var evt = Listener.Read();
                     if (evt == null)
                         continue;
-                    Parallel.ForEach(consumers, (cons) =>
+                    Parallel.ForEach(Consumers, (cons) =>
                     {
                         cons.Consume(evt);
                     });
@@ -52,8 +47,8 @@ namespace WorkloadTools
                 if (!disposed)
                 {
                     disposed = true;
-                    listener.Dispose();
-                    foreach (var cons in consumers)
+                    Listener.Dispose();
+                    foreach (var cons in Consumers)
                     {
                         cons.Dispose();
                     }
@@ -83,10 +78,10 @@ namespace WorkloadTools
             if (!disposed)
             {
                 disposed = true;
-                if(listener != null)
-                    listener.Dispose();
+                if(Listener != null)
+                    Listener.Dispose();
 
-                foreach (var cons in consumers)
+                foreach (var cons in Consumers)
                 {
                     if(cons != null)
                         cons.Dispose();

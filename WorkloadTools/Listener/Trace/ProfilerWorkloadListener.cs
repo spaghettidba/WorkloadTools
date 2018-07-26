@@ -17,6 +17,14 @@ namespace WorkloadTools.Listener.Trace
         private ConcurrentQueue<WorkloadEvent> events = new ConcurrentQueue<WorkloadEvent>();
         private TraceServerWrapper trace;
 
+
+        public ProfilerWorkloadListener()
+        {
+            Filter = new ProfilerEventFilter();
+            Source = "Listener\\Trace\\sqlworkload.tdf";
+        }
+        
+
         public override void Initialize()
         {
             SqlConnectionInfoWrapper conn = new SqlConnectionInfoWrapper

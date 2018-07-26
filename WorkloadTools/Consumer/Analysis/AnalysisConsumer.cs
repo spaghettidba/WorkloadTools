@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using WorkloadTools.Consumer.Analysis;
 
-namespace WorkloadTools.Consumer
+namespace WorkloadTools.Consumer.Analysis
 {
     public class AnalysisConsumer : BufferedWorkloadConsumer
     {
@@ -21,7 +21,7 @@ namespace WorkloadTools.Consumer
             {
                 analyzer = new WorkloadAnalyzer()
                 {
-                    Interval = UploadIntervalSeconds,
+                    Interval = UploadIntervalSeconds / 60,
                     ConnectionInfo = this.ConnectionInfo
                 };
             }
