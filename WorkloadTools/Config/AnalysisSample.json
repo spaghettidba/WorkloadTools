@@ -1,0 +1,32 @@
+﻿{
+    "Controller": {
+
+        "Listener":
+        {
+            "__type": "ExtendedEventsWorkloadListener",
+            "ConnectionInfo":
+            {
+                "ServerName": "testServer",
+                "UserName": "sa",
+                "Password": "P4$$w0rd!"
+            },
+            "DatabaseFilter": "MyDB"
+        },
+
+        "Consumers":
+        [
+            {
+                "__type": "AnalysisConsumer",
+                "ConnectionInfo": 
+                {
+                    "ServerName": "testServer",
+                    "DatabaseName": "SqlWorkload",
+                    "SchemaName": "replay",
+                    "UserName": "sa",
+                    "Password": "P4$$w0rd!"
+                },
+                "UploadIntervalSeconds": 60
+            }
+        ]
+    }
+}
