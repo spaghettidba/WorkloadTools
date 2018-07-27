@@ -27,7 +27,7 @@ SqlWorkload accepts a single command line switch:
 
 `--File` Path to the `.JSON` configuration file
 
-In fact, SqlWorkload supports a moltitude of parameters and specifying them all in the command line can become really tedious. For this reason, SqlWorkload supports `.JSON` configuration files.
+In fact, SqlWorkload supports a multitude of parameters and specifying them all in the command line can become really tedious. For this reason, SqlWorkload supports `.JSON` configuration files.
 
 Here is the list of the parameters that can be supplied in the configuration file:
 
