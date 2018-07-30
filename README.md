@@ -27,7 +27,7 @@ SqlWorkload accepts a single command line switch:
 
 `--File` Path to the `.JSON` configuration file
 
-In fact, SqlWorkload supports a moltitude of parameters and specifying them all in the command line can become really tedious. For this reason, SqlWorkload supports `.JSON` configuration files.
+In fact, SqlWorkload supports a multitude of parameters and specifying them all in the command line can become really tedious. For this reason, SqlWorkload supports `.JSON` configuration files.
 
 Here is the list of the parameters that can be supplied in the configuration file:
 
@@ -47,7 +47,7 @@ Here is the list of the parameters that can be supplied in the configuration fil
             "__type": "ExtendedEventsWorkloadListener",
 
             // For each Listener type you can supply your own script
-            // to customize the SqlTrace definition of the XE session
+            // to customize the SqlTrace definition or the XE session
             // definition. If you omit this parameter, the default
             // definition will be used, which is fine 99% of the time.
             "Source": "Listener\\ExtendedEvents\\sqlworkload.sql",
@@ -62,7 +62,7 @@ Here is the list of the parameters that can be supplied in the configuration fil
                 "Password": "P4$$w0rd!"
             },
 
-            // Filters: for the workload
+            // Filters for the workload
             // These are not mandatory, you can omit them
             // if you don't need to filter.
             // Prepend the '^' character to exclude the value
