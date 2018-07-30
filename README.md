@@ -78,9 +78,10 @@ Here is the list of the parameters that can be supplied in the configuration fil
         [
             {
                 // This is the type of the consumer
-                // Two types are available at the moment:
+                // Three types are available at the moment:
                 // - ReplayConsumer
                 // - AnalysisConsumer
+                // - WorkloadFileWriterConsumer
                 "__type": "ReplayConsumer",
 
                 // The same considerations for ConnectionInfo
