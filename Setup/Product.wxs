@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-  <Product Id="*" Name="WorkloadTools" Language="1033" Version="1.0.0.0" Manufacturer="sqlconsulting.it" UpgradeCode="EF0F1905-E03F-4634-BB2E-3A5C3369AB23">
+  <?include ProductVersion.wxi?>
+  <Product Id="*" Name="WorkloadTools" Language="1033" Version="$(var.ProductVersion)" Manufacturer="sqlconsulting.it" UpgradeCode="EF0F1905-E03F-4634-BB2E-3A5C3369AB23">
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
     <MajorUpgrade AllowDowngrades="yes" />

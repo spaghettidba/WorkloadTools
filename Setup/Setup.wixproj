@@ -23,9 +23,6 @@
     <Compile Include="Product.wxs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ExcludeNonRelease.xsl" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\SqlWorkload\SqlWorkload.csproj">
       <Name>SqlWorkload</Name>
       <Project>{fb46ad2c-df81-4d35-b419-d93e5ef9d98a}</Project>
@@ -35,6 +32,9 @@
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ProductVersion.wxi" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
