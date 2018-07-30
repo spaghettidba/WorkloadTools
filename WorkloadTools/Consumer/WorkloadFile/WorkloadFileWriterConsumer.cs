@@ -125,5 +125,26 @@ namespace WorkloadTools.Consumer.WorkloadFile
             databaseInitialized = true;
 
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                if (cmd != null)
+                    cmd.Dispose();
+
+                if (conn != null)
+                {
+                    conn.Close();
+                    conn.Dispose();
+                }
+            }
+            catch(Exception)
+            {
+                //ignore
+            }
+
+            stopped = true;
+        }
     }
 }
