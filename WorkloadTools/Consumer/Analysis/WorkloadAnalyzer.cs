@@ -320,6 +320,9 @@ namespace WorkloadTools.Consumer.Analysis
 
         private void WriteWaitsData(SqlConnection conn, SqlTransaction tran, int current_interval_id)
         {
+            if (waitsData == null)
+                return;
+
             lock (waitsData)
             {
                 using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
@@ -362,6 +365,9 @@ namespace WorkloadTools.Consumer.Analysis
 
         private void WritePerformanceCounters(SqlConnection conn, SqlTransaction tran, int current_interval_id)
         {
+            if (counterData == null)
+                return;
+
             lock (counterData)
             {
                 using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
