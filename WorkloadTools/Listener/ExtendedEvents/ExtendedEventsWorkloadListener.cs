@@ -19,7 +19,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
         public ExtendedEventsWorkloadListener()
         {
             Filter = new ExtendedEventsEventFilter();
-            Source = "Listener\\ExtendedEvents\\sqlworkload.sql";
+            Source = AppDomain.CurrentDomain.BaseDirectory + "\\Listener\\ExtendedEvents\\sqlworkload.sql";
         }
 
         public override void Initialize()

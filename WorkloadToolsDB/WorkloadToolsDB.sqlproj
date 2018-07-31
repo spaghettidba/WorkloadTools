@@ -70,6 +70,7 @@
     <Folder Include="replay\Views\" />
     <Folder Include="baseline\Views\" />
     <Folder Include="Security\" />
+    <Folder Include="dbo\Stored Procedures" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="replay\Tables\NormalizedQueries.sql" />
@@ -92,5 +93,6 @@
     <Build Include="baseline\Views\AllData.sql" />
     <Build Include="Security\replay.sql" />
     <Build Include="Security\baseline.sql" />
+    <Build Include="dbo\Stored Procedures\createAnalysisView.sql" />
   </ItemGroup>
 </Project>

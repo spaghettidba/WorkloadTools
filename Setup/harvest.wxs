@@ -55,9 +55,6 @@
             <Component Id="cmpB0D00055965EDE11CC624747CE56C686" Directory="INSTALLFOLDER" Guid="*">
                 <File Id="fil1AD5F5CE645B996B33CF1EF5C058BA4F" KeyPath="yes" Source="$(var.SqlWorkload.TargetDir)\System.Data.SQLite.xml" />
             </Component>
-            <Component Id="cmp92F0B60FE870D115F0184EC5C5CABF25" Directory="INSTALLFOLDER" Guid="*">
-                <File Id="filB01DEDF4610F247B8A41456BC0F4F530" KeyPath="yes" Source="$(var.SqlWorkload.TargetDir)\Warnings.log" />
-            </Component>
             <Component Id="cmp05556E8AE47641536D245549C5EC7500" Directory="INSTALLFOLDER" Guid="*">
                 <File Id="fil95B4D4D8E479952DC67C571B09F2AFDA" KeyPath="yes" Source="$(var.SqlWorkload.TargetDir)\WorkloadTools.dll" />
             </Component>

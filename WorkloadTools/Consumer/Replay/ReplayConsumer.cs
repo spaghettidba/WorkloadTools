@@ -161,7 +161,7 @@ namespace WorkloadTools.Consumer.Replay
                     logger.Warn(e.Message);
                 }
 
-                Thread.Sleep(WORKER_EXPIRY_TIMEOUT_SECONDS); // sleep some seconds
+                Thread.Sleep(WORKER_EXPIRY_TIMEOUT_SECONDS * 1000); // sleep some seconds
             }
             logger.Trace("Sweeper thread stopped.");
         }
