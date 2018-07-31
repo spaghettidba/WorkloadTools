@@ -356,7 +356,11 @@ namespace WorkloadTools.Consumer.Analysis
                                     wait_count = grp.Sum(t => t.Field<int>("wait_count"))
                                 };
 
-                    bulkCopy.WriteToServer(DataUtils.ToDataTable(Table));
+                    using(var dt = DataUtils.ToDataTable(Table))
+                    {
+                        bulkCopy.WriteToServer(dt);
+                    }
+                    
                     logger.Info("Wait stats written");
                 }
                 waitsData.Rows.Clear();
@@ -382,7 +386,6 @@ namespace WorkloadTools.Consumer.Analysis
                     bulkCopy.BatchSize = 1000;
                     bulkCopy.BulkCopyTimeout = 300;
 
-
                     var Table = from t in counterData.AsEnumerable()
                                 group t by new
                                 {
@@ -400,7 +403,10 @@ namespace WorkloadTools.Consumer.Analysis
                                     avg_counter_value = grp.Average(t => t.Field<float>("counter_value"))
                                 };
 
-                    bulkCopy.WriteToServer(DataUtils.ToDataTable(Table));
+                    using (var dt = DataUtils.ToDataTable(Table))
+                    {
+                        bulkCopy.WriteToServer(dt);
+                    }
                     logger.Info("Performance counters written");
                 }
                 counterData.Rows.Clear();

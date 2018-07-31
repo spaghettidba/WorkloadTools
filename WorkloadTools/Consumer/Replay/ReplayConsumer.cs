@@ -15,7 +15,7 @@ namespace WorkloadTools.Consumer.Replay
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private static readonly int SEMAPHORE_LIMIT = Properties.Settings.Default.ReplayConsumer_SEMAPHORE_LIMIT;
-        private static readonly int WORKER_EXPIRY_TIMEOUT_MINUTES = Properties.Settings.Default.ReplayConsumer_WORKER_EXPIRY_TIMEOUT_MINUTES;
+        private static readonly int WORKER_EXPIRY_TIMEOUT_SECONDS = Properties.Settings.Default.ReplayConsumer_WORKER_EXPIRY_TIMEOUT_SECONDS;
         private static readonly Semaphore WorkLimiter = new Semaphore(SEMAPHORE_LIMIT, SEMAPHORE_LIMIT);
 
         public SqlConnectionInfo ConnectionInfo { get; set; }
@@ -122,6 +122,10 @@ namespace WorkloadTools.Consumer.Replay
 
         protected override void Dispose(bool disposing)
         {
+            foreach(var r in ReplayWorkers.Values)
+            {
+                r.Dispose();
+            }
             stopped = true;
         }
 
@@ -143,7 +147,7 @@ namespace WorkloadTools.Consumer.Replay
 
                     foreach (ReplayWorker wrk in ReplayWorkers.Values)
                     {
-                        if (wrk.LastCommandTime < DateTime.Now.AddMinutes(-WORKER_EXPIRY_TIMEOUT_MINUTES) && !wrk.HasCommands)
+                        if (wrk.LastCommandTime < DateTime.Now.AddSeconds(-WORKER_EXPIRY_TIMEOUT_SECONDS) && !wrk.HasCommands)
                         {
                             RemoveWorker(wrk.Name);
                         }
@@ -157,7 +161,7 @@ namespace WorkloadTools.Consumer.Replay
                     logger.Warn(e.Message);
                 }
 
-                Thread.Sleep(10000); // sleep 10 seconds
+                Thread.Sleep(WORKER_EXPIRY_TIMEOUT_SECONDS); // sleep some seconds
             }
             logger.Trace("Sweeper thread stopped.");
         }
@@ -169,6 +173,7 @@ namespace WorkloadTools.Consumer.Replay
             ReplayWorker outWrk;
             ReplayWorkers.TryRemove(Int32.Parse(name), out outWrk);
             logger.Info(String.Format("Worker [{0}] - Disposing", name));
+            outWrk.Stop();
             outWrk.Dispose();
         }
 
@@ -280,6 +285,7 @@ namespace WorkloadTools.Consumer.Replay
                 foreach (ReplayWorker wrk in ReplayWorkers.Values)
                 {
                     wrk.Stop();
+                    wrk.Dispose();
                 }
             }
             logger.Trace("Worker thread stopped.");

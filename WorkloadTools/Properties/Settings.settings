@@ -26,8 +26,8 @@
     <Setting Name="ReplayConsumer_SEMAPHORE_LIMIT" Type="System.Int32" Scope="Application">
       <Value Profile="(Default)">32</Value>
     </Setting>
-    <Setting Name="ReplayConsumer_WORKER_EXPIRY_TIMEOUT_MINUTES" Type="System.Int32" Scope="Application">
-      <Value Profile="(Default)">1</Value>
+    <Setting Name="ReplayConsumer_WORKER_EXPIRY_TIMEOUT_SECONDS" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">15</Value>
     </Setting>
     <Setting Name="SqlTraceWorkloadListener_DEFAULT_TRACE_INTERVAL_SECONDS" Type="System.Int32" Scope="Application">
       <Value Profile="(Default)">10</Value>

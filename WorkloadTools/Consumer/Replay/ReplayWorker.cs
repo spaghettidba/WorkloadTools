@@ -203,7 +203,7 @@ namespace WorkloadTools.Consumer.Replay
 
             if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_RESET_CONNECTION)
             {
-                Stop(false);
+                //Stop(false);
                 return;
             }
             else if(nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_PREPARE)
