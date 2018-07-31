@@ -53,6 +53,6 @@
 	</Target>
 	-->
   <Target Name="BeforeBuild">
-    <HeatDirectory OutputFile="$(ProjectDir)\harvest.wxs" Directory="..\SqlWorkload\bin\Release" ComponentGroupName="ProductComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.SqlWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" />
+    <HeatDirectory OutputFile="$(ProjectDir)\harvest.wxs" Directory="..\SqlWorkload\bin\$(Configuration)" ComponentGroupName="ProductComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.SqlWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" />
   </Target>
 </Project>

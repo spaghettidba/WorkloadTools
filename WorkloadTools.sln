@@ -11,6 +11,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkloadTools", "WorkloadTools\WorkloadTools.csproj", "{AE6E4548-8C33-4728-8504-88AA9666020B}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Setup", "Setup\Setup.wixproj", "{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AE6E4548-8C33-4728-8504-88AA9666020B} = {AE6E4548-8C33-4728-8504-88AA9666020B}
+	EndProjectSection
 EndProject
 Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "WorkloadToolsDB", "WorkloadToolsDB\WorkloadToolsDB.sqlproj", "{5B6D2922-11C1-4FEC-98E8-41848ACA4DEE}"
 EndProject
