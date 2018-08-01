@@ -31,6 +31,28 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <CurrentPlatform>x86</CurrentPlatform>
+    <CurrentPlatform Condition="'$(PROCESSOR_ARCHITECTURE)'=='AMD64' or '$(PROCESSOR_ARCHITEW6432)'=='AMD64'">x64</CurrentPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="DouglasCrockford.JsMin, Version=1.1.3.0, Culture=neutral, PublicKeyToken=99147aa1108448b7, processorArchitecture=MSIL">
       <HintPath>..\packages\DouglasCrockford.JsMin.1.1.3\lib\net40-client\DouglasCrockford.JsMin.dll</HintPath>
@@ -157,11 +179,11 @@
     </Reference>
     <Reference Include="Microsoft.SqlServer.Xe.Core, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\runtimes\win-x64\native\Microsoft.SqlServer.Xe.Core.dll</HintPath>
+      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\runtimes\win-$(CurrentPlatform)\native\Microsoft.SqlServer.Xe.Core.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.SqlServer.XEvent.Linq, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\runtimes\win-x64\native\Microsoft.SqlServer.XEvent.Linq.dll</HintPath>
+      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\runtimes\win-$(CurrentPlatform)\native\Microsoft.SqlServer.XEvent.Linq.dll</HintPath>
     </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.4.12\lib\net40\NLog.dll</HintPath>
@@ -213,6 +235,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="Properties\SharedAssemblyInfo.cs" />
     <Compile Include="SqlConnectionInfo.cs" />
     <Compile Include="Util\DataUtils.cs" />
     <Compile Include="WaitStatsWorkloadEvent.cs" />

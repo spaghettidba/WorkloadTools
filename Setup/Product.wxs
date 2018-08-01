@@ -1,8 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-  <?include ProductVersion.wxi?>
-  <Product Id="*" Name="WorkloadTools" Language="1033" Version="$(var.ProductVersion)" Manufacturer="sqlconsulting.it" UpgradeCode="EF0F1905-E03F-4634-BB2E-3A5C3369AB23">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+  <?if $(var.Platform) = x64 ?>
+    <?define Win64 = "yes" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+    <?define PlatformReleaseFolder = "ReleaseX64" ?>
+  <?else ?>
+    <?define Win64 = "no" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+    <?define PlatformReleaseFolder = "Release" ?>
+  <?endif ?>
+
+  <?define ProductName="WorkloadTools" ?>
+  <?define CompanyName="sqlconsulting.it" ?>
+  <?define ProductVersion="$(var.BuildVersion)" ?>
+  
+  <Product Id="*" Name="$(var.ProductName)" Language="1033" Version="$(var.ProductVersion)" Manufacturer="$(var.CompanyName)" UpgradeCode="EF0F1905-E03F-4634-BB2E-3A5C3369AB23">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" Platform="$(var.Platform)" />
 
     <MajorUpgrade AllowDowngrades="yes" />
     <MediaTemplate EmbedCab="yes" />
@@ -19,7 +33,7 @@
 
   <Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
+      <Directory Id="$(var.PlatformProgramFilesFolder)">
         <Directory Id="INSTALLFOLDER" Name="WorkloadTools" />
       </Directory>
     </Directory>
