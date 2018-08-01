@@ -207,6 +207,7 @@ namespace WorkloadTools.Consumer.Analysis
             if (rawData == null)
             {
                 PrepareDataTable();
+                PrepareDictionaries();
             }
 
             DataRow row = rawData.NewRow();
@@ -639,6 +640,58 @@ namespace WorkloadTools.Consumer.Analysis
             rawData.Columns.Add("writes", typeof(long));
             rawData.Columns.Add("duration_ms", typeof(long));
 
+        }
+
+
+        private void PrepareDictionaries()
+        {
+            using (SqlConnection conn = new SqlConnection())
+            {
+                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.Open();
+                DataTable dt = null;
+
+                string sql = String.Format(@"SELECT * FROM [{0}].[Applications]",ConnectionInfo.SchemaName);
+                AddAllRows(conn, sql, applications);
+
+                sql = String.Format(@"SELECT * FROM [{0}].[Databases]", ConnectionInfo.SchemaName);
+                AddAllRows(conn, sql, databases);
+
+                sql = String.Format(@"SELECT * FROM [{0}].[Hosts]", ConnectionInfo.SchemaName);
+                AddAllRows(conn, sql, hosts);
+
+                sql = String.Format(@"SELECT * FROM [{0}].[Logins]", ConnectionInfo.SchemaName);
+                AddAllRows(conn, sql, logins);
+            }
+        }
+
+        private void AddAllRows(SqlConnection conn, string sql,  Dictionary<string, int> d)
+        {
+            try
+            {
+
+                using (SqlDataAdapter adapter = new SqlDataAdapter(sql, conn))
+                {
+                    using (DataSet ds = new DataSet())
+                    {
+                        adapter.Fill(ds);
+                        DataTable dt = ds.Tables[0];
+                        foreach (DataRow dr in dt.Rows)
+                        {
+                            d.Add((string)dr[1], (int)dr[0]);
+                        }
+                    }
+                }
+            }
+            catch(SqlException e)
+            {
+                logger.Trace("Unable to read saved classifiers from the analyssi database: {0}", e.Message);
+            }
+            catch(Exception e)
+            {
+                logger.Error(e.Message);
+                throw;
+            }
         }
 
 
