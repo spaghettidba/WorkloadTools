@@ -197,8 +197,19 @@ namespace WorkloadTools
             }
 
             // catch the case when stats are reset
-            long newWaitCount = (long)newWaits.Compute("SUM(wait_count)", null);
-            long lastWaitCount = (long)lastWaits.Compute("SUM(wait_count)", null);
+            long newWaitCount = 0;
+            object newWaitCountObj = newWaits.Compute("SUM(wait_count)", null);
+            if (newWaitCountObj != DBNull.Value)
+            {
+                newWaitCount = Convert.ToInt64(newWaitCountObj);
+            }
+            long lastWaitCount = 0;
+            object lastWaitCountObj = lastWaits.Compute("SUM(wait_count)", null);
+            if (lastWaitCountObj != DBNull.Value)
+            {
+                lastWaitCount = Convert.ToInt64(lastWaitCountObj);
+            }
+
 
             // if newWaits < lastWaits --> reset
             // I can return newWaits without having to compute the diff
