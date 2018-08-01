@@ -353,7 +353,7 @@ namespace WorkloadTools.Consumer.Analysis
                                     wait_sec = grp.Sum(t => t.Field<double>("wait_sec")),
                                     resource_sec = grp.Sum(t => t.Field<double>("resource_sec")),
                                     signal_sec = grp.Sum(t => t.Field<double>("signal_sec")),
-                                    wait_count = grp.Sum(t => t.Field<int>("wait_count"))
+                                    wait_count = grp.Sum(t => t.Field<double>("wait_count"))
                                 };
 
                     using(var dt = DataUtils.ToDataTable(Table))
@@ -755,7 +755,7 @@ namespace WorkloadTools.Consumer.Analysis
                     [wait_sec] [float] NOT NULL,
                     [resource_sec] [float] NOT NULL,
                     [signal_sec] [float] NOT NULL,
-                    [wait_count] [int] NOT NULL
+                    [wait_count] [bigint] NOT NULL
                 )
 
             ";

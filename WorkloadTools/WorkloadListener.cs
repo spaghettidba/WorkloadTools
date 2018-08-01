@@ -214,7 +214,7 @@ namespace WorkloadTools
                               wait_sec = Convert.ToDouble(table1["wait_sec"]) - Convert.ToDouble(table2["wait_sec"]),
                               resource_sec = Convert.ToDouble(table1["resource_sec"]) - Convert.ToDouble(table2["resource_sec"]),
                               signal_sec = Convert.ToDouble(table1["signal_sec"]) - Convert.ToDouble(table2["signal_sec"]),
-                              wait_count = Convert.ToInt32(table1["wait_count"]) - Convert.ToInt32(table2["wait_count"])
+                              wait_count = Convert.ToDouble(table1["wait_count"]) - Convert.ToDouble(table2["wait_count"])
                           };
 
             return DataUtils.ToDataTable(results.Where(w => w.wait_sec > 0));
@@ -304,7 +304,7 @@ namespace WorkloadTools
                                   wait_sec = Convert.ToDouble(table1["wait_sec"]),
                                   resource_sec = Convert.ToDouble(table1["resource_sec"]),
                                   signal_sec = Convert.ToDouble(table1["signal_sec"]),
-                                  wait_count = Convert.ToInt32(table1["wait_count"])
+                                  wait_count = Convert.ToDouble(table1["wait_count"])
                               };
 
                 return DataUtils.ToDataTable(results);
