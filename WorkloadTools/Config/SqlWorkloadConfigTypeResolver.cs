@@ -23,7 +23,7 @@ namespace WorkloadTools.Config
                     mappedTypes.Add(t.AssemblyQualifiedName, t);
                     mappedTypes.Add(t.Name, t);
                 }
-                catch(Exception e)
+                catch(Exception)
                 {
                     throw;
                 }
