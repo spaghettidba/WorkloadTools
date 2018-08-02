@@ -15,6 +15,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
+        private enum evntType
+        {
+            Action,
+            Field
+        }
 
         public ExtendedEventsWorkloadListener()
         {
@@ -124,9 +129,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     ALTER EVENT SESSION [sqlworkload] ON SERVER STATE = STOP;
                     DROP EVENT SESSION [sqlworkload] ON SERVER;
                 END
-
-                
-
             ";
             SqlCommand cmd = conn.CreateCommand();
             cmd.CommandText = sql;
@@ -154,17 +156,17 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     string commandText = String.Empty;
                     if (evt.Name == "rpc_completed")
                     {
-                        commandText = evt.Fields["statement"].Value.ToString();
+                        commandText = (string)TryGetValue(evt, evntType.Field, "statement");
                         evnt.Type = WorkloadEvent.EventType.RPCCompleted;
                     }
                     else if (evt.Name == "sql_batch_completed")
                     {
-                        commandText = evt.Fields["batch_text"].Value.ToString();
+                        commandText = (string)TryGetValue(evt, evntType.Field, "batch_text");
                         evnt.Type = WorkloadEvent.EventType.BatchCompleted;
                     }
                     else if (evt.Name == "attention")
                     {
-                        commandText = evt.Actions["sql_text"].Value.ToString();
+                        commandText = (string)TryGetValue(evt, evntType.Action, "sql_text");
                         evnt.Type = WorkloadEvent.EventType.Timeout;
                     }
                     else
@@ -173,33 +175,39 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         continue;
                     }
 
-                    if (evt.Actions["client_app_name"].Value != null)
-                        evnt.ApplicationName = (string)evt.Actions["client_app_name"].Value;
-                    if (evt.Actions["database_name"].Value != null)
-                        evnt.DatabaseName = (string)evt.Actions["database_name"].Value;
-                    if (evt.Actions["client_hostname"].Value != null)
-                        evnt.HostName = (string)evt.Actions["client_hostname"].Value;
-                    if (evt.Actions["server_principal_name"].Value != null)
-                        evnt.LoginName = (string)evt.Actions["server_principal_name"].Value;
-                    if (evt.Actions["session_id"].Value != null)
-                        evnt.SPID = Convert.ToInt32(evt.Actions["session_id"].Value);
-                    if (commandText != null)
-                        evnt.Text = commandText;
-
-
-                    evnt.StartTime = evt.Timestamp.LocalDateTime;
-
-                    if (evnt.Type == WorkloadEvent.EventType.Timeout)
+                    try
                     {
-                        evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
-                        evnt.CPU = Convert.ToInt32(evnt.Duration / 1000);
+                        evnt.ApplicationName = (string)TryGetValue(evt, evntType.Action, "client_app_name"); 
+                        evnt.DatabaseName = (string)TryGetValue(evt, evntType.Action, "database_name");
+                        evnt.HostName = (string)TryGetValue(evt, evntType.Action, "client_hostname");
+                        evnt.LoginName = (string)TryGetValue(evt, evntType.Action, "server_principal_name");
+                        object oSession = TryGetValue(evt, evntType.Action, "session_id");
+                        if (oSession != null)
+                            evnt.SPID = Convert.ToInt32(oSession);
+                        if (commandText != null)
+                            evnt.Text = commandText;
+
+
+                        evnt.StartTime = evt.Timestamp.LocalDateTime;
+
+                        if (evnt.Type == WorkloadEvent.EventType.Timeout)
+                        {
+                            evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
+                            evnt.CPU = Convert.ToInt32(evnt.Duration / 1000);
+                        }
+                        else
+                        {
+                            evnt.Reads = Convert.ToInt64(evt.Fields["logical_reads"].Value);
+                            evnt.Writes = Convert.ToInt64(evt.Fields["writes"].Value);
+                            evnt.CPU = Convert.ToInt32(evt.Fields["cpu_time"].Value);
+                            evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
+                        }
+
                     }
-                    else
+                    catch(Exception e)
                     {
-                        evnt.Reads = Convert.ToInt64(evt.Fields["logical_reads"].Value);
-                        evnt.Writes = Convert.ToInt64(evt.Fields["writes"].Value);
-                        evnt.CPU = Convert.ToInt32(evt.Fields["cpu_time"].Value);
-                        evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
+                        logger.Error(e, "Error converting XE data from the stream.");
+                        throw;
                     }
 
                     if (transformer.Skip(evnt.Text))
@@ -225,6 +233,28 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                 Dispose();
             }
+        }
+
+        private object TryGetValue(PublishedEvent evt, evntType t, string name)
+        {
+            object result = null;
+            if(t == evntType.Action)
+            {
+                PublishedAction act;
+                if(evt.Actions.TryGetValue(name, out act))
+                {
+                    result = act.Value;
+                }
+            }
+            else
+            {
+                PublishedEventField fld;
+                if (evt.Fields.TryGetValue(name, out fld))
+                {
+                    result = fld.Value;
+                }
+            }
+            return result;
         }
     }
 }

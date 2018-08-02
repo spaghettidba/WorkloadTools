@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using WorkloadTools.Util;
 
 namespace WorkloadTools.Consumer.Analysis
@@ -39,7 +40,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         private static int MAX_WRITE_RETRIES = Properties.Settings.Default.WorkloadAnalyzer_MAX_WRITE_RETRIES;
 
-        struct NormalizedQuery
+        private class NormalizedQuery
         {
             public long Hash { get; set; }
             public string NormalizedText { get; set; }
@@ -365,7 +366,8 @@ namespace WorkloadTools.Consumer.Analysis
                     
                     logger.Info("Wait stats written");
                 }
-                waitsData.Rows.Clear();
+                waitsData.Dispose();
+                waitsData = null;
             }
         }
 
@@ -411,7 +413,8 @@ namespace WorkloadTools.Consumer.Analysis
                     }
                     logger.Info("Performance counters written");
                 }
-                counterData.Rows.Clear();
+                counterData.Dispose();
+                counterData = null;
             }
         }
 
@@ -578,7 +581,7 @@ namespace WorkloadTools.Consumer.Analysis
                 bulkCopy.DestinationTableName = "#NormalizedQueries";
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
-                bulkCopy.WriteToServer(DataUtils.ToDataTable(from t in values select new { t.Value.Hash, t.Value.NormalizedText, t.Value.ExampleText }));
+                bulkCopy.WriteToServer(DataUtils.ToDataTable(from t in values where (t.Value != null) select new { t.Value.Hash, t.Value.NormalizedText, t.Value.ExampleText }));
 
             }
 
@@ -602,6 +605,24 @@ namespace WorkloadTools.Consumer.Analysis
                 cmd.CommandText = sql;
                 cmd.ExecuteNonQuery();
             }
+
+
+            // Erase from memory all the normalized queries 
+            // already written to the database. This should reduce
+            // the memory footprint quite a lot
+            foreach(var hash in values.Keys.ToList())
+            {
+                values[hash] = null;
+            }
+            // Run the Garbage Collector in a separate task
+            Task.Factory.StartNew(() => InvokeGC());
+        }
+
+
+        private void InvokeGC()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
 
 
