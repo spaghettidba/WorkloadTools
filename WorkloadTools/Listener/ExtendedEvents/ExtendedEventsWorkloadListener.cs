@@ -225,13 +225,20 @@ namespace WorkloadTools.Listener.ExtendedEvents
             }
             catch (Exception ex)
             {
-                logger.Error(ex.Message);
-                logger.Error(ex.StackTrace);
+                if (!stopped)
+                {
+                    logger.Error(ex.Message);
+                    logger.Error(ex.StackTrace);
 
-                if (ex.InnerException != null)
-                    logger.Error(ex.InnerException.Message);
+                    if (ex.InnerException != null)
+                        logger.Error(ex.InnerException.Message);
 
-                Dispose();
+                    Dispose();
+                }
+                else
+                {
+                    logger.Warn(ex, "The shutdown workflow generated a warning:");
+                }
             }
         }
 
