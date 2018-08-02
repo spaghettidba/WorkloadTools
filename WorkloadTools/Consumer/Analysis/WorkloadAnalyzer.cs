@@ -728,6 +728,31 @@ namespace WorkloadTools.Consumer.Analysis
                     cmd.CommandText = sql;
                     cmd.ExecuteNonQuery();
                 }
+
+                // Invoke the stored procedure to create the workload comparison view
+                sql = @"
+                    DECLARE @name1 sysname, @name2 sysname;
+
+                    SELECT @name1 = ISNULL([1],'dbo'), @name2 = ISNULL([2],'dbo')
+                    FROM (
+                        SELECT TOP(2) OBJECT_SCHEMA_NAME(object_id) AS schema_name, ROW_NUMBER() OVER (ORDER BY create_date DESC) AS RN
+                        FROM sys.tables
+                        WHERE name = 'WorkloadDetails'
+                        ORDER BY create_date DESC
+                    ) AS src
+                    PIVOT( MIN(schema_name) FOR RN IN ([1], [2])) AS p;
+
+                    IF OBJECT_ID(@name1 + '.WorkloadDetails') IS NOT NULL
+                        AND OBJECT_ID(@name2 + '.WorkloadDetails') IS NOT NULL
+                    BEGIN
+                        EXEC createAnalysisView @name1, @name2;
+                    END
+                ";
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = sql;
+                    cmd.ExecuteNonQuery();
+                }
             }
         }
 
