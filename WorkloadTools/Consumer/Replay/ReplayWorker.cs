@@ -334,7 +334,7 @@ namespace WorkloadTools.Consumer.Replay
             using (SqlCommand cmd = new SqlCommand(sql))
             {
                 cmd.Connection = conn;
-                cmd.Parameters.AddWithValue("@userinfo", "WorkloadTools.Timeout["+ DEFAULT_QUERY_TIMEOUT_SECONDS +"]");
+                cmd.Parameters.AddWithValue("@userinfo", String.Format("WorkloadTools.Timeout[{0}]", DEFAULT_QUERY_TIMEOUT_SECONDS));
                 cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(commandText));
                 cmd.ExecuteNonQuery();
             }
