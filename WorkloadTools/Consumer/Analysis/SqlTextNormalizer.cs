@@ -42,6 +42,7 @@ namespace WorkloadTools.Consumer.Analysis
         private static Regex _numericConstant = new Regex("(?<prefix>[\\(\\s,=\\-><\\!\\&\\|\\+\\*\\/\\%\\~\\$])(?<digits>[\\-\\.\\d]+)", RegexOptions.Compiled);
         private static Regex _inClause = new Regex("IN\\s*\\(\\s*\\{.*\\}\\s*\\)", RegexOptions.Compiled | RegexOptions.Singleline);
         private static Regex _brackets = new Regex("(\\[|\\])", RegexOptions.Compiled);
+        private static Regex _TVPExecute = new Regex(@"DECLARE\s*@(?<tablename>(\w+))\s*(AS)?\s*(?<tabletype>(\w+)).*EXEC(UTE)?\s*(?<object>(\S+)).*@\k<tablename>\sREADONLY", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
         private static bool TRUNCATE_TO_4000 = Settings.Default.SqlTextNormalizer_TRUNCATE_TO_4000;
         private static bool TRUNCATE_TO_1024K = Settings.Default.SqlTextNormalizer_TRUNCATE_TO_1024K;
@@ -203,7 +204,15 @@ namespace WorkloadTools.Consumer.Analysis
                 }
             }
 
-            
+            Match matchTVPExecute = _TVPExecute.Match(sql);
+            if (matchTVPExecute.Success)
+            {
+                result.Statement = sql;
+                result.NormalizedText = "EXECUTE " + matchTVPExecute.Groups["object"].ToString();
+            }
+
+
+
             result.NormalizedText = _emptyString.Replace(result.NormalizedText, "{STR}");
             result.NormalizedText = _stringConstant.Replace(result.NormalizedText, "{STR}");
             result.NormalizedText = _unicodeConstant.Replace(result.NormalizedText, "{NSTR}");
