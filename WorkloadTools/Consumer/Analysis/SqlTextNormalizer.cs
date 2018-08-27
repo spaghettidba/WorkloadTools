@@ -52,9 +52,9 @@ namespace WorkloadTools.Consumer.Analysis
             try
             {
                 var result = NormalizeSqlText(sql, spid, true);
-                logger.Trace("NormalizeSqlText:[" + spid + "]: " + sql);
+                logger.Trace("NormalizeSqlText:[{0}]: {1}", spid, sql);
                 if (result != null)
-                    logger.Trace("NormalizeSqlText:[" + spid + "]: " + result.NormalizedText);
+                    logger.Trace("NormalizeSqlText:[{0}]: {1}", spid, result.NormalizedText);
                 return result;
             }
             catch (Exception)
