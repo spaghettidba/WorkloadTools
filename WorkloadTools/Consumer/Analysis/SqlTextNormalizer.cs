@@ -225,10 +225,11 @@ namespace WorkloadTools.Consumer.Analysis
             result.NormalizedText = TruncateSql(result.NormalizedText);
             if (flag1 && num != 0)
             {
-                if (!prepSql.ContainsKey((object)(spid.ToString() + "_" + num.ToString())))
-                    prepSql.Add((object)(spid.ToString() + "_" + num.ToString()), (object)sql);
+                var theKey = (object)(spid.ToString() + "_" + num.ToString());
+                if (!prepSql.ContainsKey(theKey))
+                    prepSql.Add(theKey, sql);
                 else
-                    prepSql[(object)(spid.ToString() + "_" + num.ToString())] = (object)sql;
+                    prepSql[theKey] = sql;
             }
 
             if (flag2)
