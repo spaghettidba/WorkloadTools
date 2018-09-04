@@ -15,11 +15,18 @@ namespace WorkloadTools.Listener.ExtendedEvents
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private enum evntType
+        private enum ServerType
         {
-            Action,
-            Field
+            OnPremises,
+            SqlAzure
         }
+
+        private ServerType serverType { get; set; }
+
+        // Path to the file target
+        // Mandatory on SqlAzure
+        // If not specified, On Premises SQLServer will use the streaming API
+        public string FileTargetPath { get; set; }
 
         public ExtendedEventsWorkloadListener()
         {
@@ -33,6 +40,22 @@ namespace WorkloadTools.Listener.ExtendedEvents
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
+
+                LoadServerType(conn);
+
+                if(serverType == ServerType.SqlAzure)
+                {
+                    if (FileTargetPath == null)
+                    {
+                        throw new ArgumentException("Azure SqlDatabase does not support Extended Events streaming. Please specify a path for the FileTarget");
+                    }
+                    if(ConnectionInfo.DatabaseName == null)
+                    {
+                        throw new ArgumentException("Azure SqlDatabase does not support starting Extended Events sessions on the master database. Please specify a database name.");
+                    }
+
+                    ((ExtendedEventsEventFilter)Filter).IsSqlAzure = true;
+                }
 
                 string sessionSql = null;
                 try
@@ -69,7 +92,10 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         filters = "WHERE " + filters;
                     }
 
-                    sessionSql = String.Format(sessionSql, filters);
+                    string sessionType = serverType == ServerType.SqlAzure ? "DATABASE" : "SERVER";
+                    string principalName = serverType == ServerType.SqlAzure ? "username" : "server_principal_name";
+
+                    sessionSql = String.Format(sessionSql, filters, sessionType, principalName );
                     
                 }
                 catch (Exception e)
@@ -77,11 +103,32 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     throw new ArgumentException("Cannot open the source script to start the extended events session", e);
                 }
 
-                SqlCommand cmd = conn.CreateCommand();
-                cmd.CommandText = sessionSql;
-                cmd.ExecuteNonQuery();
+                StopSession(conn);
 
-                Task.Factory.StartNew(() => ReadEventsFromStream());
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = sessionSql;
+                    cmd.ExecuteNonQuery();
+                }
+
+                if (FileTargetPath != null)
+                {
+                    string sql = @"
+                        ALTER EVENT SESSION [sqlworkload] ON {0}
+                        ADD TARGET package0.event_file(SET filename=N'{1}',max_file_size=(100))
+                    ";
+
+                    sql = String.Format(sql, serverType == ServerType.OnPremises ? "SERVER": "DATABASE" , FileTargetPath);
+
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = sql;
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                
+                Task.Factory.StartNew(() => ReadEvents());
 
                 //Initialize the source of performance counters events
                 Task.Factory.StartNew(() => ReadPerfCountersEvents());
@@ -91,6 +138,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
             }
         }
 
+       
 
         public override WorkloadEvent Read()
         {
@@ -120,107 +168,70 @@ namespace WorkloadTools.Listener.ExtendedEvents
         private void StopSession(SqlConnection conn)
         {
             string sql = @"
-                IF EXISTS (
-	                SELECT *
-	                FROM sys.dm_xe_sessions
-	                WHERE name = 'sqlworkload'
-                )
+                DECLARE @condition bit = 0;
+
+                IF SERVERPROPERTY('Edition') = 'SQL Azure'
                 BEGIN
-                    ALTER EVENT SESSION [sqlworkload] ON SERVER STATE = STOP;
-                    DROP EVENT SESSION [sqlworkload] ON SERVER;
+	                SELECT @condition = 1
+	                WHERE EXISTS (
+		                SELECT *
+		                FROM sys.database_event_sessions
+		                WHERE name = 'sqlworkload'
+	                )
+                END
+                ELSE
+                BEGIN 
+	                SELECT @condition = 1
+	                WHERE EXISTS (
+		                SELECT *
+		                FROM sys.server_event_sessions
+		                WHERE name = 'sqlworkload'
+	                )
+                END
+
+                IF @condition = 1
+                BEGIN
+	                BEGIN TRY
+		                ALTER EVENT SESSION [sqlworkload] ON {0} STATE = STOP;
+	                END TRY
+	                BEGIN CATCH
+		                -- whoops...
+		                PRINT ERROR_MESSAGE()
+	                END CATCH
+	                BEGIN TRY
+		                DROP EVENT SESSION [sqlworkload] ON {0};
+	                END TRY
+	                BEGIN CATCH
+		                -- whoops...
+		                PRINT ERROR_MESSAGE()
+	                END CATCH
                 END
             ";
-            SqlCommand cmd = conn.CreateCommand();
-            cmd.CommandText = sql;
-            cmd.ExecuteNonQuery();
+            sql = String.Format(sql, serverType == ServerType.OnPremises ? "SERVER" : "DATABASE");
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = sql;
+                cmd.ExecuteNonQuery();
+            }
         }
 
 
-        private void ReadEventsFromStream()
+        private void ReadEvents()
         {
             try {
 
-                QueryableXEventData eventstream = new QueryableXEventData(
-                                ConnectionInfo.ConnectionString,
-                                "sqlworkload",
-                                EventStreamSourceOptions.EventStream,
-                                EventStreamCacheOptions.DoNotCache);
+                XEventDataReader reader;
 
-                int rowsRead = 0;
-                SqlTransformer transformer = new SqlTransformer();
-
-                foreach (PublishedEvent evt in eventstream)
+                if (serverType == ServerType.OnPremises && FileTargetPath == null)
                 {
-                    ExecutionWorkloadEvent evnt = new ExecutionWorkloadEvent();
-
-                    string commandText = String.Empty;
-                    if (evt.Name == "rpc_completed")
-                    {
-                        commandText = (string)TryGetValue(evt, evntType.Field, "statement");
-                        evnt.Type = WorkloadEvent.EventType.RPCCompleted;
-                    }
-                    else if (evt.Name == "sql_batch_completed")
-                    {
-                        commandText = (string)TryGetValue(evt, evntType.Field, "batch_text");
-                        evnt.Type = WorkloadEvent.EventType.BatchCompleted;
-                    }
-                    else if (evt.Name == "attention")
-                    {
-                        commandText = (string)TryGetValue(evt, evntType.Action, "sql_text");
-                        evnt.Type = WorkloadEvent.EventType.Timeout;
-                    }
-                    else
-                    {
-                        evnt.Type = WorkloadEvent.EventType.Unknown;
-                        continue;
-                    }
-
-                    try
-                    {
-                        evnt.ApplicationName = (string)TryGetValue(evt, evntType.Action, "client_app_name"); 
-                        evnt.DatabaseName = (string)TryGetValue(evt, evntType.Action, "database_name");
-                        evnt.HostName = (string)TryGetValue(evt, evntType.Action, "client_hostname");
-                        evnt.LoginName = (string)TryGetValue(evt, evntType.Action, "server_principal_name");
-                        object oSession = TryGetValue(evt, evntType.Action, "session_id");
-                        if (oSession != null)
-                            evnt.SPID = Convert.ToInt32(oSession);
-                        if (commandText != null)
-                            evnt.Text = commandText;
-
-
-                        evnt.StartTime = evt.Timestamp.LocalDateTime;
-
-                        if (evnt.Type == WorkloadEvent.EventType.Timeout)
-                        {
-                            evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
-                            evnt.CPU = Convert.ToInt32(evnt.Duration / 1000);
-                        }
-                        else
-                        {
-                            evnt.Reads = Convert.ToInt64(evt.Fields["logical_reads"].Value);
-                            evnt.Writes = Convert.ToInt64(evt.Fields["writes"].Value);
-                            evnt.CPU = Convert.ToInt32(evt.Fields["cpu_time"].Value);
-                            evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
-                        }
-
-                    }
-                    catch(Exception e)
-                    {
-                        logger.Error(e, "Error converting XE data from the stream.");
-                        throw;
-                    }
-
-                    if (transformer.Skip(evnt.Text))
-                        continue;
-
-                    evnt.Text = transformer.Transform(evnt.Text);
-
-                    Events.Enqueue(evnt);
-
-                    rowsRead++;
-
-
+                    reader = new StreamXEventDataReader(ConnectionInfo.ConnectionString, "sqlworkload", Events);
                 }
+                else
+                {
+                    reader = new FileTargetXEventDataReader(ConnectionInfo.ConnectionString, "sqlworkload", Events);
+                }
+
+                reader.ReadEvents();
 
             }
             catch (Exception ex)
@@ -242,26 +253,26 @@ namespace WorkloadTools.Listener.ExtendedEvents
             }
         }
 
-        private object TryGetValue(PublishedEvent evt, evntType t, string name)
+
+
+        
+
+        private void LoadServerType(SqlConnection conn)
         {
-            object result = null;
-            if(t == evntType.Action)
+            string sql = "SELECT SERVERPROPERTY('Edition')";
+            using (SqlCommand cmd = conn.CreateCommand())
             {
-                PublishedAction act;
-                if(evt.Actions.TryGetValue(name, out act))
+                cmd.CommandText = sql;
+                string edition = (string)cmd.ExecuteScalar();
+                if(edition == "SQL Azure")
                 {
-                    result = act.Value;
+                    serverType = ServerType.SqlAzure;
+                }
+                else
+                {
+                    serverType = ServerType.OnPremises;
                 }
             }
-            else
-            {
-                PublishedEventField fld;
-                if (evt.Fields.TryGetValue(name, out fld))
-                {
-                    result = fld.Value;
-                }
-            }
-            return result;
         }
     }
 }

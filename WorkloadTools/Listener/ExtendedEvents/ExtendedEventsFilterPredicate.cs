@@ -8,6 +8,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
         {
         }
 
+        public bool IsSqlAzure { get; set; }
+
         public override string PushDown()
         {
             if (!IsPredicateSet)
@@ -25,7 +27,14 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     result = "sqlserver.client_hostname";
                     break;
                 case FilterColumnName.LoginName:
-                    result = "sqlserver.server_principal_name";
+                    if (IsSqlAzure)
+                    {
+                        result = "sqlserver.username";
+                    }
+                    else
+                    {
+                        result = "sqlserver.server_principal_name";
+                    }
                     break;
                 case FilterColumnName.DatabaseName:
                     result = "sqlserver.database_name";

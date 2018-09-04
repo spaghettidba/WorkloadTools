@@ -219,6 +219,9 @@
     <Compile Include="Listener\ExtendedEvents\ExtendedEventsWorkloadListener.cs" />
     <Compile Include="Listener\ExtendedEvents\ExtendedEventsEventFilter.cs" />
     <Compile Include="Listener\ExtendedEvents\ExtendedEventsFilterPredicate.cs" />
+    <Compile Include="Listener\ExtendedEvents\FileTargetXEventDataReader.cs" />
+    <Compile Include="Listener\ExtendedEvents\StreamXEventDataReader.cs" />
+    <Compile Include="Listener\ExtendedEvents\XEventDataReader.cs" />
     <Compile Include="Listener\Trace\ProfilerWorkloadListener.cs" />
     <Compile Include="Consumer\Replay\ReplayConsumer.cs" />
     <Compile Include="Listener\Trace\SqlTraceWorkloadListener.cs" />

@@ -105,32 +105,47 @@ namespace WorkloadTools
                 conn.Open();
                 // Calculate CPU usage during the last minute interval
                 string sql = @"
-                    WITH ts_now(ts_now) AS (
-	                    SELECT cpu_ticks/(cpu_ticks/ms_ticks) FROM sys.dm_os_sys_info WITH (NOLOCK)
-                    ),
-                    CPU_Usage AS (
-	                    SELECT TOP(256) SQLProcessUtilization, 
-				                       DATEADD(ms, -1 * (ts_now.ts_now - [timestamp]), GETDATE()) AS [Event_Time] 
-	                    FROM (
-		                    SELECT record.value('(./Record/@id)[1]', 'int') AS record_id, 
-			                    record.value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]', 'int') 
-			                    AS [SystemIdle], 
-			                    record.value('(./Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int') 
-			                    AS [SQLProcessUtilization], [timestamp] 
-		                    FROM (
-			                    SELECT [timestamp], CONVERT(xml, record) AS [record] 
-			                    FROM sys.dm_os_ring_buffers WITH (NOLOCK)
-			                    WHERE ring_buffer_type = N'RING_BUFFER_SCHEDULER_MONITOR' 
-				                    AND record LIKE N'%<SystemHealth>%'
-		                    ) AS x
-	                    ) AS y 
-	                    CROSS JOIN ts_now
-                    )
-                    SELECT 
-                        ISNULL(AVG(SQLProcessUtilization),0) AS avg_CPU_percent
-                    FROM CPU_Usage
-                    WHERE [Event_Time] >= DATEADD(minute, -1, GETDATE())
-                    OPTION (RECOMPILE);
+                    IF SERVERPROPERTY('Edition') = 'SQL Azure'
+                    BEGIN
+                        WITH CPU_Usage AS (
+                            SELECT avg_cpu_percent, end_time AS Event_Time
+                            FROM sys.dm_db_resource_stats WITH (NOLOCK) 
+                        )
+                        SELECT 
+                            CAST(ISNULL(AVG(avg_cpu_percent),0) AS int) AS avg_CPU_percent
+                        FROM CPU_Usage
+                        WHERE [Event_Time] >= DATEADD(minute, -1, GETDATE())
+                        OPTION (RECOMPILE);
+                    END
+                    ELSE
+                    BEGIN
+                        WITH ts_now(ts_now) AS (
+                            SELECT cpu_ticks/(cpu_ticks/ms_ticks) FROM sys.dm_os_sys_info WITH (NOLOCK)
+                        ),
+                        CPU_Usage AS (
+                            SELECT TOP(256) SQLProcessUtilization, 
+                                            DATEADD(ms, -1 * (ts_now.ts_now - [timestamp]), GETDATE()) AS [Event_Time] 
+                            FROM (
+                                SELECT record.value('(./Record/@id)[1]', 'int') AS record_id, 
+                                    record.value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]', 'int') 
+                                    AS [SystemIdle], 
+                                    record.value('(./Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int') 
+                                    AS [SQLProcessUtilization], [timestamp] 
+                                FROM (
+                                    SELECT [timestamp], CONVERT(xml, record) AS [record] 
+                                    FROM sys.dm_os_ring_buffers WITH (NOLOCK)
+                                    WHERE ring_buffer_type = N'RING_BUFFER_SCHEDULER_MONITOR' 
+                                        AND record LIKE N'%<SystemHealth>%'
+                                ) AS x
+                            ) AS y 
+                            CROSS JOIN ts_now
+                        )
+                        SELECT 
+                            ISNULL(AVG(SQLProcessUtilization),0) AS avg_CPU_percent
+                        FROM CPU_Usage
+                        WHERE [Event_Time] >= DATEADD(minute, -1, GETDATE())
+                        OPTION (RECOMPILE);
+                    END
                 ";
 
                 int avg_CPU_percent = -1;
