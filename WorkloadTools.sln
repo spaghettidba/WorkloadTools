@@ -62,6 +62,7 @@ Global
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Debug|x86.Build.0 = Debug|x86
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|Any CPU.ActiveCfg = Release|x86
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|x64.ActiveCfg = Release|x64
+		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|x64.Build.0 = Release|x64
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|x86.ActiveCfg = Release|x86
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
