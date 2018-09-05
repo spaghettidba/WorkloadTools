@@ -719,7 +719,7 @@ namespace WorkloadTools.Consumer.Analysis
         protected void CreateTargetTables()
         {
 
-            string sql = File.ReadAllText(AppDomain.CurrentDomain.BaseDirectory + "\\Consumer\\Analysis\\DatabaseSchema.sql");
+            string sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\DatabaseSchema.sql");
 
             sql = sql.Replace("{DatabaseName}", ConnectionInfo.DatabaseName);
             sql = sql.Replace("{SchemaName}", ConnectionInfo.SchemaName);
@@ -743,7 +743,7 @@ namespace WorkloadTools.Consumer.Analysis
                     cmd.ExecuteNonQuery();
                 }
 
-                sql = File.ReadAllText(AppDomain.CurrentDomain.BaseDirectory + "\\Consumer\\Analysis\\createAnalysisView.sql");
+                sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\createAnalysisView.sql");
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = sql;

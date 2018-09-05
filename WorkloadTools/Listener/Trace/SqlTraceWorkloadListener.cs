@@ -64,7 +64,7 @@ namespace WorkloadTools.Listener.Trace
         public SqlTraceWorkloadListener()
         {
             Filter = new TraceEventFilter();
-            Source = AppDomain.CurrentDomain.BaseDirectory + "\\Listener\\Trace\\sqlworkload.sql";
+            Source = WorkloadController.BaseLocation + "\\Listener\\Trace\\sqlworkload.sql";
         }
 
 
