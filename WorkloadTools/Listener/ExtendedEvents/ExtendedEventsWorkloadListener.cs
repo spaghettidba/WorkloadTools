@@ -60,7 +60,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 string sessionSql = null;
                 try
                 {
-                    sessionSql = File.ReadAllText(Source);
+                    sessionSql = System.IO.File.ReadAllText(Source);
 
                     // Push Down EventFilters
                     string filters = String.Empty;
@@ -148,7 +148,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 if (stopped)
                     return null;
 
-                Thread.Sleep(5);
+                Thread.Sleep(1);
             }
             return result;
         }

@@ -78,7 +78,7 @@ namespace WorkloadTools.Listener.Trace
                 string traceSql = null;
                 try
                 {
-                    traceSql = File.ReadAllText(Source);
+                    traceSql = System.IO.File.ReadAllText(Source);
 
                     // Push Down EventFilters
                     string filters = "";
@@ -205,7 +205,7 @@ namespace WorkloadTools.Listener.Trace
                         } // while (Read)
 
                     } // using reader
-                    File.Delete(traceFile);
+                    System.IO.File.Delete(traceFile);
                 } // while not stopped
             }
             catch (Exception ex)
