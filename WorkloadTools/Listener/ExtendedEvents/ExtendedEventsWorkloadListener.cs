@@ -64,7 +64,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 string sessionSql = null;
                 try
                 {
-                    sessionSql = File.ReadAllText(Source);
+                    sessionSql = System.IO.File.ReadAllText(Source);
 
                     // Push Down EventFilters
                     string filters = String.Empty;
