@@ -16,7 +16,7 @@ namespace WorkloadTools.Listener.ExtendedEvents.DBStreamReader
         public SQLiteProvider()
         {
             string dbPath = Path.Combine(Environment.CurrentDirectory, "data.sqlite");
-            if (File.Exists(dbPath)) File.Delete(dbPath);
+            if (System.IO.File.Exists(dbPath)) System.IO.File.Delete(dbPath);
             SQLiteConnection.CreateFile(dbPath);
             _currentCNS = new SQLiteConnection($"Data Source = {dbPath}; Version = 3; ");
             _currentCNS.Open();

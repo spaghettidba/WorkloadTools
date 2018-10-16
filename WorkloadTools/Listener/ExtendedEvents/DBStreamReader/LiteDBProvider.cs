@@ -15,7 +15,7 @@ namespace WorkloadTools.Listener.ExtendedEvents.DBStreamReader
         public LiteDBProvider()
         {
             string dbPath = Path.Combine(Environment.CurrentDirectory, "events.db");
-            if (File.Exists(dbPath)) File.Delete(dbPath);
+            if (System.IO.File.Exists(dbPath)) System.IO.File.Delete(dbPath);
             _currentDB = new LiteDatabase($"{dbPath}");
             _dataCollection = _currentDB.GetCollection<WorkloadEvent>("dataqueue");
             _currentDB.Mapper.Entity<WorkloadEvent>()
