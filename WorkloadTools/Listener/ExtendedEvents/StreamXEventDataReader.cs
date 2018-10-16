@@ -2,15 +2,11 @@
 using NLog;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace WorkloadTools.Listener.ExtendedEvents
 {
     public class StreamXEventDataReader : XEventDataReader
     {
-
         private enum FieldType
         {
             Action,
@@ -25,11 +21,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
         {
         }
 
-
         public override void ReadEvents()
         {
-
-            EventCount = 0;
             SqlTransformer transformer = new SqlTransformer();
 
             using (QueryableXEventData eventstream = new QueryableXEventData(
@@ -38,7 +31,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                             EventStreamSourceOptions.EventStream,
                                             EventStreamCacheOptions.DoNotCache))
             {
-
                 var eventsEnumerator = eventstream.GetEnumerator();
 
                 while (!stopped && eventsEnumerator.MoveNext())
@@ -80,7 +72,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         if (commandText != null)
                             evnt.Text = commandText;
 
-
                         evnt.StartTime = evt.Timestamp.LocalDateTime;
 
                         if (evnt.Type == WorkloadEvent.EventType.Timeout)
@@ -95,7 +86,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             evnt.CPU = Convert.ToInt32(evt.Fields["cpu_time"].Value);
                             evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
                         }
-
                     }
                     catch (Exception e)
                     {
@@ -108,15 +98,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                     evnt.Text = transformer.Transform(evnt.Text);
 
-                    Events.Enqueue(evnt);
-
-                    EventCount++;
+                    SaveEvent(evnt);
+                    this.EventCount++;
                 }
             }
         }
-
-
-
 
         private object TryGetValue(PublishedEvent evt, FieldType t, string name)
         {

@@ -8,13 +8,14 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using WorkloadTools.Listener.ExtendedEvents.DBStreamReader;
 
 namespace WorkloadTools.Listener.ExtendedEvents
 {
     public class ExtendedEventsWorkloadListener : WorkloadListener
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
-
+        private XEventDataReader _reader = null;
         private enum ServerType
         {
             OnPremises,
@@ -33,7 +34,10 @@ namespace WorkloadTools.Listener.ExtendedEvents
             Filter = new ExtendedEventsEventFilter();
             Source = AppDomain.CurrentDomain.BaseDirectory + "\\Listener\\ExtendedEvents\\sqlworkload.sql";
         }
-
+        public override long GetEventReaded()
+        {
+            return _reader.EventCount;
+        }
         public override void Initialize()
         {
             using (SqlConnection conn = new SqlConnection())
@@ -127,7 +131,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     }
                 }
 
-                
+                if (serverType == ServerType.OnPremises && FileTargetPath == null)
+                {
+                    _reader = new DBStreamXEventDataReader(ConnectionInfo.ConnectionString, "sqlworkload", Events);
+                }
+                else
+                {
+                    _reader = new FileTargetXEventDataReader(ConnectionInfo.ConnectionString, "sqlworkload", Events);
+                }
+
                 Task.Factory.StartNew(() => ReadEvents());
 
                 //Initialize the source of performance counters events
@@ -142,15 +154,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         public override WorkloadEvent Read()
         {
-            WorkloadEvent result = null;
-            while (!Events.TryDequeue(out result))
+            if(Events.Count > 0)
             {
-                if (stopped)
-                    return null;
-
-                Thread.Sleep(5);
+                WorkloadEvent result = null;
+                Events.TryDequeue(out result);
+                return result;
             }
-            return result;
+            return _reader.Read();
         }
 
         protected override void Dispose(bool disposing)
@@ -161,6 +171,10 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
                 StopSession(conn);
+            }
+            if(_reader != null)
+            {
+                _reader.Dispose();
             }
             logger.Info("Extended Events session [sqlworkload] stopped successfully.");
         }
@@ -218,20 +232,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         private void ReadEvents()
         {
-            try {
+            try {              
 
-                XEventDataReader reader;
+                
 
-                if (serverType == ServerType.OnPremises && FileTargetPath == null)
-                {
-                    reader = new StreamXEventDataReader(ConnectionInfo.ConnectionString, "sqlworkload", Events);
-                }
-                else
-                {
-                    reader = new FileTargetXEventDataReader(ConnectionInfo.ConnectionString, "sqlworkload", Events);
-                }
-
-                reader.ReadEvents();
+                _reader.ReadEvents();
 
             }
             catch (Exception ex)

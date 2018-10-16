@@ -7,6 +7,7 @@ namespace WorkloadTools
 {
     public class ExecutionWorkloadEvent : WorkloadEvent
     {
+        
         public string Text { get; set; }
         public int? SPID { get; set; }
         public string ApplicationName { get; set; }

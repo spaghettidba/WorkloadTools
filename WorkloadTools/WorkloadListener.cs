@@ -24,7 +24,6 @@ namespace WorkloadTools
         public string HostFilter { get; set; } 
         public string LoginFilter { get; set; }
 
-
         private WorkloadEventFilter _filter;
 
         protected WorkloadEventFilter Filter {
@@ -66,6 +65,11 @@ namespace WorkloadTools
         public abstract void Initialize();
 
         public bool IsRunning { get { return !stopped; } }
+
+        public virtual long GetEventReaded()
+        {
+            return 0;
+        }
 
         // Collects some performance counters
         protected virtual void ReadPerfCountersEvents()

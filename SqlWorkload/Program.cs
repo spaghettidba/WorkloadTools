@@ -2,29 +2,22 @@
 using CommandLine.Text;
 using NLog;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WorkloadTools;
 using WorkloadTools.Config;
-using WorkloadTools.Consumer;
-using WorkloadTools.Listener;
-using WorkloadTools.Listener.ExtendedEvents;
-using WorkloadTools.Listener.Trace;
+using WorkloadTools.Listener.ExtendedEvents.DBStreamReader;
 
 namespace SqlWorkload
 {
-    class Program
+    internal class Program
     {
-
         private static Logger logger = LogManager.GetCurrentClassLogger();
         private static CancellationTokenSource source;
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(GenericErrorHandler);
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
@@ -44,25 +37,28 @@ namespace SqlWorkload
                 }
                 Run(options);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 logger.Error(e);
             }
-
         }
 
-        static void Run(Options options)
+        private static void Run(Options options)
         {
             options.ConfigurationFile = System.IO.Path.GetFullPath(options.ConfigurationFile);
             logger.Info(String.Format("Reading configuration from '{0}'", options.ConfigurationFile));
+            logger.Info(String.Format("AutoInsertData '{0}'", options.AutoInsertTestDataClientNumber));
+            logger.Info(String.Format("Listener database '{0}'", options.ListenerDbProvider));
 
             SqlWorkloadConfig config = SqlWorkloadConfig.LoadFromFile(options.ConfigurationFile);
             config.Controller.Listener.Source = System.IO.Path.GetFullPath(config.Controller.Listener.Source);
-
-            Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
+            config.Controller.AutoInsertTestDataClientNumber = options.AutoInsertTestDataClientNumber;
+            config.Controller.DatabaseProvider = options.ListenerDbProvider;
+            Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e)
+            {
                 e.Cancel = true;
                 logger.Info("Received shutdown signal...");
-                source.CancelAfter(TimeSpan.FromSeconds(10)); // give a 10 seconds cancellation grace period 
+                source.CancelAfter(TimeSpan.FromSeconds(10)); // give a 10 seconds cancellation grace period
                 config.Controller.Stop();
             };
 
@@ -71,9 +67,7 @@ namespace SqlWorkload
             logger.Info("Controller stopped.");
         }
 
-
-
-        static void GenericErrorHandler(object sender, UnhandledExceptionEventArgs e)
+        private static void GenericErrorHandler(object sender, UnhandledExceptionEventArgs e)
         {
             try
             {
@@ -82,10 +76,8 @@ namespace SqlWorkload
             finally
             {
                 Console.WriteLine("Caught unhandled exception...");
-
             }
         }
-
 
         public static async Task processController(WorkloadController controller)
         {
@@ -101,15 +93,9 @@ namespace SqlWorkload
         {
             logger.Info("Shutdown complete.");
         }
-
-
     }
 
-
-
-
-
-    class Options
+    internal class Options
     {
         [Option('F', "File", DefaultValue = "SqlWorkload.json", HelpText = "Configuration file")]
         public string ConfigurationFile { get; set; }
@@ -117,13 +103,18 @@ namespace SqlWorkload
         [ParserState]
         public IParserState LastParserState { get; set; }
 
+        [Option('A', "AutoInsertTestDataClientNumber")]
+        public int AutoInsertTestDataClientNumber{ get; set; }
+
+        [Option('D', "DatabaseProvider", DefaultValue =1, HelpText ="Database provider. 1-LiteDB, 2-Sqlite")]
+        [ParserState]
+        public DatabaseFactory.DatabaseProvider ListenerDbProvider { get; set; }
+
         [HelpOption]
         public string GetUsage()
         {
             return HelpText.AutoBuild(this,
               (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
         }
-    
     }
-
 }

@@ -15,28 +15,28 @@
 
         "Consumers":
         [
-            {
-                "__type": "ReplayConsumer",
-                "ConnectionInfo": 
-                {
-                    "ServerName": "SQLDEMO\\SQL2016",
-                    "DatabaseName": "DS3",
-                    "UserName": "sa",
-                    "Password": "P4$$w0rd!"
-                }
-            },
-            {
-                "__type": "AnalysisConsumer",
-                "ConnectionInfo": 
-                {
-                    "ServerName": "SQLDEMO\\SQL2016",
-                    "DatabaseName": "DS3",
-                    "SchemaName": "baseline",
-                    "UserName": "sa",
-                    "Password": "P4$$w0rd!"
-                },
-                "UploadIntervalSeconds": 60
-            }
+            //{
+            //    "__type": "ReplayConsumer",
+            //    "ConnectionInfo": 
+            //    {
+            //        "ServerName": "SQLDEMO\\SQL2016",
+            //        "DatabaseName": "DS3",
+            //        "UserName": "sa",
+            //        "Password": "P4$$w0rd!"
+            //    }
+            //},
+            //{
+            //    "__type": "AnalysisConsumer",
+            //    "ConnectionInfo": 
+            //    {
+            //        "ServerName": "SQLDEMO\\SQL2016",
+            //        "DatabaseName": "DS3",
+            //        "SchemaName": "baseline",
+            //        "UserName": "sa",
+            //        "Password": "P4$$w0rd!"
+            //    },
+            //    "UploadIntervalSeconds": 60
+            //}
         ]
     }
 }

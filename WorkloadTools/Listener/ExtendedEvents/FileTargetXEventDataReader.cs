@@ -177,9 +177,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                         continue;
 
                                     evt.Text = transformer.Transform(evt.Text);
-
-                                    Events.Enqueue(evt);
-
+                                                                        
+                                    SaveEvent(evt);
                                     rowsRead++;
                                     EventCount++;
                                 }

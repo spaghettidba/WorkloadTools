@@ -227,11 +227,11 @@ namespace WorkloadTools.Consumer.Replay
 
             try
             {
-                if (conn.Database != command.Database)
-                {
-                    logger.Trace(String.Format("Worker [{0}] - Changing database to {1} ", Name, command.Database));
-                    conn.ChangeDatabase(command.Database);
-                }
+                //if (conn.Database != command.Database)
+                //{
+                //    logger.Trace(String.Format("Worker [{0}] - Changing database to {1} ", Name, command.Database));
+                //    conn.ChangeDatabase(command.Database);
+                //}
 
                 using (SqlCommand cmd = new SqlCommand(command.CommandText))
                 {
