@@ -38,6 +38,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
             string sql = @"
                 INSERT INTO Events (
                     event_sequence,
+                    event_type,
                     start_time,
                     client_app_name,
                     client_host_name,
@@ -48,6 +49,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                 )
                 VALUES (
                     $event_sequence,
+                    $event_type,
                     $start_time,
                     $client_app_name,
                     $client_host_name,
@@ -67,6 +69,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                 cmd = new SQLiteCommand(sql, conn);
 
             cmd.Parameters.AddWithValue("$event_sequence", event_sequence++);
+            cmd.Parameters.AddWithValue("$event_type", evt.Type);
             cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
             cmd.Parameters.AddWithValue("$client_app_name", evt.ApplicationName);
             cmd.Parameters.AddWithValue("$client_host_name", evt.HostName);
@@ -91,6 +94,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
             string sqlCreateTable = @"
                 CREATE TABLE IF NOT EXISTS Events (
                     event_sequence INTEGER,
+                    event_type INTEGER,
                     start_time date NOT NULL,
                     client_app_name TEXT NULL, 
                     client_host_name TEXT NULL, 
