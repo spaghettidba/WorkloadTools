@@ -24,6 +24,8 @@ namespace WorkloadTools
         public string HostFilter { get; set; } 
         public string LoginFilter { get; set; }
 
+        public int StatsCollectionIntervalSeconds { get; set; } = 60000;
+
 
         private WorkloadEventFilter _filter;
 
@@ -77,12 +79,15 @@ namespace WorkloadTools
                     CounterWorkloadEvent evt = new CounterWorkloadEvent();
                     evt.Type = WorkloadEvent.EventType.PerformanceCounter;
                     evt.StartTime = DateTime.Now;
-                    evt.Name = CounterWorkloadEvent.CounterNameEnum.AVG_CPU_USAGE;
-                    evt.Value = GetLastCPUUsage();
+
+                    evt.Counters.Add(
+                        CounterWorkloadEvent.CounterNameEnum.AVG_CPU_USAGE,
+                        GetLastCPUUsage()
+                    );
 
                     Events.Enqueue(evt);
 
-                    Thread.Sleep(60000); // 1 minute
+                    Thread.Sleep(StatsCollectionIntervalSeconds); // 1 minute
                 }
             }
             catch (Exception ex)
@@ -179,7 +184,7 @@ namespace WorkloadTools
 
                     Events.Enqueue(evt);
 
-                    Thread.Sleep(60000); // 1 minute
+                    Thread.Sleep(StatsCollectionIntervalSeconds); // 1 minute
                 }
             }
             catch (Exception ex)

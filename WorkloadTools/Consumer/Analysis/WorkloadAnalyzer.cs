@@ -194,13 +194,17 @@ namespace WorkloadTools.Consumer.Analysis
                 counterData.Columns.Add("counter_value", typeof(float));
             }
 
-            DataRow row = counterData.NewRow();
+            foreach(var cntr in evt.Counters.Keys)
+            {
+                DataRow row = counterData.NewRow();
 
-            row.SetField("event_time", evt.StartTime);
-            row.SetField("counter_name", evt.Name.ToString());
-            row.SetField("counter_value", evt.Value);
+                row.SetField("event_time", evt.StartTime);
+                row.SetField("counter_name", cntr.ToString());
+                row.SetField("counter_value", evt.Counters[cntr]);
 
-            counterData.Rows.Add(row);
+                counterData.Rows.Add(row);
+            }
+            
         }
 
 
