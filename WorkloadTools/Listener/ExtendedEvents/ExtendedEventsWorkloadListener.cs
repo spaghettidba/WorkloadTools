@@ -32,7 +32,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
         public ExtendedEventsWorkloadListener()
         {
             Filter = new ExtendedEventsEventFilter();
-            Source = AppDomain.CurrentDomain.BaseDirectory + "\\Listener\\ExtendedEvents\\sqlworkload.sql";
+            Source = WorkloadController.BaseLocation + "\\Listener\\ExtendedEvents\\sqlworkload.sql";
         }
         public override long GetEventReaded()
         {

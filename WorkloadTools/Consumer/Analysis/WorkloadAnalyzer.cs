@@ -194,13 +194,17 @@ namespace WorkloadTools.Consumer.Analysis
                 counterData.Columns.Add("counter_value", typeof(float));
             }
 
-            DataRow row = counterData.NewRow();
+            foreach(var cntr in evt.Counters.Keys)
+            {
+                DataRow row = counterData.NewRow();
 
-            row.SetField("event_time", evt.StartTime);
-            row.SetField("counter_name", evt.Name.ToString());
-            row.SetField("counter_value", evt.Value);
+                row.SetField("event_time", evt.StartTime);
+                row.SetField("counter_name", cntr.ToString());
+                row.SetField("counter_value", evt.Counters[cntr]);
 
-            counterData.Rows.Add(row);
+                counterData.Rows.Add(row);
+            }
+            
         }
 
 
@@ -719,7 +723,7 @@ namespace WorkloadTools.Consumer.Analysis
         protected void CreateTargetTables()
         {
 
-            string sql = File.ReadAllText(AppDomain.CurrentDomain.BaseDirectory + "\\Consumer\\Analysis\\DatabaseSchema.sql");
+            string sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\DatabaseSchema.sql");
 
             sql = sql.Replace("{DatabaseName}", ConnectionInfo.DatabaseName);
             sql = sql.Replace("{SchemaName}", ConnectionInfo.SchemaName);
@@ -743,7 +747,7 @@ namespace WorkloadTools.Consumer.Analysis
                     cmd.ExecuteNonQuery();
                 }
 
-                sql = File.ReadAllText(AppDomain.CurrentDomain.BaseDirectory + "\\Consumer\\Analysis\\createAnalysisView.sql");
+                sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\createAnalysisView.sql");
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = sql;

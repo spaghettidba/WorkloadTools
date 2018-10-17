@@ -12,8 +12,13 @@ namespace WorkloadTools.Listener.File
 
         public override string PushDown()
         {
-            IsPushedDown = false;
-            return String.Empty;
+            if (!IsPredicateSet)
+                return String.Empty;
+
+            IsPushedDown = true;
+            string result = ColumnName.ToString();
+            result += " " + FilterPredicate.ComparisonOperatorAsString(ComparisonOperator) + " N'" + EscapeFilter(PredicateValue) + "'";
+            return result;
         }
     }
 }
