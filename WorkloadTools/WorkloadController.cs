@@ -13,6 +13,9 @@ namespace WorkloadTools
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
+        public static String BaseLocation = new Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().CodeBase)).LocalPath;
+
+
         public WorkloadListener Listener { get; set; }
         public List<WorkloadConsumer> Consumers = new List<WorkloadConsumer>();
 
@@ -57,7 +60,14 @@ namespace WorkloadTools
             catch (Exception e)
             {
                 logger.Error("Uncaught Exception");
+                logger.Error(e.Message);
                 logger.Error(e.StackTrace);
+
+                Exception ex = e;
+                while ((ex = ex.InnerException) != null){
+                    logger.Error(ex.Message);
+                    logger.Error(ex.StackTrace);
+                }
             }
         }
 
