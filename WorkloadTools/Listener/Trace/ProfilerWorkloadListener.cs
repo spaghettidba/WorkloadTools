@@ -21,7 +21,7 @@ namespace WorkloadTools.Listener.Trace
         public ProfilerWorkloadListener()
         {
             Filter = new ProfilerEventFilter();
-            Source = AppDomain.CurrentDomain.BaseDirectory + "\\Listener\\Trace\\sqlworkload.tdf";
+            Source = WorkloadController.BaseLocation + "\\Listener\\Trace\\sqlworkload.tdf";
         }
         
 

@@ -197,8 +197,6 @@ namespace WorkloadTools.Consumer.Replay
                 {
                     InitializeConnection();
                 }
-                conn.ConnectionString += ";MultipleActiveResultSets=true;";
-                conn.Open();
             }
 
 
