@@ -61,7 +61,7 @@ namespace WorkloadTools.Listener.Trace
         public StreamSourceEnum StreamSource { get; set; } = StreamSourceEnum.StreamFromTDS;
 
 
-        public SqlTraceWorkloadListener()
+        public SqlTraceWorkloadListener() : base()
         {
             Filter = new TraceEventFilter();
             Source = WorkloadController.BaseLocation + "\\Listener\\Trace\\sqlworkload.sql";

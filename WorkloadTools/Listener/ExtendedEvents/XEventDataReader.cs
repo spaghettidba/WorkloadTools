@@ -12,13 +12,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         public string ConnectionString { get; set; }
         public string SessionName { get; set; }
-        public ConcurrentQueue<WorkloadEvent> Events { get; set; }
+        public IEventQueue Events { get; set; }
         public long EventCount { get; set; }
 
         public XEventDataReader(
                 string connectionString, 
-                string sessionName, 
-                ConcurrentQueue<WorkloadEvent> events
+                string sessionName,
+                IEventQueue events
             )  
         {
             ConnectionString = connectionString;

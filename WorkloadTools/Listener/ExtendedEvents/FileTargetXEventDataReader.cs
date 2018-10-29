@@ -21,7 +21,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         private bool stopped = false;
 
-        public FileTargetXEventDataReader(string connectionString, string sessionName, ConcurrentQueue<WorkloadEvent> events) : base(connectionString, sessionName, events)
+        public FileTargetXEventDataReader(string connectionString, string sessionName, IEventQueue events) : base(connectionString, sessionName, events)
         {
         }
 

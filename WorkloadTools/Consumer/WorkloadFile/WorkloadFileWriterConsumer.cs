@@ -25,6 +25,8 @@ namespace WorkloadTools.Consumer.WorkloadFile
         private SQLiteCommand waits_cmd;
         private SQLiteCommand counters_cmd;
 
+        private long _rowsInserted = 0;
+
         private string insert_events = @"
                 INSERT INTO Events (
                     event_sequence,
@@ -126,9 +128,17 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     InsertCounterEvent(evnt);
                 if ((evnt is WaitStatsWorkloadEvent))
                     InsertWaitEvent(evnt);
+
+                _rowsInserted++;
+                if(_rowsInserted % 1000 == 0)
+                {
+                    logger.Info($"{_rowsInserted} events saved");
+                }
             }
             catch (Exception e)
             {
+                if (stopped)
+                    return;
                 logger.Error(e, "Unable to write to the destination file");
                 throw;
             }
@@ -241,6 +251,8 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         public void InitializeDatabase()
         {
+            logger.Info($"Writing event data to {OutputFile}");
+
             if (!File.Exists(OutputFile))
             {
                 Directory.CreateDirectory(Directory.GetParent(OutputFile).FullName);
@@ -278,7 +290,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
             string sqlMaxSeq = @"SELECT COALESCE(MAX(event_sequence),0) + 1 FROM Events;";
 
-            connectionString = "Data Source=" + OutputFile + ";Version=3;Cache Size=10000;Locking Mode=Exclusive;";
+            connectionString = "Data Source=" + OutputFile + ";Version=3;Cache Size=10000;Locking Mode=Exclusive;Journal Mode=Memory;";
 
             using (SQLiteConnection m_dbConnection = new SQLiteConnection(connectionString))
             {
@@ -303,6 +315,8 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         protected override void Dispose(bool disposing)
         {
+            logger.Info("Closing the connection to the output file");
+
             try
             {
                 if (events_cmd != null)

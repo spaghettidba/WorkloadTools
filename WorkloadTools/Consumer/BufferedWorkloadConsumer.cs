@@ -14,8 +14,19 @@ namespace WorkloadTools.Consumer
         protected ConcurrentQueue<WorkloadEvent> Buffer { get; set; } = new ConcurrentQueue<WorkloadEvent>();
         protected Task BufferReader { get; set; }
 
+        private SpinWait spin = new SpinWait();
+
+        public int BufferSize { get; set; } = 10000;
+
         public override sealed void Consume(WorkloadEvent evt)
         {
+            // Ensure that the buffer does not get too big
+            while (Buffer.Count >= BufferSize)
+            {
+                spin.SpinOnce();
+            }
+
+            // If the buffer has room, enqueue the event
             Buffer.Enqueue(evt);
 
             if(BufferReader == null)
@@ -34,7 +45,7 @@ namespace WorkloadTools.Consumer
                     if (stopped)
                         return;
 
-                    Thread.Sleep(10);
+                    spin.SpinOnce();
                 }
 
                 if (evt == null)

@@ -29,7 +29,7 @@ namespace WorkloadTools.Listener.File
         private string connectionString;
 
 
-        public FileWorkloadListener()
+        public FileWorkloadListener() : base()
         {
             Filter = new FileEventFilter();
         }

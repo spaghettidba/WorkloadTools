@@ -15,6 +15,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
+        private SpinWait spin = new SpinWait();
+
         private enum ServerType
         {
             OnPremises,
@@ -28,7 +30,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
         // If not specified, On Premises SQLServer will use the streaming API
         public string FileTargetPath { get; set; }
 
-        public ExtendedEventsWorkloadListener()
+        public ExtendedEventsWorkloadListener() : base()
         {
             Filter = new ExtendedEventsEventFilter();
             Source = WorkloadController.BaseLocation + "\\Listener\\ExtendedEvents\\sqlworkload.sql";
@@ -148,7 +150,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 if (stopped)
                     return null;
 
-                Thread.Sleep(1);
+                spin.SpinOnce();
             }
             return result;
         }

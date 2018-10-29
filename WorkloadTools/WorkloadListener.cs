@@ -13,6 +13,12 @@ namespace WorkloadTools
 {
     public abstract class WorkloadListener : IDisposable
     {
+        public enum EventQueueType
+        {
+            MMF,
+            Sqlite,
+            LiteDB
+        }
 
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -51,9 +57,26 @@ namespace WorkloadTools
             }
         }
 
-        protected ConcurrentQueue<WorkloadEvent> Events = new ConcurrentQueue<WorkloadEvent>();
+        protected IEventQueue Events;
+
+        public EventQueueType QueueType = EventQueueType.MMF;
 
         protected bool stopped;
+
+        public WorkloadListener()
+        {
+            switch (QueueType)
+            {
+                case EventQueueType.MMF:
+                    Events = new MMFEventQueue();
+                    break;
+                case EventQueueType.LiteDB:
+                    break;
+                case EventQueueType.Sqlite:
+                    break;
+            }
+            
+        }
 
         public void Dispose() {
             stopped = true;
