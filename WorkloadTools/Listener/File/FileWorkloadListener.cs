@@ -189,13 +189,11 @@ namespace WorkloadTools.Listener.File
                     cr.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
                     ReadCounters(sequence, cr);
                     return cr;
-                    break;
                 case WorkloadEvent.EventType.WAIT_stats:
                     WaitStatsWorkloadEvent wr = new WaitStatsWorkloadEvent();
                     wr.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
                     wr.Type = type;
                     return wr;
-                    break;
                 default:
                     ExecutionWorkloadEvent result = new ExecutionWorkloadEvent();
                     result.ApplicationName = reader.GetString(reader.GetOrdinal("client_app_name"));
@@ -205,9 +203,12 @@ namespace WorkloadTools.Listener.File
                     result.LoginName = reader.GetString(reader.GetOrdinal("server_principal_name"));
                     result.SPID = reader.GetInt32(reader.GetOrdinal("session_id"));
                     result.Text = reader.GetString(reader.GetOrdinal("sql_text"));
+                    result.CPU = reader.GetInt32(reader.GetOrdinal("cpu"));
+                    result.Duration = reader.GetInt64(reader.GetOrdinal("duration"));
+                    result.Reads = reader.GetInt64(reader.GetOrdinal("reads"));
+                    result.Writes = reader.GetInt64(reader.GetOrdinal("writes"));
                     result.Type = type;
                     return result;
-                    break;
             }
         }
     

@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace WorkloadTools.Consumer.WorkloadFile
@@ -37,7 +38,11 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     database_name,
                     server_principal_name,
                     session_id,
-                    sql_text
+                    sql_text,
+                    cpu,
+                    duration,
+                    reads,
+                    writes
                 )
                 VALUES (
                     $event_sequence,
@@ -48,7 +53,11 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     $database_name,
                     $server_principal_name,
                     $session_id,
-                    $sql_text
+                    $sql_text,
+                    $cpu,
+                    $duration,
+                    $reads,
+                    $writes
                 );";
 
         private string insert_waits = @"
@@ -112,6 +121,10 @@ namespace WorkloadTools.Consumer.WorkloadFile
             events_cmd.Parameters.AddWithValue("$server_principal_name", evt.LoginName);
             events_cmd.Parameters.AddWithValue("$session_id", evt.SPID);
             events_cmd.Parameters.AddWithValue("$sql_text", evt.Text);
+            events_cmd.Parameters.AddWithValue("$cpu", evt.CPU);
+            events_cmd.Parameters.AddWithValue("$duration", evt.Duration);
+            events_cmd.Parameters.AddWithValue("$reads", evt.Reads);
+            events_cmd.Parameters.AddWithValue("$writes", evt.Writes);
 
             events_cmd.ExecuteNonQuery();
 
@@ -260,6 +273,11 @@ namespace WorkloadTools.Consumer.WorkloadFile
             }
 
             string sqlCreateTable = @"
+                CREATE TABLE IF NOT EXISTS FileProperties (
+                    name TEXT NOT NULL PRIMARY KEY,
+                    value TEXT NOT NULL
+                )
+
                 CREATE TABLE IF NOT EXISTS Events (
                     event_sequence INTEGER PRIMARY KEY,
                     event_type INTEGER,
@@ -269,7 +287,11 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     database_name TEXT NULL, 
                     server_principal_name TEXT NULL, 
                     session_id INTEGER NULL, 
-                    sql_text  TEXT NULL
+                    sql_text  TEXT NULL,
+                    cpu INTEGER NULL,
+                    duration INTEGER NULL,
+                    reads INTEGER NULL,
+                    writes INTEGER NULL
                 );
 
                 CREATE TABLE IF NOT EXISTS Counters (
@@ -286,7 +308,18 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     signal_sec INTEGER NULL,
                     wait_count INTEGER NULL 
                 );
+
+                INSERT INTO FileProperties (name, value)
+                SELECT 'FormatVersion','{0}'
+                FROM FileProperties
+                WHERE NOT EXISTS (
+                    SELECT *
+                    FROM FileProperties
+                    WHERE name = 'FormatVersion'
+                );
             ";
+
+            sqlCreateTable = String.Format(sqlCreateTable, Assembly.GetEntryAssembly().GetName().Version.ToString());
 
             string sqlMaxSeq = @"SELECT COALESCE(MAX(event_sequence),0) + 1 FROM Events;";
 
