@@ -73,7 +73,9 @@ namespace WorkloadTools.Listener.Trace
             Type type;
             try
             {
+#pragma warning disable 618
                 Assembly assembly = Assembly.LoadWithPartialName("Microsoft.SqlServer.ConnectionInfo");
+#pragma warning restore 618
                 type = assembly.GetType("Microsoft.SqlServer.Management.Common.SqlConnectionInfo");
                 SqlConnectionInfo = type.InvokeMember((string)null, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance, (Binder)null, (object)null, (object[])null);
             }

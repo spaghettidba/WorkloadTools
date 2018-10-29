@@ -24,7 +24,9 @@ namespace WorkloadTools.Listener.Trace
         {
             try
             {
+#pragma warning disable 618
                 _baseAssembly = Assembly.LoadWithPartialName("Microsoft.SqlServer.ConnectionInfoExtended");
+#pragma warning restore 618
                 logger.Info(string.Format("SMO Version: {0}", (object)_baseAssembly.FullName.ToString()));
                 _baseType = _baseAssembly.GetType("Microsoft.SqlServer.Management.Trace.TraceServer");
             }
