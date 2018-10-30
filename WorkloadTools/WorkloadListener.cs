@@ -13,13 +13,6 @@ namespace WorkloadTools
 {
     public abstract class WorkloadListener : IDisposable
     {
-        public enum EventQueueType
-        {
-            MMF,
-            Sqlite,
-            LiteDB
-        }
-
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         public SqlConnectionInfo ConnectionInfo { get; set; }
@@ -59,7 +52,7 @@ namespace WorkloadTools
 
         protected IEventQueue Events;
 
-        public EventQueueType QueueType = EventQueueType.MMF;
+        public EventQueueType QueueType = EventQueueType.BinarySerialized;
 
         protected bool stopped;
 
@@ -71,8 +64,12 @@ namespace WorkloadTools
                     Events = new MMFEventQueue();
                     break;
                 case EventQueueType.LiteDB:
-                    break;
+                    throw new NotImplementedException();
                 case EventQueueType.Sqlite:
+                    throw new NotImplementedException();
+                case EventQueueType.BinarySerialized:
+                    Events = new BinarySerializedBufferedEventQueue();
+                    Events.BufferSize = 10000;
                     break;
             }
             
@@ -80,6 +77,7 @@ namespace WorkloadTools
 
         public void Dispose() {
             stopped = true;
+            Events.Dispose();
             Dispose(true);
             GC.SuppressFinalize(this);
         }

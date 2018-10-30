@@ -221,6 +221,7 @@
     <Compile Include="Consumer\Replay\ResultSetConsumer.cs" />
     <Compile Include="Consumer\WorkloadFile\WorkloadFileWriterConsumer.cs" />
     <Compile Include="CounterWorkloadEvent.cs" />
+    <Compile Include="BufferedEventQueue.cs" />
     <Compile Include="MMFEventQueue.cs" />
     <Compile Include="ExecutionWorkloadEvent.cs" />
     <Compile Include="FilterPredicate.cs" />
@@ -251,8 +252,11 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="Properties\SharedAssemblyInfo.cs" />
+    <Compile Include="BinarySerializedBufferedEventQueue.cs" />
     <Compile Include="SqlConnectionInfo.cs" />
+    <Compile Include="SqliteEventQueue.cs" />
     <Compile Include="Util\DataUtils.cs" />
+    <Compile Include="Util\StringExtensions.cs" />
     <Compile Include="WaitStatsWorkloadEvent.cs" />
     <Compile Include="Consumer\WorkloadConsumer.cs" />
     <Compile Include="WorkloadController.cs" />

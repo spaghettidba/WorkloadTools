@@ -5,6 +5,7 @@ using System.Text;
 
 namespace WorkloadTools
 {
+    [Serializable]
     public class ExecutionWorkloadEvent : WorkloadEvent
     {
         public string Text { get; set; }

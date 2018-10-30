@@ -1,6 +1,17 @@
-﻿namespace WorkloadTools
+﻿using System;
+
+namespace WorkloadTools
 {
-    public interface IEventQueue 
+
+    public enum EventQueueType
+    {
+        MMF,
+        Sqlite,
+        LiteDB,
+        BinarySerialized
+    }
+
+    public interface IEventQueue : IDisposable
     {
         int BufferSize { get; set; }
 

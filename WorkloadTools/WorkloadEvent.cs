@@ -5,6 +5,7 @@ using System.Text;
 
 namespace WorkloadTools
 {
+    [Serializable]
     public abstract class WorkloadEvent
     {
         public enum EventType 

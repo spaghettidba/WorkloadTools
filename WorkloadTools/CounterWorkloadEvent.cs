@@ -5,6 +5,7 @@ using System.Text;
 
 namespace WorkloadTools
 {
+    [Serializable]
     public class CounterWorkloadEvent : WorkloadEvent
     {
         public enum CounterNameEnum

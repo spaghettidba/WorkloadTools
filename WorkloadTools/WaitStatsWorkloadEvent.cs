@@ -6,6 +6,7 @@ using System.Text;
 
 namespace WorkloadTools
 {
+    [Serializable]
     public class WaitStatsWorkloadEvent : WorkloadEvent
     {
         public DataTable Waits;

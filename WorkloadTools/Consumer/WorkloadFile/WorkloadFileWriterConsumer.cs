@@ -16,10 +16,13 @@ namespace WorkloadTools.Consumer.WorkloadFile
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         public string OutputFile { get; set; }
+        public static int CACHE_SIZE = 1000;
 
         private bool databaseInitialized = false;
         private int event_sequence = 1;
         private string connectionString;
+
+        private object syncRoot = new object();
 
         private SQLiteConnection conn;
         private SQLiteCommand events_cmd;
@@ -90,19 +93,52 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     $value
                 );";
 
+        private Queue<WorkloadEvent> cache = new Queue<WorkloadEvent>(CACHE_SIZE);
+
+        private bool forceFlush = false;
+
         public override void ConsumeBuffered(WorkloadEvent evt)
         {
             if (!databaseInitialized)
                 InitializeDatabase();
 
-            InsertEvent(evt);
+            lock (syncRoot)
+            {
+                cache.Enqueue(evt);
+
+                Flush();
+            }
         }
 
 
-        private void InsertExecutionEvent(WorkloadEvent evnt)
+        private void Flush()
         {
-            ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
+            if (cache.Count == CACHE_SIZE || forceFlush)
+            {
+                InitializeConnection();
+                var tran = conn.BeginTransaction();
+                try
+                {
+                    while (cache.Count > 0)
+                    {
+                        InsertEvent(cache.Dequeue());
+                    }
+                    tran.Commit();
+                }
+                catch
+                {
+                    tran.Rollback();
+                    throw;
+                }
+                finally
+                {
+                    forceFlush = false;
+                }
+            }
+        }
 
+        private void InitializeConnection()
+        {
             if (conn == null)
             {
                 conn = new SQLiteConnection(connectionString);
@@ -111,6 +147,17 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
             if (events_cmd == null)
                 events_cmd = new SQLiteCommand(insert_events, conn);
+
+            if (waits_cmd == null)
+                waits_cmd = new SQLiteCommand(insert_waits, conn);
+
+            if (counters_cmd == null)
+                counters_cmd = new SQLiteCommand(insert_counters, conn);
+        }
+
+        private void InsertExecutionEvent(WorkloadEvent evnt)
+        {
+            ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
 
             events_cmd.Parameters.AddWithValue("$event_sequence", event_sequence++);
             events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
@@ -127,7 +174,6 @@ namespace WorkloadTools.Consumer.WorkloadFile
             events_cmd.Parameters.AddWithValue("$writes", evt.Writes);
 
             events_cmd.ExecuteNonQuery();
-
 
         }
 
@@ -162,15 +208,6 @@ namespace WorkloadTools.Consumer.WorkloadFile
         {
             WaitStatsWorkloadEvent evt = (WaitStatsWorkloadEvent)evnt;
 
-            if (conn == null)
-            {
-                conn = new SQLiteConnection(connectionString);
-                conn.Open();
-            }
-
-            if (events_cmd == null)
-                events_cmd = new SQLiteCommand(insert_events, conn);
-
             events_cmd.Parameters.AddWithValue("$event_sequence", event_sequence++);
             events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
             events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
@@ -180,11 +217,12 @@ namespace WorkloadTools.Consumer.WorkloadFile
             events_cmd.Parameters.AddWithValue("$server_principal_name", null);
             events_cmd.Parameters.AddWithValue("$session_id", null);
             events_cmd.Parameters.AddWithValue("$sql_text", null);
+            events_cmd.Parameters.AddWithValue("$cpu", null);
+            events_cmd.Parameters.AddWithValue("$duration", null);
+            events_cmd.Parameters.AddWithValue("$reads", null);
+            events_cmd.Parameters.AddWithValue("$writes", null);
 
             events_cmd.ExecuteNonQuery();
-
-            if (waits_cmd == null)
-                waits_cmd = new SQLiteCommand(insert_waits, conn);
 
             SQLiteTransaction tran = conn.BeginTransaction();
             try
@@ -215,15 +253,6 @@ namespace WorkloadTools.Consumer.WorkloadFile
         {
             CounterWorkloadEvent evt = (CounterWorkloadEvent)evnt;
 
-            if (conn == null)
-            {
-                conn = new SQLiteConnection(connectionString);
-                conn.Open();
-            }
-
-            if (events_cmd == null)
-                events_cmd = new SQLiteCommand(insert_events, conn);
-
             events_cmd.Parameters.AddWithValue("$event_sequence", event_sequence++);
             events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
             events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
@@ -233,11 +262,12 @@ namespace WorkloadTools.Consumer.WorkloadFile
             events_cmd.Parameters.AddWithValue("$server_principal_name", null);
             events_cmd.Parameters.AddWithValue("$session_id", null);
             events_cmd.Parameters.AddWithValue("$sql_text", null);
+            events_cmd.Parameters.AddWithValue("$cpu", null);
+            events_cmd.Parameters.AddWithValue("$duration", null);
+            events_cmd.Parameters.AddWithValue("$reads", null);
+            events_cmd.Parameters.AddWithValue("$writes", null);
 
             events_cmd.ExecuteNonQuery();
-
-            if (counters_cmd == null)
-                counters_cmd = new SQLiteCommand(insert_counters, conn);
 
             SQLiteTransaction tran = conn.BeginTransaction();
             try
@@ -276,7 +306,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                 CREATE TABLE IF NOT EXISTS FileProperties (
                     name TEXT NOT NULL PRIMARY KEY,
                     value TEXT NOT NULL
-                )
+                );
 
                 CREATE TABLE IF NOT EXISTS Events (
                     event_sequence INTEGER PRIMARY KEY,
@@ -350,11 +380,11 @@ namespace WorkloadTools.Consumer.WorkloadFile
         {
             logger.Info("Closing the connection to the output file");
 
+            forceFlush = true;
+            Flush();
+
             try
             {
-                if (events_cmd != null)
-                    events_cmd.Dispose();
-
                 if (conn != null)
                 {
                     conn.Close();
