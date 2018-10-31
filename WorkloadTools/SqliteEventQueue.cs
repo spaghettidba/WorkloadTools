@@ -8,7 +8,6 @@ namespace WorkloadTools
 {
     public class SqliteEventQueue : BufferedEventQueue
     {
-        private int _index;
 
         public SqliteEventQueue() : base()
         {
