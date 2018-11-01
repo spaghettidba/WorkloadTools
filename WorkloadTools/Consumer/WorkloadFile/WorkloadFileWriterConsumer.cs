@@ -137,6 +137,15 @@ namespace WorkloadTools.Consumer.WorkloadFile
             }
         }
 
+        /*
+         * Initializes the database connection.
+         * Connection string settings that affect performance:
+         * - synchronous = off | full | normal
+         * - journal mode = memory | delete | persist | off
+         * - cache size = <number>
+         * - temp store = memory
+         * - locking mode = exclusive
+         */
         private void InitializeConnection()
         {
             if (conn == null)
