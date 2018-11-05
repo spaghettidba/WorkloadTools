@@ -27,6 +27,7 @@
 
     <Feature Id="ProductFeature" Title="WorkloadTools" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="ProductReports" />
     </Feature>
     
   </Product>
@@ -39,5 +40,18 @@
     </Directory>
   </Fragment>
 
+  <Fragment>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Directory Id="dirCD80900D3B5A452B876D2B896E10F051" Name="Reports" />
+    </DirectoryRef>
+  </Fragment>
+  <Fragment>
+    <ComponentGroup Id="ProductReports">
+      <Component Id="cmp20EE999FA46842A8A3E67D82FF987418" Directory="dirCD80900D3B5A452B876D2B896E10F051" Guid="9CDDBDE3-A115-4CEE-9F5F-41DCCABB618E">
+        <File Id="filF8339E0B13434A31BB913FADC4066D7D" Source="..\Reports\SqlWorkload.pbix" />
+        <File Id="fil9A72942DD7E14FC98051DF6EAA302AF0" Source="..\Reports\WorkloadAnalysis.pbix" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
 
 </Wix>
