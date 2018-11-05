@@ -68,6 +68,6 @@
     <PostBuildEvent>move /Y "!(TargetPath)" "$(TargetDir)$(SolutionName)_$(Platform)$(TargetExt)"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent />
+    <PreBuildEvent>IF "$(Configuration)" EQU "Release" DEL "$(SolutionDir)SqlWorkload\bin\$(Platform)\$(Configuration)\%2a.log" /Q /F</PreBuildEvent>
   </PropertyGroup>
 </Project>

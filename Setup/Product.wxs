@@ -54,4 +54,12 @@
     </ComponentGroup>
   </Fragment>
 
+  <Fragment>
+    <ComponentGroup Id="ProductLicense">
+      <Component Id="cmpE591726ED3774E44B75D7106236DD456" Directory="INSTALLFOLDER" Guid="2CA2DACC-347C-449E-A39E-4A68310BDAB1">
+        <File Id="fil63DB101A0DC947AC94811D8A5C151E54" Source="..\LICENSE.md" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
 </Wix>
