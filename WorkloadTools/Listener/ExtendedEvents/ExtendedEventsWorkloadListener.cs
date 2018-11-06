@@ -58,6 +58,12 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                     ((ExtendedEventsEventFilter)Filter).IsSqlAzure = true;
                 }
+                else
+                {
+                    ConnectionInfo.DatabaseName = "master";
+                }
+
+                logger.Info($"Reading Extended Events session definition from {Source}");
 
                 string sessionSql = null;
                 try
