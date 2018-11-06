@@ -134,45 +134,55 @@ namespace WorkloadTools.Listener.File
 
         public override WorkloadEvent Read()
         {
-            if(reader == null) 
-            {
-                return null;
-            }
-
-            bool validEventFound = false;
             WorkloadEvent result = null;
 
-            do
+            try
             {
-                if (!reader.Read())
+                if (reader == null)
                 {
                     return null;
                 }
-                result = ReadEvent(reader);
 
-                if (SynchronizationMode)
+                bool validEventFound = false;
+               
+
+                do
                 {
-                    if(previousDate != DateTime.MinValue)
+                    if (!reader.Read())
                     {
-                        double msSleep = (result.StartTime - previousDate).TotalMilliseconds;
-                        Thread.Sleep(Convert.ToInt32(msSleep));
+                        return null;
                     }
-                }
-                
-                previousDate = result.StartTime;
+                    result = ReadEvent(reader);
 
-                // Filter events
-                if (result is ExecutionWorkloadEvent)
-                {
-                    validEventFound = Filter.Evaluate(result);
-                }
-                else
-                {
-                    validEventFound = true;
-                }
+                    if (SynchronizationMode)
+                    {
+                        if (previousDate != DateTime.MinValue)
+                        {
+                            double msSleep = (result.StartTime - previousDate).TotalMilliseconds;
+                            Thread.Sleep(Convert.ToInt32(msSleep));
+                        }
+                    }
 
+                    previousDate = result.StartTime;
+
+                    // Filter events
+                    if (result is ExecutionWorkloadEvent)
+                    {
+                        validEventFound = Filter.Evaluate(result);
+                    }
+                    else
+                    {
+                        validEventFound = true;
+                    }
+
+                }
+                while (!validEventFound);
             }
-            while (!validEventFound);
+            catch (Exception e)
+            {
+                logger.Error($"Unable to read next event. Last event date: {previousDate}");
+                throw;
+            }
 
             return result;
         }
