@@ -350,7 +350,6 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
                 INSERT INTO FileProperties (name, value)
                 SELECT 'FormatVersion','{0}'
-                FROM FileProperties
                 WHERE NOT EXISTS (
                     SELECT *
                     FROM FileProperties
