@@ -11,6 +11,76 @@ BEGIN
 		
 
 	DECLARE @sql nvarchar(max);
+	DECLARE @sql_alldata nvarchar(max);
+
+	SET @sql_alldata = N'
+CREATE VIEW {0}.[AllData]
+AS
+SELECT 
+	bWD.[interval_id], 
+	bWD.[sql_hash], 
+	bWD.[application_id], 
+	bWD.[database_id], 
+	bWD.[host_id], 
+	bWD.[login_id], 
+	bWD.[avg_cpu_ms], 
+	bWD.[min_cpu_ms], 
+	bWD.[max_cpu_ms], 
+	bWD.[sum_cpu_ms], 
+	bWD.[avg_reads], 
+	bWD.[min_reads], 
+	bWD.[max_reads], 
+	bWD.[sum_reads], 
+	bWD.[avg_writes], 
+	bWD.[min_writes], 
+	bWD.[max_writes], 
+	bWD.[sum_writes], 
+	bWD.[avg_duration_ms] * 1000 AS [avg_duration_ms], 
+	bWD.[min_duration_ms] * 1000 AS [min_duration_ms], 
+	bWD.[max_duration_ms] * 1000 AS [max_duration_ms], 
+	bWD.[sum_duration_ms] * 1000 AS [sum_duration_ms], 
+	bWD.[execution_count],
+	bIn.duration_minutes, 
+	bIn.end_time, 
+	bNQ.normalized_text, 
+	bNQ.example_text, 
+	bAp.application_name, 
+	bDB.database_name, 
+	bHS.host_name, 
+	bLI.login_name
+FROM {0}.WorkloadDetails AS bWD
+INNER JOIN {0}.Intervals AS bIn
+	ON bIn.interval_id = bWD.interval_id
+INNER JOIN {0}.NormalizedQueries AS bNQ
+	ON bNQ.sql_hash = bWD.sql_hash
+INNER JOIN {0}.Applications AS bAp
+	ON bAp.application_id = bWD.application_id
+INNER JOIN {0}.Databases AS bDB
+	ON bDB.database_id = bWD.database_id
+INNER JOIN {0}.Hosts AS bHS
+	ON bHS.host_id = bWD.host_id
+INNER JOIN {0}.Logins AS bLI
+	ON bLI.login_id = bWD.login_id
+'
+
+	SET @sql = REPLACE(@sql_alldata, '{0}', @baselineSchema);
+
+	BEGIN TRY
+		EXEC(@sql);
+	END TRY
+	BEGIN CATCH
+		PRINT 'Unable to create ' + @baselineSchema + '.AllData'
+	END CATCH
+
+	SET @sql = REPLACE(@sql_alldata, '{0}', @replaySchema);
+
+	BEGIN TRY
+		EXEC(@sql);
+	END TRY
+	BEGIN CATCH
+		PRINT 'Unable to create ' + @replaySchema + '.AllData'
+	END CATCH
+
 
 	SET @sql = N'
 CREATE VIEW [dbo].[WorkloadOverview]
