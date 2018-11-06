@@ -34,6 +34,9 @@ namespace WorkloadTools
             try
             {
                 Listener.Initialize();
+
+                logger.Info($"Listener of type {Listener.GetType().Name} initialized correctly. Waiting for events.");
+
                 while (!stopped)
                 {
                     if (!Listener.IsRunning)
