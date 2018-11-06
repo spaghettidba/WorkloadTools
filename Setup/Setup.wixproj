@@ -42,6 +42,9 @@
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="transform.xsl" />
+  </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
   <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
@@ -62,12 +65,12 @@
     <PropertyGroup>
       <DefineConstants>BuildVersion=%(AssemblyVersion.Version)</DefineConstants>
     </PropertyGroup>
-    <HeatDirectory OutputFile="$(ProjectDir)\harvest.wxs" Directory="..\SqlWorkload\bin\$(Platform)\$(Configuration)" ComponentGroupName="ProductComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.SqlWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" />
+    <HeatDirectory OutputFile="$(ProjectDir)\harvest.wxs" Directory="..\SqlWorkload\bin\$(Platform)\$(Configuration)" ComponentGroupName="ProductComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.SqlWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" Transforms="transform.xsl" />
   </Target>
   <PropertyGroup>
     <PostBuildEvent>move /Y "!(TargetPath)" "$(TargetDir)$(SolutionName)_$(Platform)$(TargetExt)"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>IF "$(Configuration)" EQU "Release" DEL "$(SolutionDir)SqlWorkload\bin\$(Platform)\$(Configuration)\%2a.log" /Q /F</PreBuildEvent>
+    <PreBuildEvent>IF "$(Configuration)" EQU "Release" TYPE NUL &gt; "$(SolutionDir)SqlWorkload\bin\$(Platform)\$(Configuration)\SqlWorkload.log"</PreBuildEvent>
   </PropertyGroup>
 </Project>
