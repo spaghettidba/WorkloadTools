@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SqlWorkload")]
+[assembly: AssemblyTitle("WorkloadTools")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("spaghettidba")]
-[assembly: AssemblyProduct("SqlWorkload")]
+[assembly: AssemblyProduct("WorkloadTools")]
 [assembly: AssemblyCopyright("Copyright © 2018 spaghettidba")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
