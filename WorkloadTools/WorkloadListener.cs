@@ -23,7 +23,7 @@ namespace WorkloadTools
         public string HostFilter { get; set; } 
         public string LoginFilter { get; set; }
 
-        public int StatsCollectionIntervalSeconds { get; set; } = 60000;
+        public int StatsCollectionIntervalSeconds { get; set; } = 60;
 
 
         private WorkloadEventFilter _filter;
@@ -108,7 +108,7 @@ namespace WorkloadTools
 
                     Events.Enqueue(evt);
 
-                    Thread.Sleep(StatsCollectionIntervalSeconds); // 1 minute
+                    Thread.Sleep(StatsCollectionIntervalSeconds * 1000); // 1 minute
                 }
             }
             catch (Exception ex)
@@ -140,7 +140,7 @@ namespace WorkloadTools
                         SELECT 
                             CAST(ISNULL(AVG(avg_cpu_percent),0) AS int) AS avg_CPU_percent
                         FROM CPU_Usage
-                        WHERE [Event_Time] >= DATEADD(minute, -1, GETDATE())
+                        WHERE [Event_Time] >= DATEADD(minute, -{0}, GETDATE())
                         OPTION (RECOMPILE);
                     END
                     ELSE
@@ -169,10 +169,12 @@ namespace WorkloadTools
                         SELECT 
                             ISNULL(AVG(SQLProcessUtilization),0) AS avg_CPU_percent
                         FROM CPU_Usage
-                        WHERE [Event_Time] >= DATEADD(minute, -1, GETDATE())
+                        WHERE [Event_Time] >= DATEADD(minute, -{0}, GETDATE())
                         OPTION (RECOMPILE);
                     END
                 ";
+
+                sql = String.Format(sql,StatsCollectionIntervalSeconds / 60);
 
                 int avg_CPU_percent = -1;
 
@@ -205,7 +207,7 @@ namespace WorkloadTools
 
                     Events.Enqueue(evt);
 
-                    Thread.Sleep(StatsCollectionIntervalSeconds); // 1 minute
+                    Thread.Sleep(StatsCollectionIntervalSeconds * 1000); // 1 minute
                 }
             }
             catch (Exception ex)
