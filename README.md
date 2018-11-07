@@ -1,6 +1,6 @@
 # WorkloadTools
 
-*WorkloadTools is a collection of tools to collect, analyze and replay workloads on a SQL Server instance.*
+*WorkloadTools is a collection of tools to collect, analyze and replay SQL Server workloads, on premises and in the cloud .*
 
 ## SqlWorkload
 
