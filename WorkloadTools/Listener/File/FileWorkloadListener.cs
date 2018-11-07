@@ -135,6 +135,7 @@ namespace WorkloadTools.Listener.File
         public override WorkloadEvent Read()
         {
             WorkloadEvent result = null;
+            double msSleep = 0;
 
             try
             {
@@ -158,8 +159,15 @@ namespace WorkloadTools.Listener.File
                     {
                         if (previousDate != DateTime.MinValue)
                         {
-                            double msSleep = (result.StartTime - previousDate).TotalMilliseconds;
-                            Thread.Sleep(Convert.ToInt32(msSleep));
+                            msSleep = (result.StartTime - previousDate).TotalMilliseconds;
+                            if (msSleep > 0)
+                            {
+                                if(msSleep > Int32.MaxValue)
+                                {
+                                    msSleep = Int32.MaxValue;
+                                }
+                                Thread.Sleep(Convert.ToInt32(msSleep));
+                            }
                         }
                     }
 
@@ -180,7 +188,7 @@ namespace WorkloadTools.Listener.File
             }
             catch (Exception e)
             {
-                logger.Error($"Unable to read next event. Last event date: {previousDate}");
+                logger.Error($"Unable to read next event. Current event date: {result.StartTime}  Last event date: {previousDate}  Requested sleep: {msSleep}");
                 throw;
             }
 
