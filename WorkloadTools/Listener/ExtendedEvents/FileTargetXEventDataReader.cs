@@ -31,8 +31,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 DECLARE @filename nvarchar(max);
 
                 SELECT @filename = CAST(target_data AS xml).value('(/EventFileTarget/File/@name)[1]','nvarchar(max)') 
-                FROM sys.dm_xe_database_session_targets AS t
-                INNER JOIN sys.dm_xe_database_sessions AS s
+                FROM sys.dm_xe_{3}session_targets AS t
+                INNER JOIN sys.dm_xe_{3}sessions AS s
 	                ON t.event_session_address = s.address
                 WHERE s.name = '{2}'
                     AND target_name = 'event_file';
@@ -52,15 +52,16 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         conn.ConnectionString = ConnectionString;
                         conn.Open();
 
-                        String sql = "";
+                        string sql = "";
+                        string databaseSuffix = ServerType == ExtendedEventsWorkloadListener.ServerType.AzureSqlDatabase ? "database_" : "";
 
                         if (lastEvent > 0)
                         {
-                            sql = String.Format(sqlXE, "@filename", lastEvent, SessionName);
+                            sql = String.Format(sqlXE, "@filename", lastEvent, SessionName, databaseSuffix);
                         }
                         else
                         {
-                            sql = String.Format(sqlXE, "NULL", "NULL", SessionName);
+                            sql = String.Format(sqlXE, "NULL", "NULL", SessionName, databaseSuffix);
                         }
 
                         using (SqlCommand cmd = conn.CreateCommand())
