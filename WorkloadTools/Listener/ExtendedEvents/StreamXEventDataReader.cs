@@ -21,7 +21,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         private bool stopped;
 
-        public StreamXEventDataReader(string connectionString, string sessionName, IEventQueue events) : base(connectionString, sessionName, events)
+        public StreamXEventDataReader(string connectionString, string sessionName, IEventQueue events) : base(connectionString, sessionName, events, ExtendedEventsWorkloadListener.ServerType.AzureSqlDatabase)
         {
         }
 

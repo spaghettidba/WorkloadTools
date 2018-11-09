@@ -21,7 +21,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         private bool stopped = false;
 
-        public FileTargetXEventDataReader(string connectionString, string sessionName, IEventQueue events) : base(connectionString, sessionName, events)
+        public FileTargetXEventDataReader(string connectionString, string sessionName, IEventQueue events, ExtendedEventsWorkloadListener.ServerType serverType) : base(connectionString, sessionName, events, serverType)
         {
         }
 
@@ -34,7 +34,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 FROM sys.dm_xe_database_session_targets AS t
                 INNER JOIN sys.dm_xe_database_sessions AS s
 	                ON t.event_session_address = s.address
-                WHERE s.name = 'sqlworkload';
+                WHERE s.name = '{2}'
+                    AND target_name = 'event_file';
 
                 SELECT timestamp_utc, event_data, file_offset
                 FROM sys.fn_xe_file_target_read_file(@filename, NULL, {0}, {1});
@@ -55,11 +56,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                         if (lastEvent > 0)
                         {
-                            sql = String.Format(sqlXE, "@filename", lastEvent);
+                            sql = String.Format(sqlXE, "@filename", lastEvent, SessionName);
                         }
                         else
                         {
-                            sql = String.Format(sqlXE, "NULL", "NULL");
+                            sql = String.Format(sqlXE, "NULL", "NULL", SessionName);
                         }
 
                         using (SqlCommand cmd = conn.CreateCommand())

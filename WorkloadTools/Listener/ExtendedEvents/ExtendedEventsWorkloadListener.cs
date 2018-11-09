@@ -17,10 +17,12 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         private SpinWait spin = new SpinWait();
 
-        private enum ServerType
+        public string SessionName { get; set; } = "sqlworkload";
+
+        public enum ServerType
         {
-            OnPremises,
-            SqlAzure
+            FullInstance,
+            AzureSqlDatabase
         }
 
         private ServerType serverType { get; set; }
@@ -45,7 +47,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                 LoadServerType(conn);
 
-                if(serverType == ServerType.SqlAzure)
+                if(serverType == ServerType.AzureSqlDatabase)
                 {
                     if (FileTargetPath == null)
                     {
@@ -100,8 +102,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         filters = "WHERE " + filters;
                     }
 
-                    string sessionType = serverType == ServerType.SqlAzure ? "DATABASE" : "SERVER";
-                    string principalName = serverType == ServerType.SqlAzure ? "username" : "server_principal_name";
+                    string sessionType = serverType == ServerType.AzureSqlDatabase ? "DATABASE" : "SERVER";
+                    string principalName = serverType == ServerType.AzureSqlDatabase ? "username" : "server_principal_name";
 
                     sessionSql = String.Format(sessionSql, filters, sessionType, principalName );
                     
@@ -118,15 +120,14 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     cmd.CommandText = sessionSql;
                     cmd.ExecuteNonQuery();
                 }
-
                 if (FileTargetPath != null)
                 {
                     string sql = @"
-                        ALTER EVENT SESSION [sqlworkload] ON {0}
+                        ALTER EVENT SESSION [{2}] ON {0}
                         ADD TARGET package0.event_file(SET filename=N'{1}',max_file_size=(100))
                     ";
 
-                    sql = String.Format(sql, serverType == ServerType.OnPremises ? "SERVER": "DATABASE" , FileTargetPath);
+                    sql = String.Format(sql, serverType == ServerType.FullInstance ? "SERVER": "DATABASE" , FileTargetPath, SessionName);
 
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
@@ -170,7 +171,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 conn.Open();
                 StopSession(conn);
             }
-            logger.Info("Extended Events session [sqlworkload] stopped successfully.");
+            logger.Info($"Extended Events session [{SessionName}] stopped successfully.");
         }
 
         private void StopSession(SqlConnection conn)
@@ -184,7 +185,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 	                WHERE EXISTS (
 		                SELECT *
 		                FROM sys.database_event_sessions
-		                WHERE name = 'sqlworkload'
+		                WHERE name = '{1}'
 	                )
                 END
                 ELSE
@@ -193,21 +194,21 @@ namespace WorkloadTools.Listener.ExtendedEvents
 	                WHERE EXISTS (
 		                SELECT *
 		                FROM sys.server_event_sessions
-		                WHERE name = 'sqlworkload'
+		                WHERE name = '{1}'
 	                )
                 END
 
                 IF @condition = 1
                 BEGIN
 	                BEGIN TRY
-		                ALTER EVENT SESSION [sqlworkload] ON {0} STATE = STOP;
+		                ALTER EVENT SESSION [{1}] ON {0} STATE = STOP;
 	                END TRY
 	                BEGIN CATCH
 		                -- whoops...
 		                PRINT ERROR_MESSAGE()
 	                END CATCH
 	                BEGIN TRY
-		                DROP EVENT SESSION [sqlworkload] ON {0};
+		                DROP EVENT SESSION [{1}] ON {0};
 	                END TRY
 	                BEGIN CATCH
 		                -- whoops...
@@ -215,7 +216,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 	                END CATCH
                 END
             ";
-            sql = String.Format(sql, serverType == ServerType.OnPremises ? "SERVER" : "DATABASE");
+            sql = String.Format(sql, serverType == ServerType.FullInstance ? "SERVER" : "DATABASE",SessionName);
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandText = sql;
@@ -230,13 +231,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                 XEventDataReader reader;
 
-                if (serverType == ServerType.OnPremises && FileTargetPath == null)
+                if (serverType == ServerType.FullInstance && FileTargetPath == null)
                 {
-                    reader = new StreamXEventDataReader(ConnectionInfo.ConnectionString, "sqlworkload", Events);
+                    reader = new StreamXEventDataReader(ConnectionInfo.ConnectionString, SessionName, Events);
                 }
                 else
                 {
-                    reader = new FileTargetXEventDataReader(ConnectionInfo.ConnectionString, "sqlworkload", Events);
+                    reader = new FileTargetXEventDataReader(ConnectionInfo.ConnectionString, SessionName, Events, serverType);
                 }
 
                 reader.ReadEvents();
@@ -274,11 +275,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 string edition = (string)cmd.ExecuteScalar();
                 if(edition == "SQL Azure")
                 {
-                    serverType = ServerType.SqlAzure;
+                    serverType = ServerType.AzureSqlDatabase;
                 }
                 else
                 {
-                    serverType = ServerType.OnPremises;
+                    serverType = ServerType.FullInstance;
                 }
             }
         }

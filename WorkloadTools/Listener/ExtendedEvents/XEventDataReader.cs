@@ -14,16 +14,19 @@ namespace WorkloadTools.Listener.ExtendedEvents
         public string SessionName { get; set; }
         public IEventQueue Events { get; set; }
         public long EventCount { get; set; }
+        public ExtendedEventsWorkloadListener.ServerType ServerType { get; set; }
 
         public XEventDataReader(
                 string connectionString, 
                 string sessionName,
-                IEventQueue events
+                IEventQueue events,
+                ExtendedEventsWorkloadListener.ServerType serverType
             )  
         {
             ConnectionString = connectionString;
             SessionName = sessionName;
             Events = events;
+            ServerType = serverType;
         }
 
 
