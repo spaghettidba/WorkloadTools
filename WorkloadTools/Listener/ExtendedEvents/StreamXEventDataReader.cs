@@ -86,13 +86,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         if (evnt.Type == WorkloadEvent.EventType.Timeout)
                         {
                             evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
-                            evnt.CPU = Convert.ToInt32(evnt.Duration / 1000);
+                            evnt.CPU = Convert.ToInt64(evnt.Duration);
                         }
                         else
                         {
                             evnt.Reads = Convert.ToInt64(evt.Fields["logical_reads"].Value);
                             evnt.Writes = Convert.ToInt64(evt.Fields["writes"].Value);
-                            evnt.CPU = Convert.ToInt32(evt.Fields["cpu_time"].Value);
+                            evnt.CPU = Convert.ToInt64(evt.Fields["cpu_time"].Value);
                             evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
                         }
 

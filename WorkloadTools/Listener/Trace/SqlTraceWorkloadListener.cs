@@ -184,7 +184,7 @@ namespace WorkloadTools.Listener.Trace
                                 evt.Text = (string)reader.GetValue("TextData");
                                 evt.Reads = (long?)reader.GetValue("Reads");
                                 evt.Writes = (long?)reader.GetValue("Writes");
-                                evt.CPU = (int?)reader.GetValue("CPU");
+                                evt.CPU = (long?)reader.GetValue("CPU");
                                 evt.Duration = (long?)reader.GetValue("Duration");
                                 evt.StartTime = DateTime.Now;
 
@@ -389,13 +389,13 @@ namespace WorkloadTools.Listener.Trace
                                             evt.Text = Encoding.Unicode.GetString(bytes);
                                         }
                                         evt.Duration = ExtractTimeoutDuration(reader["TextData"]);
-                                        evt.CPU = Convert.ToInt32(evt.Duration / 1000);
+                                        evt.CPU = Convert.ToInt64(evt.Duration);
                                     }
                                     else
                                     {
                                         evt.Reads = (long?)reader["Reads"];
                                         evt.Writes = (long?)reader["Writes"];
-                                        evt.CPU = (int?)reader["CPU"];
+                                        evt.CPU = (long?)reader["CPU"] * 1000; // SqlTrace captures CPU as milliseconds => convert to microseconds
                                         evt.Duration = (long?)reader["Duration"];
                                     }
 

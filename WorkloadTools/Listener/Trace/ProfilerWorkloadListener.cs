@@ -117,7 +117,7 @@ namespace WorkloadTools.Listener.Trace
                         evt.Text = (string)trace.GetValue("TextData");
                         evt.Reads = (long?)trace.GetValue("Reads");
                         evt.Writes = (long?)trace.GetValue("Writes");
-                        evt.CPU = (int?)trace.GetValue("CPU");
+                        evt.CPU = (long?)trace.GetValue("CPU") * 1000; // Profiler captures CPU as milliseconds => convert to microseconds
                         evt.Duration = (long?)trace.GetValue("Duration");
                         evt.StartTime = DateTime.Now;
 

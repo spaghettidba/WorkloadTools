@@ -221,7 +221,7 @@ namespace WorkloadTools.Listener.File
                     result.LoginName = reader.GetString(reader.GetOrdinal("server_principal_name"));
                     result.SPID = reader.GetInt32(reader.GetOrdinal("session_id"));
                     result.Text = reader.GetString(reader.GetOrdinal("sql_text"));
-                    result.CPU = reader.GetInt32(reader.GetOrdinal("cpu"));
+                    result.CPU = reader.GetInt64(reader.GetOrdinal("cpu"));
                     result.Duration = reader.GetInt64(reader.GetOrdinal("duration"));
                     result.Reads = reader.GetInt64(reader.GetOrdinal("reads"));
                     result.Writes = reader.GetInt64(reader.GetOrdinal("writes"));

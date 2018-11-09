@@ -37,7 +37,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 WHERE s.name = '{2}'
                     AND target_name = 'event_file';
 
-                SELECT timestamp_utc, event_data, file_offset
+                SELECT event_data, file_offset
                 FROM sys.fn_xe_file_target_read_file(@filename, NULL, {0}, {1});
             ";
 
@@ -80,9 +80,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                         lastEvent = (long)reader["file_offset"];
 
                                     ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
-
-                                    DateTime dt = ((DateTime)reader["timestamp_utc"]);
-                                    evt.StartTime = new DateTimeOffset(dt, TimeSpan.Zero).LocalDateTime;
 
                                     string xmldata = (string)reader["event_data"];
 
@@ -154,13 +151,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                                 evt.SPID = Convert.ToInt32(node.FirstChild.FirstChild.Value);
                                                 break;
                                             case "cpu_time":
-                                                evt.CPU = Convert.ToInt32(node.FirstChild.FirstChild.Value);
+                                                evt.CPU = Convert.ToInt64(node.FirstChild.FirstChild.Value);
                                                 break;
                                             case "duration":
                                                 evt.Duration = Convert.ToInt64(node.FirstChild.FirstChild.Value);
                                                 if(evt.Type == WorkloadEvent.EventType.Timeout)
                                                 {
-                                                    evt.CPU = Convert.ToInt32(evt.Duration / 1000);
+                                                    evt.CPU = Convert.ToInt64(evt.Duration);
                                                 }
                                                 break;
                                             case "logical_reads":

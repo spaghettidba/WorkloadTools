@@ -266,10 +266,10 @@ namespace WorkloadTools.Consumer.Analysis
             row.SetField("host_id", hostId);
             row.SetField("login_id", loginId);
             row.SetField("event_time", evt.StartTime);
-            row.SetField("cpu_ms", evt.CPU);
+            row.SetField("cpu_ms", evt.CPU / 1000); // microseconds to milliseconds
             row.SetField("reads", evt.Reads);
             row.SetField("writes", evt.Writes);
-            row.SetField("duration_ms", evt.Duration / 1000);
+            row.SetField("duration_ms", evt.Duration / 1000); // microseconds to milliseconds
 
             rawData.Rows.Add(row);
         }
