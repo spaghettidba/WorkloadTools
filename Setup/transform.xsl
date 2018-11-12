@@ -13,6 +13,11 @@
 
   <xsl:output method="xml" indent="yes" />
 
+  <!--
+    This section includes all the files that need not be included
+    in the setup. For instance, all local log files.
+    -->
+  
   <xsl:key name="log-search" match="wix:Component[contains(wix:File/@Source, '.log')]" use="@Id" />
   <xsl:template match="wix:Component[key('log-search', @Id)]" />
   <xsl:template match="wix:ComponentRef[key('log-search', @Id)]" />

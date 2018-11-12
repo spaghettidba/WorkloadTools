@@ -13,6 +13,13 @@
 
   <xsl:output method="xml" indent="yes" />
 
+  <!--
+    This section includes all the files that MUST not be included
+    in the setup, because they are already included by other projects.
+    In this list we will include the libraries (nuget packages) that are
+    already included in the SqlWorkload project, in order to avoid collisions.
+    -->
+
   <xsl:key name="commandline-search" match="wix:Component[contains(wix:File/@Source, 'CommandLine.')]" use="@Id" />
   <xsl:template match="wix:Component[key('commandline-search', @Id)]" />
   <xsl:template match="wix:ComponentRef[key('commandline-search', @Id)]" />
