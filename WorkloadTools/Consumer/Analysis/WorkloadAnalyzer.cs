@@ -34,6 +34,7 @@ namespace WorkloadTools.Consumer.Analysis
         private DataTable rawData;
         private SqlTextNormalizer normalizer = new SqlTextNormalizer();
         private bool TargetTableCreated = false;
+        private bool FirstIntervalWritten = false;
 
         private DataTable counterData;
         private DataTable waitsData;
@@ -646,6 +647,22 @@ namespace WorkloadTools.Consumer.Analysis
                 cmd.Parameters.AddWithValue("@end_time", DateTime.Now);
                 cmd.Parameters.AddWithValue("@duration_minutes", Interval);
                 cmd.ExecuteNonQuery();
+            }
+
+            // If this the first interval of the analysis, write
+            // a marker interval with duration = 0 
+            if (!FirstIntervalWritten)
+            {
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = tran;
+                    cmd.CommandText = sql;
+                    cmd.Parameters.AddWithValue("@interval_id", interval_id - 1);
+                    cmd.Parameters.AddWithValue("@end_time", DateTime.Now.AddSeconds(-1));
+                    cmd.Parameters.AddWithValue("@duration_minutes", 0);
+                    cmd.ExecuteNonQuery();
+                    FirstIntervalWritten = true;
+                }
             }
 
             return interval_id;
