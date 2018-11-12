@@ -18,6 +18,13 @@
     in the setup, because they are already included by other projects.
     In this list we will include the libraries (nuget packages) that are
     already included in the SqlWorkload project, in order to avoid collisions.
+
+    ##########################################################################
+    REMEMBER THAT THE MATCH IS CASE-SENSITIVE!!! 
+    If your setup is not building, please double check the case of the items
+    that you want to exclude
+    ##########################################################################
+    
     -->
 
   <xsl:key name="commandline-search" match="wix:Component[contains(wix:File/@Source, 'CommandLine.')]" use="@Id" />
