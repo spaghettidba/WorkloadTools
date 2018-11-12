@@ -29,16 +29,32 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="harvest.wxs" />
-    <!--<Compile Include="harvest2.wxs" />-->
+    <Compile Include="harvest2.wxs" />
     <Compile Include="Product.wxs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ConvertWorkload\ConvertWorkload.csproj">
+      <Name>ConvertWorkload</Name>
+      <Project>{62e37c03-ba08-46ce-a583-d71fb7a8825b}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
     <ProjectReference Include="..\SqlWorkload\SqlWorkload.csproj">
       <Name>SqlWorkload</Name>
       <Project>{fb46ad2c-df81-4d35-b419-d93e5ef9d98a}</Project>
       <Private>True</Private>
       <DoNotHarvest>
       </DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
+    <ProjectReference Include="..\WorkloadViewer\WorkloadViewer.csproj">
+      <Name>WorkloadViewer</Name>
+      <Project>{6e10e31f-d04d-4cb7-8bb9-71abd4b6b973}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
@@ -67,7 +83,8 @@
       <DefineConstants>BuildVersion=%(AssemblyVersion.Version)</DefineConstants>
     </PropertyGroup>
     <HeatDirectory OutputFile="$(ProjectDir)\harvest.wxs" Directory="..\SqlWorkload\bin\$(Platform)\$(Configuration)" ComponentGroupName="ProductComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.SqlWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" Transforms="transform.xsl" />
-    <!--<HeatDirectory OutputFile="$(ProjectDir)\harvest2.wxs" Directory="..\WorkloadViewer\bin\$(Platform)\$(Configuration)" ComponentGroupName="ProductComponents2" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.SqlWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" Transforms="transform.xsl" />-->
+    <HeatDirectory OutputFile="$(ProjectDir)\harvest2.wxs" Directory="..\WorkloadViewer\bin\$(Platform)\$(Configuration)" ComponentGroupName="WorkloadViewerComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.WorkloadViewer.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" Transforms="transform.xsl;transform2.xsl" />
+    <HeatDirectory OutputFile="$(ProjectDir)\harvest3.wxs" Directory="..\ConvertWorkload\bin\$(Configuration)" ComponentGroupName="ConvertWorkloadComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.ConvertWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" Transforms="transform.xsl;transform2.xsl" />
   </Target>
   <PropertyGroup>
     <PostBuildEvent>move /Y "!(TargetPath)" "$(TargetDir)$(SolutionName)_$(Platform)$(TargetExt)"</PostBuildEvent>

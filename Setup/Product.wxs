@@ -27,7 +27,7 @@
 
     <Feature Id="ProductFeature" Title="WorkloadTools" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
-      <!--<ComponentGroupRef Id="ProductComponents2" />-->
+      <ComponentGroupRef Id="WorkloadViewerComponents" />
       <ComponentGroupRef Id="ProductReports" />
     </Feature>
     

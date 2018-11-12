@@ -260,3 +260,5 @@ paket-files/
 __pycache__/
 *.pyc
 Setup/harvest\.wxs
+/Setup/harvest2.wxs
+/Setup/harvest3.wxs
