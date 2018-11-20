@@ -7,20 +7,180 @@
         xmlns:local="clr-namespace:WorkloadViewer.ViewModel"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:command="http://www.galasoft.ch/mvvmlight"
+        xmlns:oxy="http://oxyplot.org/wpf"
         xmlns:Dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
         mc:Ignorable="d"
         GlowBrush="{DynamicResource AccentColorBrush}"
         SaveWindowPosition="True"
-        Height="600" Width="800"
+        Height="600" Width="1490"
         WindowState="Maximized"
+        Title="Workload Viewer"
         TitleCaps="False"
         Dialog:DialogParticipation.Register="{Binding}"
         x:Name="MainWin">
     <Window.Resources>
         <local:MainViewModel x:Key="MainViewModel" />
     </Window.Resources>
-    
-    <Grid>
-        
-    </Grid>
+
+    <Window.DataContext>
+        <Binding Source="{StaticResource MainViewModel}" />
+    </Window.DataContext>
+
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="KeyDown">
+            <command:EventToCommand Command="{Binding KeyDownCommand}" PassEventArgsToCommand="True" />
+        </i:EventTrigger>
+        <i:EventTrigger EventName="Loaded">
+            <command:EventToCommand Command="{Binding LoadedCommand}" PassEventArgsToCommand="True" />
+        </i:EventTrigger>
+        <i:EventTrigger EventName="ContentRendered">
+            <command:EventToCommand Command="{Binding RenderedCommand}" PassEventArgsToCommand="True" />
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+
+    <DockPanel>
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}" />
+            </StatusBarItem>
+        </StatusBar>
+
+        <TabControl TabStripPlacement="Bottom" DockPanel.Dock="Top">
+            <TabItem Header="Workload">
+
+                <DockPanel DockPanel.Dock="Top" Name="ContentPanel">
+                    <Grid x:Name="FiltersGrid" DockPanel.Dock="Top" Visibility="Collapsed">
+                        <DockPanel>
+                            <Grid DockPanel.Dock="Top">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1*" />
+                                    <ColumnDefinition Width="1*" />
+                                    <ColumnDefinition Width="1*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.Column="0">
+                                    <DataGrid ItemsSource="{Binding Path=ApplicationList}" AutoGenerateColumns="False" CanUserResizeColumns="False" CanUserAddRows="False">
+                                        <DataGrid.Columns>
+                                            <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                            EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                            Header=""
+                                            Binding="{Binding IsChecked, Mode=TwoWay}"
+                                            />
+                                            <DataGridTextColumn 
+                                                Header="Application Name"
+                                                Binding="{Binding Name, Mode=OneWay}"
+                                            />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </ScrollViewer>
+
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.Column="1">
+                                    <DataGrid ItemsSource="{Binding Path=DatabaseList}" AutoGenerateColumns="False" CanUserResizeColumns="False" CanUserAddRows="False">
+                                        <DataGrid.Columns>
+                                            <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                        EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                        Header=""
+                                        Binding="{Binding IsChecked, Mode=TwoWay}"
+                                        />
+                                            <DataGridTextColumn 
+                                            Header="Database Name"
+                                            Binding="{Binding Name, Mode=OneWay}"
+                                        />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </ScrollViewer>
+
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.Column="2">
+                                    <DataGrid ItemsSource="{Binding Path=HostList}" AutoGenerateColumns="False" CanUserResizeColumns="False" CanUserAddRows="False">
+                                        <DataGrid.Columns>
+                                            <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                        EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                        Header=""
+                                        Binding="{Binding IsChecked, Mode=TwoWay}"
+                                        />
+                                            <DataGridTextColumn 
+                                            Header="Host Name"
+                                            Binding="{Binding Name, Mode=OneWay}"
+                                        />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </ScrollViewer>
+                                
+                            </Grid>
+                            <Button DockPanel.Dock="Right" Width="100">Apply</Button>
+                        </DockPanel>
+                    </Grid>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" DockPanel.Dock="Bottom">
+                        <Grid x:Name="MainGrid">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="300" />
+                                <RowDefinition Height="300" />
+                                <RowDefinition Height="300" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <oxy:PlotView x:Name="CpuChart" Model="{Binding CpuPlotModel, Mode=OneWay}" Margin="10" Grid.Row="0"  />
+                            <oxy:PlotView x:Name="DurationChart" Model="{Binding DurationPlotModel, Mode=OneWay}" Margin="10" Grid.Row="1"/>
+                            <oxy:PlotView x:Name="BatchesChart" Model="{Binding BatchesPlotModel, Mode=OneWay}" Margin="10" Grid.Row="2"/>
+
+                        </Grid>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+
+            <TabItem Header="Queries">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <DataGrid x:Name="Queries" AutoGenerateColumns="True" ItemsSource="{Binding Queries, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" IsReadOnly="True" SelectionUnit="FullRow" SelectionMode="Single">
+                        
+                    </DataGrid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Query Details">
+                <Grid x:Name="DetailsGrid">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="1*" />
+                        <RowDefinition Height="1*" />
+                        <RowDefinition Height="1*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox 
+                        Name="QueryDetailText" 
+                        AcceptsReturn="True"
+                        VerticalScrollBarVisibility="Visible"
+                        HorizontalScrollBarVisibility="Auto"
+                        FontFamily="Consolas"
+                        IsReadOnly="True"
+                        Grid.Row="0"
+                        BorderThickness="0"
+                        Text="{Binding QueryText, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
+                    />
+                    <DataGrid x:Name="QueryStats" AutoGenerateColumns="True" ItemsSource="{Binding QueryStats, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" IsReadOnly="True" SelectionUnit="FullRow" SelectionMode="Single" Grid.Row="1">
+                        
+                    </DataGrid>
+                    <oxy:PlotView x:Name="QueryDetailChart" Model="{Binding DetailCpuPlotModel, Mode=OneWay}" Margin="10" Grid.Row="2"/>
+                </Grid>
+             </TabItem>
+        </TabControl>
+    </DockPanel>
 </Controls:MetroWindow>
