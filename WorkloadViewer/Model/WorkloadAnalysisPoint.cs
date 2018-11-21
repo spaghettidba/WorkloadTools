@@ -33,4 +33,5 @@ namespace WorkloadViewer.Model
 	    public long SumDurationMs { get; set; } 
 	    public long ExecutionCount { get; set; }
     }
+
 }

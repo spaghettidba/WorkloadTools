@@ -122,9 +122,13 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Model\NormalizedQuery.cs" />
+    <Compile Include="Model\SqlConnectionInfo.cs" />
+    <Compile Include="Model\WorkloadAnalysis.cs" />
     <Compile Include="Model\WorkloadAnalysisPoint.cs" />
+    <Compile Include="ViewModel\DictionaryExtensions.cs" />
     <Compile Include="ViewModel\FilterDefinition.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />
+    <Compile Include="Model\QueryDetails.cs" />
     <Compile Include="ViewModel\ViewModelLocator.cs" />
     <Page Include="View\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

@@ -20,6 +20,11 @@
         x:Name="MainWin">
     <Window.Resources>
         <local:MainViewModel x:Key="MainViewModel" />
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+        </Style>
+
     </Window.Resources>
 
     <Window.DataContext>
@@ -57,7 +62,7 @@
             </StatusBarItem>
         </StatusBar>
 
-        <TabControl TabStripPlacement="Bottom" DockPanel.Dock="Top">
+        <TabControl TabStripPlacement="Bottom" DockPanel.Dock="Top" x:Name="MainTabControl">
             <TabItem Header="Workload">
 
                 <DockPanel DockPanel.Dock="Top" Name="ContentPanel">
@@ -147,14 +152,74 @@
             </TabItem>
 
             <TabItem Header="Queries">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <DataGrid x:Name="Queries" AutoGenerateColumns="True" ItemsSource="{Binding Queries, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" IsReadOnly="True" SelectionUnit="FullRow" SelectionMode="Single">
-                        
-                    </DataGrid>
-                </ScrollViewer>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="3*" />
+                        <RowDefinition Height="1*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.Row="0">
+                        <DataGrid x:Name="Queries" 
+                                  AutoGenerateColumns="False" 
+                                  ItemsSource="{Binding Queries, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" 
+                                  IsReadOnly="True" 
+                                  SelectionUnit="FullRow" 
+                                  SelectionMode="Single" 
+                                  MouseDoubleClick="DataGridDoubleClick">
+                            <DataGrid.Resources>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#FFFF00"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#000000"/>
+                            </DataGrid.Resources>
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True">
+                                            <Setter Property="Background" Value="Yellow" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Hash"                 Binding="{Binding query_hash}" />
+                                <DataGridTextColumn Header="query_text"           Binding="{Binding query_text}" Visibility="Collapsed"/>
+                                <DataGridTextColumn Header="query_normalized"     Binding="{Binding query_normalized}" Visibility="Collapsed" />
+                                <DataGridTextColumn Header="sum_duration_ms"      Binding="{Binding sum_duration_ms}" />
+                                <DataGridTextColumn Header="sum_duration_ms2"     Binding="{Binding sum_duration_ms2}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
+                                <DataGridTextColumn Header="diff_sum_duration_ms" Binding="{Binding diff_sum_duration_ms}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
+                                <DataGridTextColumn Header="avg_duration_ms"      Binding="{Binding avg_duration_ms}" />
+                                <DataGridTextColumn Header="avg_duration_ms2"     Binding="{Binding avg_duration_ms2}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
+                                <DataGridTextColumn Header="sum_cpu_ms"           Binding="{Binding sum_cpu_ms}" />
+                                <DataGridTextColumn Header="sum_cpu_ms2"          Binding="{Binding sum_cpu_ms2}"  Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
+                                <DataGridTextColumn Header="diff_sum_cpu_ms"      Binding="{Binding diff_sum_cpu_ms}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
+                                <DataGridTextColumn Header="avg_cpu_ms"           Binding="{Binding avg_cpu_ms}" />
+                                <DataGridTextColumn Header="avg_cpu_ms2"          Binding="{Binding avg_cpu_ms2}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
+                                <DataGridTextColumn Header="sum_reads"            Binding="{Binding sum_reads}" />
+                                <DataGridTextColumn Header="sum_reads2"           Binding="{Binding sum_reads2}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
+                                <DataGridTextColumn Header="avg_reads"            Binding="{Binding avg_reads}" />
+                                <DataGridTextColumn Header="avg_reads2"           Binding="{Binding avg_reads2}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
+                                <DataGridTextColumn Header="execution_count"      Binding="{Binding execution_count}" />
+                                <DataGridTextColumn Header="execution_count2"     Binding="{Binding execution_count2}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </ScrollViewer>
+                    <TextBox 
+                        Name="QueryText" 
+                        AcceptsReturn="True"
+                        VerticalScrollBarVisibility="Visible"
+                        HorizontalScrollBarVisibility="Auto"
+                        FontFamily="Consolas"
+                        IsReadOnly="True"
+                        Grid.Row="1"
+                        BorderThickness="0,1,0,0"
+                        Padding="10,20,10,20"
+                        Text="{Binding ElementName=Queries, Path=SelectedItem.query_text}"
+                    />
+                </Grid>
             </TabItem>
 
-            <TabItem Header="Query Details">
+            <TabItem Header="Query Details" x:Name="QueryDetailsTabItem">
                 <Grid x:Name="DetailsGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="1*" />
@@ -164,6 +229,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
+                    
                     <TextBox 
                         Name="QueryDetailText" 
                         AcceptsReturn="True"
@@ -173,12 +239,27 @@
                         IsReadOnly="True"
                         Grid.Row="0"
                         BorderThickness="0"
-                        Text="{Binding QueryText, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
+                        Padding="10,20,10,20"
+                        Text="{Binding ElementName=Queries, Path=SelectedItem.query_text}"
                     />
-                    <DataGrid x:Name="QueryStats" AutoGenerateColumns="True" ItemsSource="{Binding QueryStats, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" IsReadOnly="True" SelectionUnit="FullRow" SelectionMode="Single" Grid.Row="1">
-                        
+                    
+                    <DataGrid x:Name="QueryStats" AutoGenerateColumns="True" ItemsSource="{Binding ElementName=Queries, Path=SelectedItem.querydetails.QueryStats, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" IsReadOnly="True" SelectionUnit="FullRow" SelectionMode="Single" Grid.Row="1">
+                        <DataGrid.Resources>
+                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#FFFF00"/>
+                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#000000"/>
+                        </DataGrid.Resources>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True">
+                                        <Setter Property="Background" Value="Yellow" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
                     </DataGrid>
-                    <oxy:PlotView x:Name="QueryDetailChart" Model="{Binding DetailCpuPlotModel, Mode=OneWay}" Margin="10" Grid.Row="2"/>
+                    
+                    <oxy:PlotView x:Name="QueryDetailChart" Model="{Binding ElementName=Queries, Path=SelectedItem.querydetails.DetailPlotModel, Mode=OneWay}" Margin="10" Grid.Row="2"/>
                 </Grid>
              </TabItem>
         </TabControl>

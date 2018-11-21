@@ -36,7 +36,7 @@ namespace WorkloadViewer
 
     public class Options
     {
-        [Option('F', "File", DefaultValue = "WorkloadViewer.json", HelpText = "Configuration file")]
+        [Option('F', "File", HelpText = "Configuration file")]
         public string ConfigurationFile { get; set; }
 
         [Option('S', "BaselineServer", HelpText = "Baseline Server")]
@@ -54,19 +54,19 @@ namespace WorkloadViewer
         [Option('P', "BaselinePassword", HelpText = "Baseline Password")]
         public string BaselinePassword { get; set; }
 
-        [Option('s', "BenchmarkServer", HelpText = "Benchmark Server")]
+        [Option('T', "BenchmarkServer", HelpText = "Benchmark Server")]
         public string BenchmarkServer { get; set; }
 
-        [Option('d', "BenchmarkDatabase", HelpText = "Benchmark Database")]
+        [Option('E', "BenchmarkDatabase", HelpText = "Benchmark Database")]
         public string BenchmarkDatabase { get; set; }
 
-        [Option('m', "BenchmarkSchema", HelpText = "Benchmark Schema")]
+        [Option('N', "BenchmarkSchema", HelpText = "Benchmark Schema")]
         public string BenchmarkSchema { get; set; }
 
-        [Option('u', "BenchmarkUsername", HelpText = "Benchmark Username")]
+        [Option('V', "BenchmarkUsername", HelpText = "Benchmark Username")]
         public string BenchmarkUsername { get; set; }
 
-        [Option('p', "BenchmarkPassword", HelpText = "Benchmark Password")]
+        [Option('Q', "BenchmarkPassword", HelpText = "Benchmark Password")]
         public string BenchmarkPassword { get; set; }
 
         [ParserState]

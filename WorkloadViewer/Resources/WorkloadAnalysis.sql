@@ -39,15 +39,14 @@
 		ON bHS.host_id = bWD.host_id
 	INNER JOIN capture.Logins AS bLI
 		ON bLI.login_id = bWD.login_id
-	OUTER APPLY (
+	CROSS APPLY (
 		SELECT TOP(1) base.end_time
 		FROM capture.Intervals AS base
-		WHERE duration_minutes = 0
-			AND interval_id < bIn.interval_id
-		ORDER BY interval_id DESC
+		ORDER BY interval_id
 	) AS Base
 )
 SELECT 	offset_minutes,
+		duration_minutes,
 		sql_hash,
 		application_name, 
 		database_name, 
@@ -73,8 +72,11 @@ SELECT 	offset_minutes,
 FROM baseData
 GROUP BY 
 		offset_minutes,
+		duration_minutes,
 		sql_hash,
 		application_name, 
 		database_name, 
 		host_name, 
 		login_name
+ORDER BY 
+		offset_minutes;

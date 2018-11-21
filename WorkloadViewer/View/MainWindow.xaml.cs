@@ -25,5 +25,14 @@ namespace WorkloadViewer
         {
             InitializeComponent();
         }
+
+        private void DataGridDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if(((DataGrid)sender).SelectedItem == null)
+            {
+                return;
+            }
+            Dispatcher.BeginInvoke((Action)(() => MainTabControl.SelectedIndex = 2));
+        }
     }
 }
