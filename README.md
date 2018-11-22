@@ -119,26 +119,26 @@ Here is the list of the parameters that can be supplied in the configuration fil
 }
 ```
 
-## Screenshots
+## WorkloadViewer
 
-Here are some screenshots of the PowerBI report included with the tool. It can be hooked to the statistics database via Direct Query
+WorkloadViewer is a GUI tool to analyze the data collected by the WorkloadAnalysisTarget in a SQL Server database. It shows metrics about the workload, relative to the beginning of the capture (in minutes).
 
-### Overview of the analysis
+Here are some screenshots of WorkloadViewer. 
 
-The top filters can be used to restrict the analysis to a particular database  or application or host name.
+### Workload
 
-The time slicer can filter the charts to a particular date.
+The three charts in the "Workload" tab show an overview of the workload analysis: CPU, Duration and Batches/sec. Two workloads can be compared by displaying independent series (Baseline and Benchmark) for each workload.
 
 ![SqlWorkload analysis Overview](./Images/SqlWorkloadOverview.png "Overview")
 
-### Regressed Queries
+### Queries
 
-This table shows the queries that have regressed in the replay compared to the baseline.
+This tab displays information about the queries and how they relate to the workload. For a single workload analysis, it shows the most expensive queries. When comparing two workloads, it can be used to identify query regressions.
 
 ![SqlWorkload regressed queries](./Images/SqlWorkloadRegresses.png "RegressedQueries")
 
-### Query Detail
+### Query Details
 
-Drilling on one the regressed queries will bring you to the query detail page, where you can see the text of the query (but not copy it to the clipboard - thanks PowerBI) and the stats broken down by application name, database name, host name and login name.
+Double clicking a query in the "Queries" tab takes you to the "Query Details" tab, where you can see the text of the selected query, specific statistics by application, database, host and login and the average duration in a chart.
 
 ![SqlWorkload query detail](./Images/SqlWorkloadDetail.png "Detail")
