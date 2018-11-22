@@ -125,11 +125,24 @@
     <Compile Include="Model\SqlConnectionInfo.cs" />
     <Compile Include="Model\WorkloadAnalysis.cs" />
     <Compile Include="Model\WorkloadAnalysisPoint.cs" />
+    <Compile Include="ViewModel\ConnectionInfoEditorViewModel.cs" />
     <Compile Include="ViewModel\DictionaryExtensions.cs" />
     <Compile Include="ViewModel\FilterDefinition.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="Model\QueryDetails.cs" />
     <Compile Include="ViewModel\ViewModelLocator.cs" />
+    <Page Include="View\ConnectionInfoDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\ConnectionInfoDialogStyle.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\ConnectionInfoEditor.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="View\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -137,6 +150,12 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="View\ConnectionInfoDialog.xaml.cs">
+      <DependentUpon>ConnectionInfoDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\ConnectionInfoEditor.xaml.cs">
+      <DependentUpon>ConnectionInfoEditor.xaml</DependentUpon>
     </Compile>
     <Compile Include="View\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

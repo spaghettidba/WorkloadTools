@@ -36,7 +36,8 @@ namespace WorkloadViewer.ViewModel
             }
         }
 
-        private Options _options;
+        internal Options _options;
+        internal bool _invalidOptions = false;
         private WorkloadAnalysis _baselineWorkloadAnalysis;
         private WorkloadAnalysis _benchmarkWorkloadAnalysis;
 
@@ -77,16 +78,77 @@ namespace WorkloadViewer.ViewModel
 
         private void Rendered(EventArgs ev)
         {
-            RefreshAllCharts();
+            if (_invalidOptions)
+            {
+                ShowConnectionInfoDialog();
+            }
+            else
+            {
+                InitializeAll();
+            }
+        }
+
+        private async void InitializeAll()
+        {
+            try
+            {
+                InitializeWorkloadAnalysis();
+                InitializeCharts();
+                InitializeFilters();
+                RefreshAllCharts();
+            }
+            catch(Exception e)
+            {
+                await _dialogCoordinator.ShowMessageAsync(this, "WorkloadViewer", "Unable to load data: " + e.Message);
+                ShowConnectionInfoDialog();
+            }
+        }
+
+        private async void ShowConnectionInfoDialog()
+        {
+            var editor = new View.ConnectionInfoDialog();
+            var viewModel = new ConnectionInfoEditorViewModel() { Context = this, Dialog = editor };
+            editor.DataContext = viewModel;
+            viewModel.BaselineServer = _options.BaselineServer;
+            viewModel.BaselineDatabase = _options.BaselineDatabase;
+            viewModel.BaselineSchema = _options.BaselineSchema;
+            viewModel.BaselineUsername = _options.BaselineUsername;
+            viewModel.BaselinePassword = _options.BaselinePassword;
+            viewModel.BenchmarkServer = _options.BenchmarkServer;
+            viewModel.BenchmarkDatabase = _options.BenchmarkDatabase;
+            viewModel.BenchmarkSchema = _options.BenchmarkSchema;
+            viewModel.BenchmarkUsername = _options.BenchmarkUsername;
+            viewModel.BenchmarkPassword = _options.BenchmarkPassword;
+            await _dialogCoordinator.ShowMetroDialogAsync(this, editor);
+        }
+
+        public void SetConnectionInfo(ConnectionInfoEditorViewModel viewModel)
+        {
+            _options.BaselineServer = viewModel.BaselineServer;
+            _options.BaselineDatabase = viewModel.BaselineDatabase;
+            _options.BaselineSchema = viewModel.BaselineSchema;
+            _options.BaselineUsername = viewModel.BaselineUsername;
+            _options.BaselinePassword = viewModel.BaselinePassword;
+
+            _options.BenchmarkServer = viewModel.BenchmarkServer;
+            _options.BenchmarkDatabase = viewModel.BenchmarkDatabase;
+            _options.BenchmarkSchema = viewModel.BenchmarkSchema;
+            _options.BenchmarkUsername = viewModel.BenchmarkUsername;
+            _options.BenchmarkPassword = viewModel.BenchmarkPassword;
+
+            _invalidOptions = false;
+
+            // now that the options are filled, I can invoke the initialization
+            InitializeAll();
         }
 
 
         private void Loaded(EventArgs ev)
         {
-            ParseOptions();
-            InitializeWorkloadAnalysis();
-            InitializeCharts();
-            InitializeFilters();
+            if (!ParseOptions())
+            {
+                _invalidOptions = true;
+            }
         }
 
         private void InitializeWorkloadAnalysis()
@@ -218,7 +280,7 @@ namespace WorkloadViewer.ViewModel
             RaisePropertyChanged("CompareMode");
         }
 
-        private void ParseOptions()
+        private bool ParseOptions()
         {
             _options = ((WorkloadViewer.App)App.Current).Options;
 
@@ -230,10 +292,10 @@ namespace WorkloadViewer.ViewModel
             {
                 if(_options.BaselineServer == null || _options.BaselineDatabase == null)
                 {
-                    // TODO: display dialog
+                    return false;
                 }
             }
-
+            return true;
         }
 
         private void KeyDown(KeyEventArgs e)
