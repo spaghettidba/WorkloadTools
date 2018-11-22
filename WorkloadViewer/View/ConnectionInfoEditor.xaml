@@ -15,7 +15,7 @@
             <ColumnDefinition Width="1*" />
             <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
-        <GroupBox Grid.Column="0">
+        <GroupBox Grid.Column="0" Margin="0,0,10,0">
             <GroupBox.Header>
                 Baseline
             </GroupBox.Header>
@@ -48,10 +48,38 @@
                 <PasswordBox Grid.Row="4" Grid.Column="1" Margin="0,2,0,2" PasswordChanged="Baseline_PasswordChanged"/>
             </Grid>
         </GroupBox>
-        <GroupBox Grid.Column="1">
+        <GroupBox Grid.Column="1" Margin="10,0,0,0">
             <GroupBox.Header>
                 Benchmark
             </GroupBox.Header>
+            <Grid Margin="20">
+                <Grid.Resources>
+                    <Style TargetType="{x:Type TextBox}">
+                        <Setter Property="Margin" Value="0,2,0,2" />
+                    </Style>
+                </Grid.Resources>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+                <Label Grid.Row="0" Grid.Column="0">Server</Label>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BenchmarkServer, Mode=TwoWay}"/>
+                <Label Grid.Row="1" Grid.Column="0">Database</Label>
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BenchmarkDatabase, Mode=TwoWay}"/>
+                <Label Grid.Row="2" Grid.Column="0">Schema</Label>
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BenchmarkSchema, Mode=TwoWay}"/>
+                <Label Grid.Row="3" Grid.Column="0">UserName</Label>
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding BenchmarkUsername, Mode=TwoWay}"/>
+                <Label Grid.Row="4" Grid.Column="0">Password</Label>
+                <PasswordBox Grid.Row="4" Grid.Column="1" Margin="0,2,0,2" PasswordChanged="Benchmark_PasswordChanged"/>
+            </Grid>
         </GroupBox>
         <DockPanel Grid.Row="1" Grid.ColumnSpan="2" LastChildFill="False">
             <Button DockPanel.Dock="Right" Margin="10" Padding="10" Command="{Binding CancelCommand}">Cancel</Button>
