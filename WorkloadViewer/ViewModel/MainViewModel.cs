@@ -57,6 +57,7 @@ namespace WorkloadViewer.ViewModel
         public ICommand LoadedCommand { get; set; }
         public ICommand RenderedCommand { get; set; }
         public ICommand KeyDownCommand { get; set; }
+        public ICommand ApplyCommand { get; set; }
 
         public DataTable Queries { get; private set; }
 
@@ -71,10 +72,17 @@ namespace WorkloadViewer.ViewModel
             LoadedCommand = new RelayCommand<EventArgs>(Loaded);
             RenderedCommand = new RelayCommand<EventArgs>(Rendered);
             KeyDownCommand = new RelayCommand<KeyEventArgs>(KeyDown);
+            ApplyCommand = new RelayCommand<EventArgs>(ApplyFilters);
             _dialogCoordinator = DialogCoordinator.Instance;
             PlotModels = new PlotModel[3];
         }
 
+        private void ApplyFilters(EventArgs obj)
+        {
+            InitializeCharts();
+            InitializeQueries();
+            RefreshAllCharts();
+        }
 
         private void Rendered(EventArgs ev)
         {
@@ -93,9 +101,10 @@ namespace WorkloadViewer.ViewModel
             try
             {
                 InitializeWorkloadAnalysis();
-                InitializeCharts();
                 InitializeFilters();
+                InitializeCharts();
                 RefreshAllCharts();
+                InitializeQueries();
             }
             catch(Exception e)
             {
@@ -177,8 +186,11 @@ namespace WorkloadViewer.ViewModel
                 };
                 _benchmarkWorkloadAnalysis.Load();
             }
+        }
 
 
+        private void InitializeQueries()
+        {
             // Initialize the queries
             Queries = new DataTable();
             Queries.Columns.Add(new DataColumn("query_hash", typeof(Int64)));
@@ -203,6 +215,9 @@ namespace WorkloadViewer.ViewModel
             Queries.Columns.Add(new DataColumn("querydetails", typeof(Object)));
 
             var baseline = from t in _baselineWorkloadAnalysis.Points
+                           where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
+                                && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
+                                && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
                            group t by new
                            {
                                query = t.NormalizedQuery
@@ -225,6 +240,9 @@ namespace WorkloadViewer.ViewModel
             if (_benchmarkWorkloadAnalysis != null)
             {
                 benchmark = from t in _benchmarkWorkloadAnalysis.Points
+                            where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
+                                && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
+                                && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
                             group t by new
                             {
                                 query = t.NormalizedQuery
@@ -243,7 +261,7 @@ namespace WorkloadViewer.ViewModel
                             };
             }
 
-            foreach(var itm in baseline)
+            foreach (var itm in baseline)
             {
                 var newRow = Queries.Rows.Add();
                 newRow["query_hash"] = itm.query.Hash;
@@ -261,15 +279,30 @@ namespace WorkloadViewer.ViewModel
                 {
                     var itm2 = benchmark.Where(p => p.query.Hash == itm.query.Hash).ToList();
 
-                    newRow["sum_duration_ms2"] = itm2[0].sum_duration_ms;
-                    newRow["diff_sum_duration_ms"] = itm2[0].sum_duration_ms - itm.sum_duration_ms;
-                    newRow["avg_duration_ms2"] = itm2[0].avg_duration_ms;
-                    newRow["sum_cpu_ms2"] = itm2[0].sum_cpu_ms;
-                    newRow["diff_sum_cpu_ms"] = itm2[0].sum_cpu_ms - itm.sum_cpu_ms;
-                    newRow["avg_cpu_ms2"] = itm2[0].avg_cpu_ms;
-                    newRow["sum_reads2"] = itm2[0].sum_reads;
-                    newRow["avg_reads2"] = itm2[0].avg_reads;
-                    newRow["execution_count2"] = itm2[0].execution_count;
+                    if (itm2.Count > 0)
+                    {
+                        newRow["sum_duration_ms2"] = itm2[0].sum_duration_ms;
+                        newRow["diff_sum_duration_ms"] = itm2[0].sum_duration_ms - itm.sum_duration_ms;
+                        newRow["avg_duration_ms2"] = itm2[0].avg_duration_ms;
+                        newRow["sum_cpu_ms2"] = itm2[0].sum_cpu_ms;
+                        newRow["diff_sum_cpu_ms"] = itm2[0].sum_cpu_ms - itm.sum_cpu_ms;
+                        newRow["avg_cpu_ms2"] = itm2[0].avg_cpu_ms;
+                        newRow["sum_reads2"] = itm2[0].sum_reads;
+                        newRow["avg_reads2"] = itm2[0].avg_reads;
+                        newRow["execution_count2"] = itm2[0].execution_count;
+                    }
+                    else
+                    {
+                        newRow["sum_duration_ms2"] = 0;
+                        newRow["diff_sum_duration_ms"] = - itm.sum_duration_ms;
+                        newRow["avg_duration_ms2"] = 0;
+                        newRow["sum_cpu_ms2"] = 0;
+                        newRow["diff_sum_cpu_ms"] = - itm.sum_cpu_ms;
+                        newRow["avg_cpu_ms2"] = 0;
+                        newRow["sum_reads2"] = 0;
+                        newRow["avg_reads2"] = 0;
+                        newRow["execution_count2"] = 0;
+                    }
                 }
 
                 // attach query details to the row
@@ -279,6 +312,7 @@ namespace WorkloadViewer.ViewModel
             RaisePropertyChanged("CompareModeVisibility");
             RaisePropertyChanged("CompareMode");
         }
+
 
         private bool ParseOptions()
         {
@@ -443,6 +477,9 @@ namespace WorkloadViewer.ViewModel
             };
 
             var Table = from t in analysis.Points
+                        where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
+                            && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
+                            && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
                         group t by new
                         {
                             offset = t.OffsetMinutes
@@ -479,6 +516,9 @@ namespace WorkloadViewer.ViewModel
             };
 
             var Table = from t in analysis.Points
+                        where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
+                           && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
+                           && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
                         group t by new
                         {
                             offset = t.OffsetMinutes
@@ -517,6 +557,9 @@ namespace WorkloadViewer.ViewModel
 
 
             var Table = from t in analysis.Points
+                        where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
+                           && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
+                           && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
                         group t by new
                         {
                             offset = t.OffsetMinutes

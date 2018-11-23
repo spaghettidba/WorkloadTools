@@ -66,7 +66,7 @@
             <TabItem Header="Workload">
                 <DockPanel Name="ContentPanel">
                     <Grid x:Name="FiltersGrid" DockPanel.Dock="Top" Visibility="Visible">
-                        <Border BorderThickness="0,0,0,2" BorderBrush="#01B8AA" >
+                        <Border BorderThickness="0,0,0,2" BorderBrush="{DynamicResource AccentColorBrush}" >
                         <DockPanel>
                             <Grid DockPanel.Dock="Top">
                                 <Grid.ColumnDefinitions>
@@ -83,7 +83,7 @@
                                         <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
                                             EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
                                             Header=""
-                                            Binding="{Binding IsChecked, Mode=TwoWay}"
+                                            Binding="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                         />
                                         <DataGridTextColumn 
                                             Header="Application Name"
@@ -122,7 +122,7 @@
                                         <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
                                             EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
                                             Header=""
-                                            Binding="{Binding IsChecked, Mode=TwoWay}"
+                                            Binding="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                         />
                                         <DataGridTextColumn 
                                             Header="Database Name"
@@ -160,7 +160,7 @@
                                         <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
                                             EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
                                             Header=""
-                                            Binding="{Binding IsChecked, Mode=TwoWay}"
+                                            Binding="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                         />
                                         <DataGridTextColumn 
                                             Header="Host Name"
@@ -194,7 +194,7 @@
                                 </DataGrid>
                                 
                             </Grid>
-                            <Button DockPanel.Dock="Right" Width="100" Margin="5">Apply</Button>
+                            <Button DockPanel.Dock="Right" Width="100" Margin="5" Command="{Binding ApplyCommand}">Apply</Button>
                         </DockPanel>
                         </Border>
                     </Grid>
