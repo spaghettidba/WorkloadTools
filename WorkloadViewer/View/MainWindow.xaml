@@ -64,9 +64,9 @@
 
         <TabControl TabStripPlacement="Bottom" DockPanel.Dock="Top" x:Name="MainTabControl">
             <TabItem Header="Workload">
-
-                <DockPanel DockPanel.Dock="Top" Name="ContentPanel">
-                    <Grid x:Name="FiltersGrid" DockPanel.Dock="Top" Visibility="Collapsed">
+                <DockPanel Name="ContentPanel">
+                    <Grid x:Name="FiltersGrid" DockPanel.Dock="Top" Visibility="Visible">
+                        <Border BorderThickness="0,0,0,2" BorderBrush="#01B8AA" >
                         <DockPanel>
                             <Grid DockPanel.Dock="Top">
                                 <Grid.ColumnDefinitions>
@@ -78,58 +78,127 @@
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.Column="0">
-                                    <DataGrid ItemsSource="{Binding Path=ApplicationList}" AutoGenerateColumns="False" CanUserResizeColumns="False" CanUserAddRows="False">
-                                        <DataGrid.Columns>
-                                            <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                <DataGrid ItemsSource="{Binding Path=ApplicationList}" AutoGenerateColumns="False" CanUserResizeColumns="False" CanUserAddRows="False" Grid.Column="0" MaxHeight="150" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="5">
+                                    <DataGrid.Columns>
+                                        <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
                                             EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
                                             Header=""
                                             Binding="{Binding IsChecked, Mode=TwoWay}"
-                                            />
-                                            <DataGridTextColumn 
-                                                Header="Application Name"
-                                                Binding="{Binding Name, Mode=OneWay}"
-                                            />
-                                        </DataGrid.Columns>
-                                    </DataGrid>
-                                </ScrollViewer>
-
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.Column="1">
-                                    <DataGrid ItemsSource="{Binding Path=DatabaseList}" AutoGenerateColumns="False" CanUserResizeColumns="False" CanUserAddRows="False">
-                                        <DataGrid.Columns>
-                                            <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
-                                        EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
-                                        Header=""
-                                        Binding="{Binding IsChecked, Mode=TwoWay}"
                                         />
-                                            <DataGridTextColumn 
+                                        <DataGridTextColumn 
+                                            Header="Application Name"
+                                            Binding="{Binding Name, Mode=OneWay}"
+                                            IsReadOnly="True"
+                                        />
+                                    </DataGrid.Columns>
+                                    <DataGrid.CellStyle>
+                                        <Style TargetType="DataGridCell">
+                                            <Setter Property="HorizontalAlignment" Value="Left" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="IsEditing" Value="True" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.CellStyle>
+                                    <DataGrid.RowStyle>
+                                        <Style TargetType="DataGridRow">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True">
+                                                    <Setter Property="Background" Value="Transparent" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.RowStyle>
+                                    <DataGrid.Resources>
+                                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+                                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#000000"/>
+                                    </DataGrid.Resources>
+                                </DataGrid>
+
+
+                                    <DataGrid ItemsSource="{Binding Path=DatabaseList}" AutoGenerateColumns="False" CanUserResizeColumns="False" CanUserAddRows="False" Grid.Column="1" MaxHeight="150" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="5">
+                                    <DataGrid.Columns>
+                                        <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                            EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                            Header=""
+                                            Binding="{Binding IsChecked, Mode=TwoWay}"
+                                        />
+                                        <DataGridTextColumn 
                                             Header="Database Name"
                                             Binding="{Binding Name, Mode=OneWay}"
+                                            IsReadOnly="True"
                                         />
-                                        </DataGrid.Columns>
-                                    </DataGrid>
-                                </ScrollViewer>
+                                    </DataGrid.Columns>
+                                    <DataGrid.CellStyle>
+                                        <Style TargetType="DataGridCell">
+                                            <Setter Property="HorizontalAlignment" Value="Left" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="IsEditing" Value="True" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.CellStyle>
+                                    <DataGrid.RowStyle>
+                                        <Style TargetType="DataGridRow">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True">
+                                                    <Setter Property="Background" Value="Transparent" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.RowStyle>
+                                    <DataGrid.Resources>
+                                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+                                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#000000"/>
+                                    </DataGrid.Resources>
+                                </DataGrid>
 
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.Column="2">
-                                    <DataGrid ItemsSource="{Binding Path=HostList}" AutoGenerateColumns="False" CanUserResizeColumns="False" CanUserAddRows="False">
-                                        <DataGrid.Columns>
-                                            <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
-                                        EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
-                                        Header=""
-                                        Binding="{Binding IsChecked, Mode=TwoWay}"
+                                    <DataGrid ItemsSource="{Binding Path=HostList}" AutoGenerateColumns="False" CanUserResizeColumns="False" CanUserAddRows="False" Grid.Column="2" MaxHeight="150" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="5">
+                                    <DataGrid.Columns>
+                                        <DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                            EditingElementStyle="{DynamicResource MetroDataGridCheckBox}"
+                                            Header=""
+                                            Binding="{Binding IsChecked, Mode=TwoWay}"
                                         />
-                                            <DataGridTextColumn 
+                                        <DataGridTextColumn 
                                             Header="Host Name"
                                             Binding="{Binding Name, Mode=OneWay}"
+                                            IsReadOnly="True"
                                         />
-                                        </DataGrid.Columns>
-                                    </DataGrid>
-                                </ScrollViewer>
+                                    </DataGrid.Columns>
+                                    <DataGrid.CellStyle>
+                                        <Style TargetType="DataGridCell">
+                                            <Setter Property="HorizontalAlignment" Value="Left" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="IsEditing" Value="True" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.CellStyle>
+                                    <DataGrid.RowStyle>
+                                        <Style TargetType="DataGridRow">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True">
+                                                    <Setter Property="Background" Value="Transparent" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.RowStyle>
+                                    <DataGrid.Resources>
+                                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+                                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#000000"/>
+                                    </DataGrid.Resources>
+                                </DataGrid>
                                 
                             </Grid>
-                            <Button DockPanel.Dock="Right" Width="100">Apply</Button>
+                            <Button DockPanel.Dock="Right" Width="100" Margin="5">Apply</Button>
                         </DockPanel>
+                        </Border>
                     </Grid>
+                        
 
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" DockPanel.Dock="Bottom">
                         <Grid x:Name="MainGrid">
@@ -152,7 +221,7 @@
             </TabItem>
 
             <TabItem Header="Queries">
-                <Grid>
+                <Grid Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="3*" />
                         <RowDefinition Height="1*" />
@@ -220,7 +289,7 @@
             </TabItem>
 
             <TabItem Header="Query Details" x:Name="QueryDetailsTabItem">
-                <Grid x:Name="DetailsGrid">
+                <Grid x:Name="DetailsGrid" Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="1*" />
                         <RowDefinition Height="1*" />
@@ -239,7 +308,7 @@
                         IsReadOnly="True"
                         Grid.Row="0"
                         BorderThickness="0"
-                        Padding="10,20,10,20"
+                        Padding="0,20,0,20"
                         Text="{Binding ElementName=Queries, Path=SelectedItem.query_text}"
                     />
                     

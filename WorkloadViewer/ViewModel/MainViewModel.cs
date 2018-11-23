@@ -376,6 +376,7 @@ namespace WorkloadViewer.ViewModel
                 Position = AxisPosition.Left,
                 StringFormat = "N0",
                 IsZoomEnabled = false,
+                IsPanEnabled = false,
                 AbsoluteMinimum = 0,
                 MaximumPadding = 0.2,
                 MinorTickSize = 0
@@ -539,8 +540,61 @@ namespace WorkloadViewer.ViewModel
 
         private void InitializeFilters()
         {
-            ApplicationList = new List<FilterDefinition>();
+            var baseApplications = (
+                from t in _baselineWorkloadAnalysis.Points
+                group t by new { application = t.ApplicationName }
+                into grp
+                select grp.Key.application
+            );
+            if(_benchmarkWorkloadAnalysis != null)
+            {
+                baseApplications = baseApplications.Union(
+                        from t in _benchmarkWorkloadAnalysis.Points
+                        group t by new { application = t.ApplicationName }
+                        into grp
+                        select grp.Key.application
+                    ).Distinct();
+            }
+            ApplicationList = new List<FilterDefinition>(from name in baseApplications orderby name  select new FilterDefinition() { Name = name, IsChecked = true });
+
+            var baseHosts = (
+                from t in _baselineWorkloadAnalysis.Points
+                group t by new { host = t.HostName }
+                into grp
+                select grp.Key.host
+            );
+            if (_benchmarkWorkloadAnalysis != null)
+            {
+                baseHosts = baseHosts.Union(
+                        from t in _benchmarkWorkloadAnalysis.Points
+                        group t by new { host = t.HostName }
+                        into grp
+                        select grp.Key.host
+                    ).Distinct();
+            }
+            HostList = new List<FilterDefinition>(from name in baseHosts orderby name select new FilterDefinition() { Name = name, IsChecked = true });
+
+            var baseDatabases = (
+                from t in _baselineWorkloadAnalysis.Points
+                group t by new { database = t.DatabaseName }
+                into grp
+                select grp.Key.database
+            );
+            if (_benchmarkWorkloadAnalysis != null)
+            {
+                baseDatabases = baseDatabases.Union(
+                        from t in _benchmarkWorkloadAnalysis.Points
+                        group t by new { database = t.DatabaseName }
+                        into grp
+                        select grp.Key.database
+                    ).Distinct();
+            }
+            DatabaseList = new List<FilterDefinition>(from name in baseDatabases orderby name select new FilterDefinition() { Name = name, IsChecked = true });
+
+
             RaisePropertyChanged("ApplicationList");
+            RaisePropertyChanged("HostList");
+            RaisePropertyChanged("DatabaseList"); 
         }
 
     }
