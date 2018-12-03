@@ -53,6 +53,7 @@ namespace WorkloadViewer.ViewModel
         public List<FilterDefinition> HostList { get; set; }
         public List<FilterDefinition> ApplicationList { get; set; }
         public List<FilterDefinition> DatabaseList { get; set; }
+        public List<FilterDefinition> LoginList { get; set; }
 
         public ICommand LoadedCommand { get; set; }
         public ICommand RenderedCommand { get; set; }
@@ -218,6 +219,7 @@ namespace WorkloadViewer.ViewModel
                            where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
                                 && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
                                 && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
+                                && LoginList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.LoginName)
                            group t by new
                            {
                                query = t.NormalizedQuery
@@ -243,6 +245,7 @@ namespace WorkloadViewer.ViewModel
                             where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
                                 && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
                                 && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
+                                && LoginList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.LoginName)
                             group t by new
                             {
                                 query = t.NormalizedQuery
@@ -480,6 +483,7 @@ namespace WorkloadViewer.ViewModel
                         where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
                             && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
                             && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
+                            && LoginList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.LoginName)
                         group t by new
                         {
                             offset = t.OffsetMinutes
@@ -519,6 +523,7 @@ namespace WorkloadViewer.ViewModel
                         where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
                            && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
                            && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
+                           && LoginList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.LoginName)
                         group t by new
                         {
                             offset = t.OffsetMinutes
@@ -560,6 +565,7 @@ namespace WorkloadViewer.ViewModel
                         where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
                            && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
                            && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
+                           && LoginList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.LoginName)
                         group t by new
                         {
                             offset = t.OffsetMinutes
@@ -634,10 +640,27 @@ namespace WorkloadViewer.ViewModel
             }
             DatabaseList = new List<FilterDefinition>(from name in baseDatabases orderby name select new FilterDefinition() { Name = name, IsChecked = true });
 
+            var baseLogins = (
+                from t in _baselineWorkloadAnalysis.Points
+                group t by new { login = t.LoginName }
+                into grp
+                select grp.Key.login
+            );
+            if (_benchmarkWorkloadAnalysis != null)
+            {
+                baseLogins = baseLogins.Union(
+                        from t in _benchmarkWorkloadAnalysis.Points
+                        group t by new { login = t.LoginName }
+                        into grp
+                        select grp.Key.login
+                    ).Distinct();
+            }
+            LoginList = new List<FilterDefinition>(from name in baseLogins orderby name select new FilterDefinition() { Name = name, IsChecked = true });
 
             RaisePropertyChanged("ApplicationList");
             RaisePropertyChanged("HostList");
-            RaisePropertyChanged("DatabaseList"); 
+            RaisePropertyChanged("DatabaseList");
+            RaisePropertyChanged("LoginList");
         }
 
     }
