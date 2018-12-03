@@ -214,6 +214,7 @@ namespace WorkloadViewer.ViewModel
             Queries.Columns.Add(new DataColumn("execution_count", typeof(Int64)));
             Queries.Columns.Add(new DataColumn("execution_count2", typeof(Int64)));
             Queries.Columns.Add(new DataColumn("querydetails", typeof(Object)));
+            Queries.Columns.Add(new DataColumn("document", typeof(Object)));
 
             var baseline = from t in _baselineWorkloadAnalysis.Points
                            where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
@@ -310,7 +311,8 @@ namespace WorkloadViewer.ViewModel
 
                 // attach query details to the row
                 newRow["querydetails"] = new QueryDetails(itm.query, _baselineWorkloadAnalysis, _benchmarkWorkloadAnalysis);
-            }
+                newRow["document"] = new ICSharpCode.AvalonEdit.Document.TextDocument() { Text = itm.query.ExampleText };
+            };
             RaisePropertyChanged("Queries");
             RaisePropertyChanged("CompareModeVisibility");
             RaisePropertyChanged("CompareMode");

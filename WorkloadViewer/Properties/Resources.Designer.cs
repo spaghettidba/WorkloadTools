@@ -61,6 +61,16 @@ namespace WorkloadViewer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        public static byte[] TSQL {
+            get {
+                object obj = ResourceManager.GetObject("TSQL", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to WITH baseData AS (
         ///	SELECT 
         ///		DATEDIFF(minute, Base.end_time, bIn.end_time) AS offset_minutes,
