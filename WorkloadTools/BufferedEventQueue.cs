@@ -207,5 +207,10 @@ namespace WorkloadTools
         }
 
         protected abstract void Dispose(bool disposing);
+
+        public bool HasMoreElements()
+        {
+            return Count > 0;
+        }
     }
 }

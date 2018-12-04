@@ -55,5 +55,10 @@ namespace WorkloadTools
             pile.WaitForCompleteStop();
             pile.Dispose();
         }
+
+        public bool HasMoreElements()
+        {
+            return pointers.Count > 0;
+        }
     }
 }

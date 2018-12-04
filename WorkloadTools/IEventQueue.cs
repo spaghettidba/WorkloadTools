@@ -16,6 +16,7 @@ namespace WorkloadTools
         int BufferSize { get; set; }
 
         bool TryDequeue(out WorkloadEvent result);
+        bool HasMoreElements();
         void Enqueue(WorkloadEvent evt);
     }
 }
