@@ -341,7 +341,8 @@ namespace WorkloadViewer.ViewModel
         {
             if(e.Key == Key.F5)
             {
-                // invoke refresh
+                // TODO: refreshing should keep zoom and filters
+                InitializeAll();
             }
         }
 
