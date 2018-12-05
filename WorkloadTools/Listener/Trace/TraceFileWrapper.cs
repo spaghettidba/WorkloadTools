@@ -68,6 +68,20 @@ namespace WorkloadTools.Listener.Trace
             return this[Name];
         }
 
+        public bool HasAttribute(string Name)
+        {
+            try
+            {
+                GetValue(Name);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+
         public void InitializeAsReader(string fileName)
         {
             try

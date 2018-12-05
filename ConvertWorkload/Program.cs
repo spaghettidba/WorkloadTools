@@ -11,6 +11,7 @@ using System.Runtime;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using WorkloadTools.Listener.Trace;
 
 namespace ConvertWorkload
 {
@@ -71,16 +72,20 @@ namespace ConvertWorkload
             }
 
             EventReader reader = null;
-            if (options.SourceFile.EndsWith(".trc"))
+            if (options.InputFile.EndsWith(".trc"))
             {
-                reader = new SqlTraceEventReader(options.SourceFile);
+                reader = new SqlTraceEventReader(options.InputFile);
             }
-            else if (options.SourceFile.EndsWith(".evt"))
+            else if (options.InputFile.EndsWith(".evt"))
             {
                 // TODO: implement extended events reader
             }
-            EventWriter writer = new WorkloadFileEventWriter(options.DestinationFile);
+            EventWriter writer = new WorkloadFileEventWriter(options.OutputFile);
             WorkloadConverter converter = new WorkloadConverter(reader, writer);
+            converter.ApplicationFilter = options.ApplicationFilter;
+            converter.DatabaseFilter = options.DatabaseFilter;
+            converter.HostFilter = options.HostFilter;
+            converter.LoginFilter = options.LoginFilter;
 
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
                 e.Cancel = true;
@@ -129,11 +134,23 @@ namespace ConvertWorkload
         [Option('L', "Log", HelpText = "Log file")]
         public string LogFile { get; set; }
 
-        [Option('S', "Source", HelpText = "Source file")]
-        public string SourceFile { get; set; }
+        [Option('I', "Input", HelpText = "Input file")]
+        public string InputFile { get; set; }
 
-        [Option('D', "Destination", HelpText = "Destination file")]
-        public string DestinationFile { get; set; }
+        [Option('O', "Output", HelpText = "Output file")]
+        public string OutputFile { get; set; }
+
+        [Option('A', "ApplicationFilter", HelpText = "Application filter")]
+        public string ApplicationFilter { get; set; }
+
+        [Option('D', "DatabaseFilter", HelpText = "Database filter")]
+        public string DatabaseFilter { get; set; }
+
+        [Option('H', "HostFilter", HelpText = "Host Filter")]
+        public string HostFilter { get; set; }
+
+        [Option('U', "LoginFilter", HelpText = "Login Filter")]
+        public string LoginFilter { get; set; }
 
         [ParserState]
         public IParserState LastParserState { get; set; }

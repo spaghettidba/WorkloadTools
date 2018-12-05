@@ -25,7 +25,8 @@ namespace ConvertWorkload
             Events = new BinarySerializedBufferedEventQueue();
             Events.BufferSize = 10000;
             tracePath = path;
-        }
+            Filter = new TraceEventFilter();
+    }
 
 
         private void ReadEventsFromFile()
@@ -49,10 +50,38 @@ namespace ConvertWorkload
                     {
                         reader.InitializeAsReader(traceFile);
 
+                        Dictionary<string, string> ColumnNames = null;
+
                         while (reader.Read() && !stopped)
                         {
                             try
                             {
+                                if(ColumnNames == null)
+                                {
+                                    ColumnNames = new Dictionary<string, string>();
+
+                                    string[] colNames = {
+                                        "EventClass",
+                                        "ApplicationName",
+                                        "HostName",
+                                        "LoginName",
+                                        "SPID",
+                                        "TextData",
+                                        "StartTime",
+                                        "Reads",
+                                        "Writes",
+                                        "CPU",
+                                        "Duration"
+                                    };
+
+                                    foreach(var s in colNames)
+                                    {
+                                        if (reader.HasAttribute(s)) ColumnNames.Add(s, s);
+                                    }
+                                    
+                                }
+
+
                                 ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
 
                                 if (reader.GetValue("EventClass").ToString() == "RPC:Completed")
@@ -65,18 +94,29 @@ namespace ConvertWorkload
                                     continue;
                                 }
 
-                                evt.ApplicationName = (string)reader.GetValue("ApplicationName");
-                                evt.DatabaseName = (string)reader.GetValue("DatabaseName");
-                                evt.HostName = (string)reader.GetValue("HostName");
-                                evt.LoginName = (string)reader.GetValue("LoginName");
-                                evt.SPID = (int?)reader.GetValue("SPID");
-                                evt.Text = (string)reader.GetValue("TextData");
-                                evt.StartTime = (DateTime)reader.GetValue("StartTime");
+                                if(ColumnNames.ContainsKey("ApplicationName"))
+                                    evt.ApplicationName = (string)reader.GetValue("ApplicationName");
+                                if (ColumnNames.ContainsKey("DatabaseName"))
+                                    evt.DatabaseName = (string)reader.GetValue("DatabaseName");
+                                if (ColumnNames.ContainsKey("HostName"))
+                                    evt.HostName = (string)reader.GetValue("HostName");
+                                if (ColumnNames.ContainsKey("LoginName"))
+                                    evt.LoginName = (string)reader.GetValue("LoginName");
+                                if (ColumnNames.ContainsKey("SPID"))
+                                    evt.SPID = (int?)reader.GetValue("SPID");
+                                if (ColumnNames.ContainsKey("TextData"))
+                                    evt.Text = (string)reader.GetValue("TextData");
+                                if (ColumnNames.ContainsKey("StartTime"))
+                                    evt.StartTime = (DateTime)reader.GetValue("StartTime");
 
-                                evt.Reads = (long?)reader.GetValue("Reads");
-                                evt.Writes = (long?)reader.GetValue("Writes");
-                                evt.CPU = (long?)reader.GetValue("CPU") * 1000; // SqlTrace captures CPU as milliseconds => convert to microseconds
-                                evt.Duration = (long?)reader.GetValue("Duration");
+                                if (ColumnNames.ContainsKey("Reads"))
+                                    evt.Reads = (long?)reader.GetValue("Reads");
+                                if (ColumnNames.ContainsKey("Writes"))
+                                    evt.Writes = (long?)reader.GetValue("Writes");
+                                if (ColumnNames.ContainsKey("CPU"))
+                                    evt.CPU = (long?)Convert.ToInt64(reader.GetValue("CPU")) * 1000; // SqlTrace captures CPU as milliseconds => convert to microseconds
+                                if (ColumnNames.ContainsKey("Duration"))
+                                    evt.Duration = (long?)reader.GetValue("Duration");
 
                                 if (transformer.Skip(evt.Text))
                                     continue;
@@ -144,6 +184,11 @@ namespace ConvertWorkload
         public override bool HasMoreElements()
         {
             return !finished && !stopped && (started ? Events.HasMoreElements() : true);
+        }
+
+        public override bool HasFinished()
+        {
+            return finished && !Events.HasMoreElements();
         }
     }
 }

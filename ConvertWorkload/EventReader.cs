@@ -38,6 +38,8 @@ namespace ConvertWorkload
             }
         }
 
+        public abstract bool HasFinished();
+
         public abstract WorkloadEvent Read();
 
         public abstract bool HasMoreElements();
