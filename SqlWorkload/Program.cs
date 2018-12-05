@@ -1,9 +1,11 @@
 ﻿using CommandLine;
 using CommandLine.Text;
 using NLog;
+using NLog.Targets;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime;
 using System.Text;
@@ -53,6 +55,25 @@ namespace SqlWorkload
 
         static void Run(Options options)
         {
+            // reconfigure loggers to use a file in the current directory
+            // or the file specified by the "Log" commandline parameter
+            var target = (FileTarget)LogManager.Configuration.FindTargetByName("logfile");
+            if(target != null)
+            {
+                var pathToLog = options.LogFile;
+                if (pathToLog == null)
+                {
+                    pathToLog = Path.Combine(Environment.CurrentDirectory, "SqlWorkload.log");
+                }
+                if (!Path.IsPathRooted(pathToLog))
+                {
+                    pathToLog = Path.Combine(Environment.CurrentDirectory, pathToLog);
+                }
+                target.FileName = pathToLog;
+                LogManager.ReconfigExistingLoggers();
+            }
+
+
             options.ConfigurationFile = System.IO.Path.GetFullPath(options.ConfigurationFile);
             logger.Info(String.Format("Reading configuration from '{0}'", options.ConfigurationFile));
 
@@ -113,6 +134,9 @@ namespace SqlWorkload
     {
         [Option('F', "File", DefaultValue = "SqlWorkload.json", HelpText = "Configuration file")]
         public string ConfigurationFile { get; set; }
+
+        [Option('L', "Log", HelpText = "Log file")]
+        public string LogFile { get; set; }
 
         [ParserState]
         public IParserState LastParserState { get; set; }
