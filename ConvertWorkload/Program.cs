@@ -1,9 +1,11 @@
 ﻿using CommandLine;
 using CommandLine.Text;
 using NLog;
+using NLog.Targets;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime;
 using System.Text;
@@ -47,6 +49,24 @@ namespace ConvertWorkload
 
         private static void Run(Options options)
         {
+            // reconfigure loggers to use a file in the current directory
+            // or the file specified by the "Log" commandline parameter
+            var target = (FileTarget)LogManager.Configuration.FindTargetByName("logfile");
+            if (target != null)
+            {
+                var pathToLog = options.LogFile;
+                if (pathToLog == null)
+                {
+                    pathToLog = Path.Combine(Environment.CurrentDirectory, "ConvertWorkload.log");
+                }
+                if (!Path.IsPathRooted(pathToLog))
+                {
+                    pathToLog = Path.Combine(Environment.CurrentDirectory, pathToLog);
+                }
+                target.FileName = pathToLog;
+                LogManager.ReconfigExistingLoggers();
+            }
+
             EventReader reader = null;
             if (options.SourceFile.EndsWith(".trc"))
             {
@@ -103,6 +123,9 @@ namespace ConvertWorkload
 
     class Options
     {
+        [Option('L', "Log", HelpText = "Log file")]
+        public string LogFile { get; set; }
+
         [Option('S', "Source", HelpText = "Source file")]
         public string SourceFile { get; set; }
 

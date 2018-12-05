@@ -1,9 +1,12 @@
 ﻿using CommandLine;
 using CommandLine.Text;
+using NLog;
+using NLog.Targets;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -30,6 +33,24 @@ namespace WorkloadViewer
                 MessageBox.Show(Options.GetUsage());
                 Shutdown();
             }
+
+            // reconfigure loggers to use a file in the current directory
+            // or the file specified by the "Log" commandline parameter
+            var target = (FileTarget)LogManager.Configuration.FindTargetByName("logfile");
+            if (target != null)
+            {
+                var pathToLog = Options.LogFile;
+                if (pathToLog == null)
+                {
+                    pathToLog = Path.Combine(Environment.CurrentDirectory, "WorkloadViewer.log");
+                }
+                if (!Path.IsPathRooted(pathToLog))
+                {
+                    pathToLog = Path.Combine(Environment.CurrentDirectory, pathToLog);
+                }
+                target.FileName = pathToLog;
+                LogManager.ReconfigExistingLoggers();
+            }
         }
 
     }
@@ -38,6 +59,9 @@ namespace WorkloadViewer
     {
         [Option('F', "File", HelpText = "Configuration file")]
         public string ConfigurationFile { get; set; }
+
+        [Option('L', "Log", HelpText = "Log File")]
+        public string LogFile { get; set; }
 
         [Option('S', "BaselineServer", HelpText = "Baseline Server")]
         public string BaselineServer { get; set; }
