@@ -13,6 +13,7 @@ using WorkloadViewer.Model;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Windows;
+using GalaSoft.MvvmLight.Messaging;
 
 namespace WorkloadViewer.ViewModel
 {
@@ -316,6 +317,9 @@ namespace WorkloadViewer.ViewModel
             RaisePropertyChanged("Queries");
             RaisePropertyChanged("CompareModeVisibility");
             RaisePropertyChanged("CompareMode");
+
+            var msg = new SortColMessage("diff_sum_duration_ms", System.ComponentModel.ListSortDirection.Descending);
+            Messenger.Default.Send<SortColMessage>(msg);
         }
 
 

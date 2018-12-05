@@ -26,6 +26,8 @@
             <Setter Property="HorizontalAlignment" Value="Right" />
         </Style>
 
+        <CollectionViewSource x:Key="WorkloadQueries" Source="{Binding Queries, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" />
+
     </Window.Resources>
 
     <Window.DataContext>
@@ -272,7 +274,7 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.Row="0">
                         <DataGrid x:Name="Queries" 
                                   AutoGenerateColumns="False" 
-                                  ItemsSource="{Binding Queries, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" 
+                                  ItemsSource="{Binding Source={StaticResource WorkloadQueries}, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" 
                                   IsReadOnly="True" 
                                   SelectionUnit="FullRow" 
                                   SelectionMode="Single" 

@@ -1,6 +1,8 @@
-﻿using MahApps.Metro.Controls;
+﻿using GalaSoft.MvvmLight.Messaging;
+using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,6 +16,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using WorkloadViewer.ViewModel;
 
 namespace WorkloadViewer
 {
@@ -26,6 +29,7 @@ namespace WorkloadViewer
         {
             InitializeComponent();
 
+            Messenger.Default.Register<SortColMessage>(this, (msg) => ReceiveSortMessage(msg));
 
             
             using (var stream = new MemoryStream(WorkloadViewer.Properties.Resources.TSQL))
@@ -37,6 +41,26 @@ namespace WorkloadViewer
                     QueryText.SyntaxHighlighting = highlighting;
                     QueryDetailText.SyntaxHighlighting = highlighting;
                 }
+            }
+        }
+
+        private void ReceiveSortMessage(SortColMessage msg)
+        {
+            try
+            {
+                DataGridColumn dgc = Queries.Columns.First(el => el.Header.ToString().Equals(msg.ColumnName));
+                if(dgc != null)
+                {
+                    dgc.SortDirection = msg.Direction;
+                    SortDescription sd = new SortDescription(dgc.SortMemberPath, msg.Direction);
+                    CollectionViewSource cvs = (CollectionViewSource)this.Resources["WorkloadQueries"];
+                    cvs.SortDescriptions.Clear();
+                    cvs.SortDescriptions.Add(new SortDescription(dgc.SortMemberPath, msg.Direction));
+                }
+            }
+            catch(Exception e)
+            {
+
             }
         }
 
