@@ -4,8 +4,17 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WorkloadViewer.ViewModel"
+             xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+             xmlns:command="http://www.galasoft.ch/mvvmlight"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="800">
+
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="KeyDown">
+            <command:EventToCommand Command="{Binding KeyDownCommand}" PassEventArgsToCommand="True" />
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="1*" />
@@ -37,13 +46,13 @@
                     <ColumnDefinition Width="1*" />
                 </Grid.ColumnDefinitions>
                 <Label Grid.Row="0" Grid.Column="0">Server</Label>
-                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BaselineServer, Mode=TwoWay}"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BaselineServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <Label Grid.Row="1" Grid.Column="0">Database</Label>
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BaselineDatabase, Mode=TwoWay}"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BaselineDatabase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <Label Grid.Row="2" Grid.Column="0">Schema</Label>
-                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BaselineSchema, Mode=TwoWay}"/>
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BaselineSchema, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <Label Grid.Row="3" Grid.Column="0">UserName</Label>
-                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding BaselineUsername, Mode=TwoWay}"/>
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding BaselineUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <Label Grid.Row="4" Grid.Column="0">Password</Label>
                 <PasswordBox Grid.Row="4" Grid.Column="1" Margin="0,2,0,2" PasswordChanged="Baseline_PasswordChanged"/>
             </Grid>
@@ -70,20 +79,20 @@
                     <ColumnDefinition Width="1*" />
                 </Grid.ColumnDefinitions>
                 <Label Grid.Row="0" Grid.Column="0">Server</Label>
-                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BenchmarkServer, Mode=TwoWay}"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BenchmarkServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <Label Grid.Row="1" Grid.Column="0">Database</Label>
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BenchmarkDatabase, Mode=TwoWay}"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BenchmarkDatabase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <Label Grid.Row="2" Grid.Column="0">Schema</Label>
-                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BenchmarkSchema, Mode=TwoWay}"/>
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BenchmarkSchema, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <Label Grid.Row="3" Grid.Column="0">UserName</Label>
-                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding BenchmarkUsername, Mode=TwoWay}"/>
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding BenchmarkUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <Label Grid.Row="4" Grid.Column="0">Password</Label>
                 <PasswordBox Grid.Row="4" Grid.Column="1" Margin="0,2,0,2" PasswordChanged="Benchmark_PasswordChanged"/>
             </Grid>
         </GroupBox>
         <DockPanel Grid.Row="1" Grid.ColumnSpan="2" LastChildFill="False">
-            <Button DockPanel.Dock="Right" Margin="10" Padding="10" Command="{Binding CancelCommand}">Cancel</Button>
-            <Button DockPanel.Dock="Right" Margin="10" Padding="10" Command="{Binding OKCommand}">OK</Button>
+            <Button x:Name="CancelButton" DockPanel.Dock="Right" Margin="10" Padding="10" Command="{Binding CancelCommand}">Cancel</Button>
+            <Button x:Name="OKButton" DockPanel.Dock="Right" Margin="10" Padding="10" Command="{Binding OKCommand}">OK</Button>
         </DockPanel>
     </Grid>
 </UserControl>

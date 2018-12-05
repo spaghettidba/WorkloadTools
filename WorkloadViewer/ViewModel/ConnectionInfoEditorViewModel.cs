@@ -1,5 +1,6 @@
 ﻿using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+using GalaSoft.MvvmLight.Messaging;
 using MahApps.Metro.Controls.Dialogs;
 using System;
 using System.Collections.Generic;
@@ -29,6 +30,7 @@ namespace WorkloadViewer.ViewModel
 
         public ICommand CancelCommand { get; set; }
         public ICommand OKCommand { get; set; }
+        public ICommand KeyDownCommand { get; set; }
 
         public bool Cancel = false;
         private IDialogCoordinator _dialogCoordinator;
@@ -40,9 +42,19 @@ namespace WorkloadViewer.ViewModel
         {
             CancelCommand = new RelayCommand<RoutedEventArgs>(Cancel_Pressed);
             OKCommand = new RelayCommand<RoutedEventArgs>(OK_Pressed);
+            KeyDownCommand = new RelayCommand<KeyEventArgs>(KeyDown);
             _dialogCoordinator = DialogCoordinator.Instance;
             Cancel = false;
             Exception = null;
+        }
+
+        private void KeyDown(KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                var msg = new Message("OK");
+                Messenger.Default.Send<Message>(msg);
+            }
         }
 
         private async void Cancel_Pressed(RoutedEventArgs e)
