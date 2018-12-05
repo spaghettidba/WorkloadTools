@@ -36,20 +36,23 @@ namespace WorkloadViewer
 
             // reconfigure loggers to use a file in the current directory
             // or the file specified by the "Log" commandline parameter
-            var target = (FileTarget)LogManager.Configuration.FindTargetByName("logfile");
-            if (target != null)
+            if (LogManager.Configuration != null)
             {
-                var pathToLog = Options.LogFile;
-                if (pathToLog == null)
+                var target = (FileTarget)LogManager.Configuration.FindTargetByName("logfile");
+                if (target != null)
                 {
-                    pathToLog = Path.Combine(Environment.CurrentDirectory, "WorkloadViewer.log");
+                    var pathToLog = Options.LogFile;
+                    if (pathToLog == null)
+                    {
+                        pathToLog = Path.Combine(Environment.CurrentDirectory, "WorkloadViewer.log");
+                    }
+                    if (!Path.IsPathRooted(pathToLog))
+                    {
+                        pathToLog = Path.Combine(Environment.CurrentDirectory, pathToLog);
+                    }
+                    target.FileName = pathToLog;
+                    LogManager.ReconfigExistingLoggers();
                 }
-                if (!Path.IsPathRooted(pathToLog))
-                {
-                    pathToLog = Path.Combine(Environment.CurrentDirectory, pathToLog);
-                }
-                target.FileName = pathToLog;
-                LogManager.ReconfigExistingLoggers();
             }
         }
 

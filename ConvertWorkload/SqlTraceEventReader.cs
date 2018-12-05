@@ -36,7 +36,7 @@ namespace ConvertWorkload
                 var parentDir = Directory.GetParent(tracePath);
                 var fileName = Path.GetFileNameWithoutExtension(tracePath) + "*" + Path.GetExtension(tracePath);
 
-                List<string> files = Directory.GetFiles(tracePath, fileName).ToList();
+                List<string> files = Directory.GetFiles(parentDir.FullName, fileName).ToList();
                 files.Sort();
 
                 SqlTransformer transformer = new SqlTransformer();
@@ -143,7 +143,7 @@ namespace ConvertWorkload
 
         public override bool HasMoreElements()
         {
-            return !finished && !stopped && Events.HasMoreElements();
+            return !finished && !stopped && (started ? Events.HasMoreElements() : true);
         }
     }
 }

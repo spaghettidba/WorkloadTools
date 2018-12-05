@@ -51,20 +51,23 @@ namespace ConvertWorkload
         {
             // reconfigure loggers to use a file in the current directory
             // or the file specified by the "Log" commandline parameter
-            var target = (FileTarget)LogManager.Configuration.FindTargetByName("logfile");
-            if (target != null)
+            if(LogManager.Configuration != null)
             {
-                var pathToLog = options.LogFile;
-                if (pathToLog == null)
+                var target = (FileTarget)LogManager.Configuration.FindTargetByName("logfile");
+                if (target != null)
                 {
-                    pathToLog = Path.Combine(Environment.CurrentDirectory, "ConvertWorkload.log");
+                    var pathToLog = options.LogFile;
+                    if (pathToLog == null)
+                    {
+                        pathToLog = Path.Combine(Environment.CurrentDirectory, "ConvertWorkload.log");
+                    }
+                    if (!Path.IsPathRooted(pathToLog))
+                    {
+                        pathToLog = Path.Combine(Environment.CurrentDirectory, pathToLog);
+                    }
+                    target.FileName = pathToLog;
+                    LogManager.ReconfigExistingLoggers();
                 }
-                if (!Path.IsPathRooted(pathToLog))
-                {
-                    pathToLog = Path.Combine(Environment.CurrentDirectory, pathToLog);
-                }
-                target.FileName = pathToLog;
-                LogManager.ReconfigExistingLoggers();
             }
 
             EventReader reader = null;
