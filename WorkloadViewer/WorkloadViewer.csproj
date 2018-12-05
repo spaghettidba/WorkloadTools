@@ -24,6 +24,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -33,6 +34,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -133,6 +135,7 @@
     <Compile Include="ViewModel\FilterDefinition.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="Model\QueryDetails.cs" />
+    <Compile Include="ViewModel\SortColMessage.cs" />
     <Compile Include="ViewModel\ViewModelLocator.cs" />
     <Page Include="View\ConnectionInfoDialog.xaml">
       <SubType>Designer</SubType>
