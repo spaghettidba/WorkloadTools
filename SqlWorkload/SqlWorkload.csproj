@@ -93,6 +93,7 @@
     <ProjectReference Include="..\WorkloadTools\WorkloadTools.csproj">
       <Project>{ae6e4548-8c33-4728-8504-88aa9666020b}</Project>
       <Name>WorkloadTools</Name>
+      <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
