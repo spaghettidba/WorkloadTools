@@ -271,14 +271,18 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.Row="0">
                         <DataGrid x:Name="Queries" 
                                   AutoGenerateColumns="False" 
                                   ItemsSource="{Binding Source={StaticResource WorkloadQueries}, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" 
                                   IsReadOnly="True" 
                                   SelectionUnit="FullRow" 
                                   SelectionMode="Single" 
-                                  MouseDoubleClick="DataGridDoubleClick">
+                                  MouseDoubleClick="DataGridDoubleClick"
+                                  VerticalScrollBarVisibility="Auto" 
+                                  HorizontalScrollBarVisibility="Auto"
+                                  MaxHeight="3000"
+                                  RowHeight="23"
+                                  Grid.Row="0">
                             <DataGrid.Resources>
                                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#01B8AA"/>
                                 <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#FFFFFF"/>
@@ -315,7 +319,6 @@
                                 <DataGridTextColumn Header="execution_count2"     Binding="{Binding execution_count2}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
                             </DataGrid.Columns>
                         </DataGrid>
-                    </ScrollViewer>
                     <avalonedit:TextEditor 
                         SyntaxHighlighting="SQL" 
                         x:Name="QueryText" 

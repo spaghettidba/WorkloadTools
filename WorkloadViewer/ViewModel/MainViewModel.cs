@@ -14,12 +14,16 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Windows;
 using GalaSoft.MvvmLight.Messaging;
+using NLog;
 
 namespace WorkloadViewer.ViewModel
 {
 
     public class MainViewModel : ViewModelBase
     {
+
+        private static Logger logger = LogManager.GetCurrentClassLogger();
+
         public bool CompareMode
         {
             get
@@ -217,6 +221,8 @@ namespace WorkloadViewer.ViewModel
             Queries.Columns.Add(new DataColumn("querydetails", typeof(Object)));
             Queries.Columns.Add(new DataColumn("document", typeof(Object)));
 
+           logger.Info("Entering baseline evaluation");
+
             var baseline = from t in _baselineWorkloadAnalysis.Points
                            where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
                                 && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
@@ -238,6 +244,9 @@ namespace WorkloadViewer.ViewModel
                                avg_reads = grp.Average(t => t.AvgReads),
                                execution_count = grp.Sum(t => t.ExecutionCount)
                            };
+
+            logger.Info("Baseline evaluation completed");
+            logger.Info("Entering benchmark evaluation");
 
             var benchmark = from t in baseline where false select new { t.query, t.sum_duration_ms, t.avg_duration_ms, t.sum_cpu_ms, t.avg_cpu_ms, t.sum_reads, t.avg_reads, t.execution_count };
 
@@ -266,54 +275,44 @@ namespace WorkloadViewer.ViewModel
                             };
             }
 
-            foreach (var itm in baseline)
-            {
-                var newRow = Queries.Rows.Add();
-                newRow["query_hash"] = itm.query.Hash;
-                newRow["query_text"] = itm.query.ExampleText;
-                newRow["query_normalized"] = itm.query.NormalizedText;
-                newRow["sum_duration_ms"] = itm.sum_duration_ms;
-                newRow["avg_duration_ms"] = itm.avg_duration_ms;
-                newRow["sum_cpu_ms"] = itm.sum_cpu_ms;
-                newRow["avg_cpu_ms"] = itm.avg_cpu_ms;
-                newRow["sum_reads"] = itm.sum_reads;
-                newRow["avg_reads"] = itm.avg_reads;
-                newRow["execution_count"] = itm.execution_count;
+            logger.Info("Benchmark evaluation completed");
+            logger.Info("Merging sets");
 
-                if (_benchmarkWorkloadAnalysis != null)
+            var merged =
+                from b in baseline
+                join k in benchmark
+                    on b.query.Hash equals k.query.Hash
+                    into joinedData
+                from j in joinedData.DefaultIfEmpty()
+                select new
                 {
-                    var itm2 = benchmark.Where(p => p.query.Hash == itm.query.Hash).ToList();
+                    query_hash = b.query.Hash,
+                    query_text = b.query.ExampleText,
+                    query_normalized = b.query.NormalizedText,
+                    b.sum_duration_ms,
+                    b.avg_duration_ms,
+                    b.sum_cpu_ms,
+                    b.avg_cpu_ms,
+                    b.sum_reads,
+                    b.avg_reads,
+                    b.execution_count,
+                    sum_duration_ms2     = j == null ? 0 : j.sum_duration_ms,
+                    diff_sum_duration_ms = j == null ? 0 : j.sum_duration_ms - b.sum_duration_ms,
+                    avg_duration_ms2     = j == null ? 0 : j.avg_duration_ms,
+                    sum_cpu_ms2          = j == null ? 0 : j.sum_cpu_ms,
+                    diff_sum_cpu_ms      = j == null ? 0 : j.sum_cpu_ms - b.sum_cpu_ms,
+                    avg_cpu_ms2          = j == null ? 0 : j.avg_cpu_ms,
+                    sum_reads2           = j == null ? 0 : j.sum_reads,
+                    avg_reads2           = j == null ? 0 : j.avg_reads,
+                    execution_count2     = j == null ? 0 : j.execution_count,
+                    querydetails = new QueryDetails(b.query, _baselineWorkloadAnalysis, _benchmarkWorkloadAnalysis),
+                    document = new ICSharpCode.AvalonEdit.Document.TextDocument() { Text = b.query.ExampleText }
+                };
 
-                    if (itm2.Count > 0)
-                    {
-                        newRow["sum_duration_ms2"] = itm2[0].sum_duration_ms;
-                        newRow["diff_sum_duration_ms"] = itm2[0].sum_duration_ms - itm.sum_duration_ms;
-                        newRow["avg_duration_ms2"] = itm2[0].avg_duration_ms;
-                        newRow["sum_cpu_ms2"] = itm2[0].sum_cpu_ms;
-                        newRow["diff_sum_cpu_ms"] = itm2[0].sum_cpu_ms - itm.sum_cpu_ms;
-                        newRow["avg_cpu_ms2"] = itm2[0].avg_cpu_ms;
-                        newRow["sum_reads2"] = itm2[0].sum_reads;
-                        newRow["avg_reads2"] = itm2[0].avg_reads;
-                        newRow["execution_count2"] = itm2[0].execution_count;
-                    }
-                    else
-                    {
-                        newRow["sum_duration_ms2"] = 0;
-                        newRow["diff_sum_duration_ms"] = - itm.sum_duration_ms;
-                        newRow["avg_duration_ms2"] = 0;
-                        newRow["sum_cpu_ms2"] = 0;
-                        newRow["diff_sum_cpu_ms"] = - itm.sum_cpu_ms;
-                        newRow["avg_cpu_ms2"] = 0;
-                        newRow["sum_reads2"] = 0;
-                        newRow["avg_reads2"] = 0;
-                        newRow["execution_count2"] = 0;
-                    }
-                }
+            Queries = WorkloadTools.Util.DataUtils.ToDataTable(merged);
 
-                // attach query details to the row
-                newRow["querydetails"] = new QueryDetails(itm.query, _baselineWorkloadAnalysis, _benchmarkWorkloadAnalysis);
-                newRow["document"] = new ICSharpCode.AvalonEdit.Document.TextDocument() { Text = itm.query.ExampleText };
-            };
+            logger.Info("Sets merged");
+
             RaisePropertyChanged("Queries");
             RaisePropertyChanged("CompareModeVisibility");
             RaisePropertyChanged("CompareMode");
