@@ -142,3 +142,25 @@ This tab displays information about the queries and how they relate to the workl
 Double clicking a query in the "Queries" tab takes you to the "Query Details" tab, where you can see the text of the selected query, specific statistics by application, database, host and login and the average duration in a chart.
 
 ![SqlWorkload query detail](./Images/SqlWorkloadDetail.png "Detail")
+
+## ConvertWorkload
+
+ConvertWorkload is a command line tool to convert existing trace files to the internal SQLite format used by WorkloadTools. In the future, ConvertWorkload will also support conversion from existing Extended Events files.
+
+### Command line switches
+
+```text
+-I or --Input               The input file (trace or extended events) to convert
+
+-O or --Output              The output SQLite file to write
+
+-L or --Log                 Specifies where to save the log file
+
+-A or --ApplicationFilter   Application filter to apply while converting the source file
+
+-D or --DatabaseFilter      Database filter to apply while converting the source file
+
+-H or --HostFilter          Host filter to apply while converting the source file
+
+-U or --LoginFilter         Login filter to apply while converting the source file
+```
