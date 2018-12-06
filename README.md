@@ -147,6 +147,8 @@ Double clicking a query in the "Queries" tab takes you to the "Query Details" ta
 
 ConvertWorkload is a command line tool to convert existing trace files to the internal SQLite format used by WorkloadTools. In the future, ConvertWorkload will also support conversion from existing Extended Events files.
 
+Why converting trace file to a different intermediate format instead of supporting it directly? Trace files can be read using an API that works only in x86. While WorkloadTools **can** work in x86, using x64 builds is highly recommended, due to the possible high memory usage when capturing intensive workloads. Using a x86 API would have excluded the functionality from the x64 builds, hence using an external tool to convert trace files seems much more appropriate.
+
 ### Command line switches
 
 ```text
