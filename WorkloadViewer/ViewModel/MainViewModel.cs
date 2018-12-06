@@ -15,6 +15,8 @@ using System.Data;
 using System.Windows;
 using GalaSoft.MvvmLight.Messaging;
 using NLog;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace WorkloadViewer.ViewModel
 {
@@ -72,7 +74,6 @@ namespace WorkloadViewer.ViewModel
         private IDialogCoordinator _dialogCoordinator;
         private DateTime _lastAxisAdjust = DateTime.Now;
 
-
         public MainViewModel()
         {
             LoadedCommand = new RelayCommand<EventArgs>(Loaded);
@@ -104,18 +105,32 @@ namespace WorkloadViewer.ViewModel
 
         private async void InitializeAll()
         {
+            ProgressDialogController controller = await _dialogCoordinator.ShowProgressAsync(this, "Loading data", String.Empty, false);
+            controller.SetIndeterminate();
+
             try
             {
-                InitializeWorkloadAnalysis();
-                InitializeFilters();
-                InitializeCharts();
-                RefreshAllCharts();
+                await Task.Run(() =>
+                    {
+                        InitializeWorkloadAnalysis();
+                        InitializeFilters();
+                        InitializeCharts();
+                        RefreshAllCharts();
+                    });
+
+                // This cannot be run async due to threading errors
+                // in AvalonEdit.TextEditor
+                // "TextDocument can be accessed only from the thread that owns it"
                 InitializeQueries();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 await _dialogCoordinator.ShowMessageAsync(this, "WorkloadViewer", "Unable to load data: " + e.Message);
                 ShowConnectionInfoDialog();
+            }
+            finally
+            {
+                await controller.CloseAsync();
             }
         }
 
@@ -136,6 +151,7 @@ namespace WorkloadViewer.ViewModel
             viewModel.BenchmarkPassword = _options.BenchmarkPassword;
             await _dialogCoordinator.ShowMetroDialogAsync(this, editor);
         }
+
 
         public void SetConnectionInfo(ConnectionInfoEditorViewModel viewModel)
         {
@@ -308,6 +324,7 @@ namespace WorkloadViewer.ViewModel
                     querydetails = new QueryDetails(b.query, _baselineWorkloadAnalysis, _benchmarkWorkloadAnalysis),
                     document = new ICSharpCode.AvalonEdit.Document.TextDocument() { Text = b.query.ExampleText }
                 };
+
 
             Queries = WorkloadTools.Util.DataUtils.ToDataTable(merged);
 
