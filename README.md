@@ -23,7 +23,9 @@ Once you have captured and replayed the workload for a representative enough tim
 
 ### Command line switches
 
-SqlWorkload accepts a single command line switch:
+SqlWorkload accepts two command line switches:
+
+`--Log` Path to the log file
 
 `--File` Path to the `.JSON` configuration file
 
