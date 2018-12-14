@@ -67,7 +67,7 @@ namespace WorkloadViewer.ViewModel
         public ICommand KeyDownCommand { get; set; }
         public ICommand ApplyCommand { get; set; }
 
-        public DataTable Queries { get; private set; }
+        public IEnumerable<object> Queries { get; private set; }
 
 
 
@@ -214,29 +214,6 @@ namespace WorkloadViewer.ViewModel
         private void InitializeQueries()
         {
             // Initialize the queries
-            Queries = new DataTable();
-            Queries.Columns.Add(new DataColumn("query_hash", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("query_text", typeof(String)));
-            Queries.Columns.Add(new DataColumn("query_normalized", typeof(String)));
-            Queries.Columns.Add(new DataColumn("sum_duration_ms", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("sum_duration_ms2", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("diff_sum_duration_ms", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("avg_duration_ms", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("avg_duration_ms2", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("sum_cpu_ms", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("sum_cpu_ms2", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("diff_sum_cpu_ms", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("avg_cpu_ms", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("avg_cpu_ms2", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("sum_reads", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("sum_reads2", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("avg_reads", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("avg_reads2", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("execution_count", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("execution_count2", typeof(Int64)));
-            Queries.Columns.Add(new DataColumn("querydetails", typeof(Object)));
-            Queries.Columns.Add(new DataColumn("document", typeof(Object)));
-
            logger.Info("Entering baseline evaluation");
 
             var baseline = from t in _baselineWorkloadAnalysis.Points
@@ -326,7 +303,7 @@ namespace WorkloadViewer.ViewModel
                 };
 
 
-            Queries = WorkloadTools.Util.DataUtils.ToDataTable(merged);
+            Queries = merged;
 
             logger.Info("Sets merged");
 
