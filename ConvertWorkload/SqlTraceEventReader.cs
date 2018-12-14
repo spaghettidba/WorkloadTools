@@ -26,7 +26,7 @@ namespace ConvertWorkload
             Events.BufferSize = 10000;
             tracePath = path;
             Filter = new TraceEventFilter();
-    }
+        }
 
 
         private void ReadEventsFromFile()
@@ -179,6 +179,10 @@ namespace ConvertWorkload
 
         protected override void Dispose(bool disposing) 
         {
+            if (!stopped)
+            {
+                stopped = true;
+            }
         }
 
         public override bool HasMoreElements()
