@@ -16,11 +16,11 @@ namespace WorkloadTools.Consumer.Replay
     class ReplayWorker : IDisposable
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
-        private static bool COMPUTE_AVERAGE_STATS = Properties.Settings.Default.ReplayWorker_COMPUTE_AVERAGE_STATS;
-        private static bool CONSUME_RESULTS = Properties.Settings.Default.ReplayWorker_CONSUME_RESULTS;
-        private static int DEFAULT_QUERY_TIMEOUT_SECONDS = Properties.Settings.Default.ReplayWorker_DEFAULT_QUERY_TIMEOUT_SECONDS;
-        private static int WORKLOAD_INFO_COMMAND_COUNT = Properties.Settings.Default.ReplayWorker_WORKLOAD_INFO_COMMAND_COUNT;
-        private static bool MIMIC_APPLICATION_NAME = Properties.Settings.Default.ReplayWorker_MIMIC_APPLICATION_NAME;
+        public bool DisplayWorkerStats { get; set; }
+        public bool ConsumeResults { get; set; }
+        public int QueryTimeoutSeconds { get; set; }
+        public int WorkerStatsCommandCount { get; set; }
+        public bool MimicApplicationName { get; set; }
 
         private SqlConnection conn { get; set; }
 
@@ -162,7 +162,7 @@ namespace WorkloadTools.Consumer.Replay
                 try
                 {
                     ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
-                    if (MIMIC_APPLICATION_NAME)
+                    if (MimicApplicationName)
                     {
                         ConnectionInfo.ApplicationName = command.ApplicationName;
                         if (String.IsNullOrEmpty(ConnectionInfo.ApplicationName))
@@ -238,7 +238,7 @@ namespace WorkloadTools.Consumer.Replay
                 using (SqlCommand cmd = new SqlCommand(command.CommandText))
                 {
                     cmd.Connection = conn;
-                    cmd.CommandTimeout = DEFAULT_QUERY_TIMEOUT_SECONDS;
+                    cmd.CommandTimeout = QueryTimeoutSeconds;
 
                     if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_PREPARE)
                     {
@@ -258,7 +258,7 @@ namespace WorkloadTools.Consumer.Replay
                             throw;
                         }
                     }
-                    else if (CONSUME_RESULTS)
+                    else if (ConsumeResults)
                     {
                         using(SqlDataReader reader = cmd.ExecuteReader())
                         using (ResultSetConsumer consumer = new ResultSetConsumer(reader))
@@ -273,22 +273,22 @@ namespace WorkloadTools.Consumer.Replay
                 }
 
                 logger.Trace(String.Format("Worker [{0}] - SUCCES - \n{1}", Name, command.CommandText));
-                if (commandCount > 0 && commandCount % WORKLOAD_INFO_COMMAND_COUNT == 0)
+                if (commandCount > 0 && commandCount % WorkerStatsCommandCount == 0)
                 {
                     var seconds = (DateTime.Now - previousCPSComputeTime).TotalSeconds;
                     var cps = (commandCount - previousCommandCount) / ((seconds == 0) ? 1 : seconds);
                     previousCPSComputeTime = DateTime.Now;
                     previousCommandCount = commandCount;
 
-                    if (COMPUTE_AVERAGE_STATS)
-                    {
-                        commandsPerSecond.Add((int)cps);
-                        cps = commandsPerSecond.Average();
-                    }
+					if (DisplayWorkerStats)
+					{
+						commandsPerSecond.Add((int)cps);
+						cps = commandsPerSecond.Average();
 
-                    logger.Info(String.Format("Worker [{0}] - {1} commands executed.", Name, commandCount));
-                    logger.Info(String.Format("Worker [{0}] - {1} commands pending.", Name, Commands.Count));
-                    logger.Info(String.Format("Worker [{0}] - {1} commands per second.", Name, (int)cps));
+						logger.Info(String.Format("Worker [{0}] - {1} commands executed.", Name, commandCount));
+						logger.Info(String.Format("Worker [{0}] - {1} commands pending.", Name, Commands.Count));
+						logger.Info(String.Format("Worker [{0}] - {1} commands per second.", Name, (int)cps));
+					}
                 }
             }
             catch(SqlException e)
@@ -336,7 +336,7 @@ namespace WorkloadTools.Consumer.Replay
             using (SqlCommand cmd = new SqlCommand(sql))
             {
                 cmd.Connection = conn;
-                cmd.Parameters.AddWithValue("@userinfo", String.Format("WorkloadTools.Timeout[{0}]", DEFAULT_QUERY_TIMEOUT_SECONDS));
+                cmd.Parameters.AddWithValue("@userinfo", String.Format("WorkloadTools.Timeout[{0}]", QueryTimeoutSeconds));
                 cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(commandText));
                 cmd.ExecuteNonQuery();
             }

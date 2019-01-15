@@ -18,7 +18,13 @@ namespace WorkloadTools.Consumer.Replay
         private static readonly int WORKER_EXPIRY_TIMEOUT_SECONDS = Properties.Settings.Default.ReplayConsumer_WORKER_EXPIRY_TIMEOUT_SECONDS;
         private static readonly Semaphore WorkLimiter = new Semaphore(SEMAPHORE_LIMIT, SEMAPHORE_LIMIT);
 
-        public SqlConnectionInfo ConnectionInfo { get; set; }
+		public bool DisplayWorkerStats { get; set; } = true;
+		public bool ConsumeResults { get; set; } = true;
+		public int QueryTimeoutSeconds { get; set; } = 30;
+		public int WorkerStatsCommandCount { get; set; } = 200;
+		public bool MimicApplicationName { get; set; } = false;
+
+		public SqlConnectionInfo ConnectionInfo { get; set; }
         public SynchronizationModeEnum SynchronizationMode { get; set; } = SynchronizationModeEnum.None;
 
         private ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
@@ -66,8 +72,13 @@ namespace WorkloadTools.Consumer.Replay
                     ConnectionInfo = this.ConnectionInfo,
                     ReplayIntervalSeconds = 0,
                     StopOnError = false,
-                    Name = session_id.ToString()
-                };
+                    Name = session_id.ToString(),
+					DisplayWorkerStats = this.DisplayWorkerStats,
+					ConsumeResults = this.ConsumeResults,
+					QueryTimeoutSeconds = this.QueryTimeoutSeconds,
+					WorkerStatsCommandCount = this.WorkerStatsCommandCount,
+					MimicApplicationName = this.MimicApplicationName
+				};
                 ReplayWorkers.TryAdd(session_id, rw);
                 rw.AppendCommand(command);
 

@@ -2,47 +2,11 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="WorkloadTools.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="SqlTextNormalizer_TRUNCATE_TO_4000" Type="System.Boolean" Scope="Application">
-      <Value Profile="(Default)">False</Value>
-    </Setting>
-    <Setting Name="SqlTextNormalizer_TRUNCATE_TO_1024K" Type="System.Boolean" Scope="Application">
-      <Value Profile="(Default)">False</Value>
-    </Setting>
-    <Setting Name="WorkloadAnalyzer_MAX_WRITE_RETRIES" Type="System.Int32" Scope="Application">
-      <Value Profile="(Default)">5</Value>
-    </Setting>
-    <Setting Name="ReplayWorker_COMPUTE_AVERAGE_STATS" Type="System.Boolean" Scope="Application">
-      <Value Profile="(Default)">False</Value>
-    </Setting>
-    <Setting Name="ReplayWorker_CONSUME_RESULTS" Type="System.Boolean" Scope="Application">
-      <Value Profile="(Default)">True</Value>
-    </Setting>
-    <Setting Name="ReplayWorker_DEFAULT_QUERY_TIMEOUT_SECONDS" Type="System.Int32" Scope="Application">
-      <Value Profile="(Default)">30</Value>
-    </Setting>
-    <Setting Name="ReplayWorker_WORKLOAD_INFO_COMMAND_COUNT" Type="System.Int32" Scope="Application">
-      <Value Profile="(Default)">200</Value>
-    </Setting>
     <Setting Name="ReplayConsumer_SEMAPHORE_LIMIT" Type="System.Int32" Scope="Application">
       <Value Profile="(Default)">32</Value>
     </Setting>
     <Setting Name="ReplayConsumer_WORKER_EXPIRY_TIMEOUT_SECONDS" Type="System.Int32" Scope="Application">
       <Value Profile="(Default)">15</Value>
-    </Setting>
-    <Setting Name="SqlTraceWorkloadListener_DEFAULT_TRACE_INTERVAL_SECONDS" Type="System.Int32" Scope="Application">
-      <Value Profile="(Default)">10</Value>
-    </Setting>
-    <Setting Name="SqlTraceWorkloadListener_DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD" Type="System.Int32" Scope="Application">
-      <Value Profile="(Default)">5000</Value>
-    </Setting>
-    <Setting Name="SqlTraceWorkloadListener_DEFAULT_TRACE_SIZE_MB" Type="System.Int32" Scope="Application">
-      <Value Profile="(Default)">10</Value>
-    </Setting>
-    <Setting Name="SqlTraceWorkloadListener_DEFAULT_TRACE_ROLLOVER_COUNT" Type="System.Int32" Scope="Application">
-      <Value Profile="(Default)">30</Value>
-    </Setting>
-    <Setting Name="ReplayWorker_MIMIC_APPLICATION_NAME" Type="System.Boolean" Scope="Application">
-      <Value Profile="(Default)">False</Value>
     </Setting>
   </Settings>
 </SettingsFile>

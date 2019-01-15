@@ -32,21 +32,33 @@ namespace WorkloadTools.Consumer.Analysis
         private bool stopped = false;
 
         private DataTable rawData;
-        private SqlTextNormalizer normalizer = new SqlTextNormalizer();
+        private SqlTextNormalizer normalizer;
         private bool TargetTableCreated = false;
         private bool FirstIntervalWritten = false;
 
         private DataTable counterData;
         private DataTable waitsData;
 
-        private static int MAX_WRITE_RETRIES = Properties.Settings.Default.WorkloadAnalyzer_MAX_WRITE_RETRIES;
+        public int MaximumWriteRetries { get; set; }
+		public bool TruncateTo4000 { get; set; }
+		public bool TruncateTo1024 { get; set; }
 
-        private class NormalizedQuery
+		private class NormalizedQuery
         {
             public long Hash { get; set; }
             public string NormalizedText { get; set; }
             public string ExampleText { get; set; }
         }
+
+
+		public WorkloadAnalyzer()
+		{
+			normalizer = new SqlTextNormalizer()
+			{
+				TruncateTo1024 = this.TruncateTo1024,
+				TruncateTo4000 = this.TruncateTo4000
+			};
+		}
 
 
         private void ProcessQueue()
@@ -61,19 +73,19 @@ namespace WorkloadTools.Consumer.Analysis
                     try
                     {
                         int numRetries = 0;
-                        while (numRetries <= MAX_WRITE_RETRIES)
+                        while (numRetries <= MaximumWriteRetries)
                         {
                             try
                             {
                                 WriteToServer();
-                                numRetries = MAX_WRITE_RETRIES + 1;
+                                numRetries = MaximumWriteRetries + 1;
                             }
                             catch (Exception ex)
                             {
                                 logger.Warn("Unable to write workload analysis.");
                                 logger.Warn(ex.Message);
 
-                                if (numRetries == MAX_WRITE_RETRIES)
+                                if (numRetries == MaximumWriteRetries)
                                     throw;
                             }
                             numRetries++;

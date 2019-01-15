@@ -18,8 +18,6 @@ namespace WorkloadTools.Listener.Trace
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static int DEFAULT_TRACE_SIZE_MB = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_SIZE_MB;
-        private static int DEFAULT_TRACE_ROLLOVER_COUNT = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_ROLLOVER_COUNT;
         private static string DEFAULT_LOG_SQL = @"
             DECLARE @defaultLog nvarchar(4000);
 
@@ -38,8 +36,6 @@ namespace WorkloadTools.Listener.Trace
 
             SELECT @defaultLog AS DefaultLog;
         ";
-        private static int DEFAULT_TRACE_INTERVAL_SECONDS = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_INTERVAL_SECONDS;
-        private static int DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD;
 
         public enum StreamSourceEnum
         {
@@ -60,8 +56,13 @@ namespace WorkloadTools.Listener.Trace
         // By default, stream from TDS
         public StreamSourceEnum StreamSource { get; set; } = StreamSourceEnum.StreamFromTDS;
 
+		public int TraceSizeMB { get; set; } = 10;
+		public int TraceRolloverCount { get; set; } = 30;
+		private int TraceIntervalSeconds { get; set; } = 10;
+		private int TraceRowsSleepThreshold { get; set; } = 5000;
 
-        public SqlTraceWorkloadListener() : base()
+
+		public SqlTraceWorkloadListener() : base()
         {
             Filter = new TraceEventFilter();
             Source = WorkloadController.BaseLocation + "\\Listener\\Trace\\sqlworkload.sql";
@@ -88,7 +89,7 @@ namespace WorkloadTools.Listener.Trace
                     filters += Environment.NewLine + Filter.LoginFilter.PushDown();
 
                     tracePath = GetSqlDefaultLogPath(conn);
-                    traceSql = String.Format(traceSql, DEFAULT_TRACE_SIZE_MB, DEFAULT_TRACE_ROLLOVER_COUNT, Path.Combine(tracePath  ,"sqlworkload"), filters);
+                    traceSql = String.Format(traceSql, TraceSizeMB, TraceRolloverCount, Path.Combine(tracePath  ,"sqlworkload"), filters);
                 }
                 catch (Exception e)
                 {
@@ -414,8 +415,8 @@ namespace WorkloadTools.Listener.Trace
                             }
 
                             // Wait before querying the trace file again
-                            if (rowsRead < DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD)
-                                Thread.Sleep(DEFAULT_TRACE_INTERVAL_SECONDS * 1000);
+                            if (rowsRead < TraceRowsSleepThreshold)
+                                Thread.Sleep(TraceIntervalSeconds * 1000);
 
                         }
 

@@ -44,8 +44,8 @@ namespace WorkloadTools.Consumer.Analysis
         private static Regex _brackets = new Regex("(\\[|\\])", RegexOptions.Compiled);
         private static Regex _TVPExecute = new Regex(@"DECLARE\s*@(?<tablename>(\w+))\s*(AS)?\s*(?<tabletype>(\w+)).*EXEC(UTE)?\s*(?<object>(\S+)).*@\k<tablename>\sREADONLY", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
-        private static bool TRUNCATE_TO_4000 = Settings.Default.SqlTextNormalizer_TRUNCATE_TO_4000;
-        private static bool TRUNCATE_TO_1024K = Settings.Default.SqlTextNormalizer_TRUNCATE_TO_1024K;
+        public bool TruncateTo4000 { get; set; }
+        public bool TruncateTo1024 { get; set; }
 
         public NormalizedSqlText NormalizeSqlText(string sql, int spid)
         {
@@ -80,7 +80,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             sql = sql.Trim();
 
-            if (TRUNCATE_TO_1024K  && sql.Length > 1024000)
+            if (TruncateTo1024  && sql.Length > 1024000)
             {
                 result.Statement = "{SQL>1MB}";
                 result.NormalizedText = "{SQL>1MB}";
@@ -250,7 +250,7 @@ namespace WorkloadTools.Consumer.Analysis
         private string TruncateSql(string sql)
         {
             sql = sql.Trim();
-            if (TRUNCATE_TO_4000 && sql.Length > 4000)
+            if (TruncateTo4000 && sql.Length > 4000)
                 return sql.Substring(0, 4000);
             return sql;
         }
