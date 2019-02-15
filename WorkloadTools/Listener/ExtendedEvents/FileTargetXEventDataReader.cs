@@ -14,8 +14,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
     public class FileTargetXEventDataReader : XEventDataReader 
     {
 
-        private static int DEFAULT_TRACE_INTERVAL_SECONDS = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_INTERVAL_SECONDS;
-        private static int DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD = Properties.Settings.Default.SqlTraceWorkloadListener_DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD;
+        private static int DEFAULT_TRACE_INTERVAL_SECONDS = 10;
+        private static int DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD = 5000;
 
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
