@@ -95,11 +95,14 @@ namespace WorkloadViewer.ViewModel
         {
             if (_invalidOptions)
             {
+                ShowStatusMessage("ShowConnectionInfoDialog");
                 ShowConnectionInfoDialog();
             }
             else
             {
+                ShowStatusMessage("Initializing");
                 InitializeAll();
+                ShowStatusMessage("Initialized");
             }
         }
 
@@ -125,12 +128,18 @@ namespace WorkloadViewer.ViewModel
             }
             catch (Exception e)
             {
+                ShowStatusMessage($"Exception: {e.Message}");
                 await _dialogCoordinator.ShowMessageAsync(this, "WorkloadViewer", "Unable to load data: " + e.Message);
                 ShowConnectionInfoDialog();
             }
             finally
             {
                 await controller.CloseAsync();
+                while (controller.IsOpen)
+                {
+                    await controller.CloseAsync();
+                    Thread.Sleep(5);
+                }
             }
         }
 
@@ -169,8 +178,10 @@ namespace WorkloadViewer.ViewModel
 
             _invalidOptions = false;
 
+            ShowStatusMessage("Pre InitializeAll");
             // now that the options are filled, I can invoke the initialization
             InitializeAll();
+            ShowStatusMessage("Post InitializeAll");
         }
 
 
@@ -662,6 +673,14 @@ namespace WorkloadViewer.ViewModel
             RaisePropertyChanged("DatabaseList");
             RaisePropertyChanged("LoginList");
         }
+
+
+        private void ShowStatusMessage(string message)
+        {
+            StatusMessage = message;
+            RaisePropertyChanged("StatusMessage");
+        }
+            
 
     }
 }
