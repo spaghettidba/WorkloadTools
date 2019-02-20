@@ -322,7 +322,8 @@ namespace WorkloadViewer.ViewModel
             RaisePropertyChanged("CompareModeVisibility");
             RaisePropertyChanged("CompareMode");
 
-            var msg = new SortColMessage("diff_sum_duration_ms", System.ComponentModel.ListSortDirection.Descending);
+            string sortCol = CompareMode ? "diff_sum_duration_ms" : "sum_duration_ms";
+            var msg = new SortColMessage(sortCol, System.ComponentModel.ListSortDirection.Descending);
             Messenger.Default.Send<SortColMessage>(msg);
         }
 
