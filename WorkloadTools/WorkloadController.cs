@@ -33,14 +33,20 @@ namespace WorkloadTools
 
             try
             {
+				var startTime = DateTime.Now;
+				var endTime = DateTime.MaxValue;
+
                 Listener.Initialize();
 
                 logger.Info($"Listener of type {Listener.GetType().Name} initialized correctly. Waiting for events.");
 
                 while (!stopped)
                 {
-                    if (!Listener.IsRunning)
+                    if ((!Listener.IsRunning) || (endTime < DateTime.Now))
                         Stop();
+
+					if (endTime == DateTime.MaxValue && Listener.TimeoutMinutes != 0)
+						endTime = startTime.AddMinutes(Listener.TimeoutMinutes);
 
                     var evt = Listener.Read();
                     if (evt == null)

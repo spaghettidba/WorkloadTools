@@ -24,7 +24,7 @@ namespace WorkloadTools
         public string LoginFilter { get; set; }
 
         public int StatsCollectionIntervalSeconds { get; set; } = 60;
-
+		public int TimeoutMinutes { get; set; } = 0;
 
         private WorkloadEventFilter _filter;
 

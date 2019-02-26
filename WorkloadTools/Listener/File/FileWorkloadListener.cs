@@ -151,6 +151,7 @@ namespace WorkloadTools.Listener.File
                 {
                     if (!reader.Read())
                     {
+						stopped = true;
                         return null;
                     }
                     result = ReadEvent(reader);
