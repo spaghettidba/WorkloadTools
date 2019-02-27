@@ -700,7 +700,9 @@ namespace WorkloadTools.Consumer.Analysis
 
         private void PrepareDictionaries()
         {
-            using (SqlConnection conn = new SqlConnection())
+			CreateTargetDatabase();
+
+			using (SqlConnection conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
@@ -751,8 +753,9 @@ namespace WorkloadTools.Consumer.Analysis
 
         protected void CreateTargetTables()
         {
+			CreateTargetDatabase();
 
-            string sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\DatabaseSchema.sql");
+			string sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\DatabaseSchema.sql");
 
             sql = sql.Replace("{DatabaseName}", ConnectionInfo.DatabaseName);
             sql = sql.Replace("{SchemaName}", ConnectionInfo.SchemaName);
@@ -809,6 +812,43 @@ namespace WorkloadTools.Consumer.Analysis
                 }
             }
         }
+
+
+		protected void CreateTargetDatabase()
+		{
+			string databaseName = ConnectionInfo.DatabaseName;
+			ConnectionInfo.DatabaseName = "master";
+
+			try
+			{
+				using (SqlConnection conn = new SqlConnection())
+				{
+					conn.ConnectionString = ConnectionInfo.ConnectionString;
+					conn.Open();
+					conn.ChangeDatabase(ConnectionInfo.DatabaseName);
+					using (SqlCommand cmd = conn.CreateCommand())
+					{
+						string createDb = @"
+						IF DB_ID(@name) IS NULL 
+						BEGIN
+						    DECLARE @sql nvarchar(max); 
+							SET @sql = N'CREATE DATABASE ' + QUOTENAME(@name);
+							EXEC sp_executesql @sql;
+						END
+					";
+						cmd.CommandText = createDb;
+						cmd.Parameters.AddWithValue("@name", databaseName);
+						cmd.ExecuteNonQuery();
+					}
+				}
+			}
+			finally
+			{
+				// restore original database name
+				ConnectionInfo.DatabaseName = databaseName;
+			}
+
+		}
 
 
     }
