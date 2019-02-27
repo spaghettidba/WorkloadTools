@@ -298,6 +298,10 @@ namespace WorkloadTools.Consumer.Replay
                 {
                     RaiseTimeoutEvent(command.CommandText, conn);
                 }
+				else
+				{
+					RaiseErrorEvent(command, e.Message, conn);
+				}
 
                 if (StopOnError)
                 {
@@ -342,7 +346,30 @@ namespace WorkloadTools.Consumer.Replay
             }
         }
 
-        public void AppendCommand(ReplayCommand cmd)
+
+		private void RaiseErrorEvent(ReplayCommand Command, string ErrorMessage, SqlConnection conn)
+		{
+			// Raise a custom event. Both SqlTrace and Extended Events can capture this event.
+			string sql = "EXEC sp_trace_generateevent @eventid = 83, @userinfo = @userinfo, @userdata = @userdata;";
+
+			using (SqlCommand cmd = new SqlCommand(sql))
+			{
+				cmd.Connection = conn;
+				cmd.Parameters.AddWithValue("@userinfo", "WorkloadTools.Replay");
+				string msg = "";
+				msg += "DATABASE:" + Environment.NewLine;
+				msg += Command.Database + Environment.NewLine;
+				msg += "MESSAGE:" + Environment.NewLine;
+				msg += ErrorMessage + Environment.NewLine;
+				msg += "--------------------" + Environment.NewLine;
+				msg += Command.CommandText;
+				cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(msg.Substring(0,8000)));
+				cmd.ExecuteNonQuery();
+			}
+		}
+
+
+		public void AppendCommand(ReplayCommand cmd)
         {
             Commands.Enqueue(cmd);
         }

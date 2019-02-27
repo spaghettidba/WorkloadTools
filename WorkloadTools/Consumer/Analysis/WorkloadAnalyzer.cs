@@ -32,6 +32,7 @@ namespace WorkloadTools.Consumer.Analysis
         private bool stopped = false;
 
         private DataTable rawData;
+		private DataTable errorData;
         private SqlTextNormalizer normalizer;
         private bool TargetTableCreated = false;
         private bool FirstIntervalWritten = false;
@@ -176,14 +177,22 @@ namespace WorkloadTools.Consumer.Analysis
         {
             if (evt is ExecutionWorkloadEvent)
                 _internalAdd((ExecutionWorkloadEvent)evt);
-            if (evt is CounterWorkloadEvent)
+			if (evt is ErrorWorkloadEvent)
+				_internalAdd((ErrorWorkloadEvent)evt);
+			if (evt is CounterWorkloadEvent)
                 _internalAdd((CounterWorkloadEvent)evt);
             if (evt is WaitStatsWorkloadEvent)
                 _internalAdd((WaitStatsWorkloadEvent)evt);
         }
 
+		private void _internalAdd(ErrorWorkloadEvent evt)
+		{
+			DataRow row = errorData.NewRow();
+			row.SetField("message", evt.Text);
+			errorData.Rows.Add(row);
+		}
 
-        private void _internalAdd(WaitStatsWorkloadEvent evt)
+		private void _internalAdd(WaitStatsWorkloadEvent evt)
         {
             if (waitsData == null)
             {
@@ -225,7 +234,7 @@ namespace WorkloadTools.Consumer.Analysis
         {
             if (rawData == null)
             {
-                PrepareDataTable();
+                PrepareDataTables();
                 PrepareDictionaries();
             }
 
@@ -323,7 +332,8 @@ namespace WorkloadTools.Consumer.Analysis
                     WriteNormalizedQueries(normalizedQueries, conn, tran);
 
                     WriteExecutionDetails(conn, tran, current_interval_id);
-                    WritePerformanceCounters(conn, tran, current_interval_id);
+					WriteExecutionErrors(conn, tran, current_interval_id);
+					WritePerformanceCounters(conn, tran, current_interval_id);
                     WriteWaitsData(conn, tran, current_interval_id);
 
                     tran.Commit();
@@ -440,7 +450,7 @@ namespace WorkloadTools.Consumer.Analysis
             int numRows;
 
             if(rawData == null)
-                PrepareDataTable();
+                PrepareDataTables();
 
             lock (rawData)
             {
@@ -510,7 +520,47 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
-        private void WriteDictionary(Dictionary<string, int> values, SqlConnection conn, SqlTransaction tran, string name)
+		private void WriteExecutionErrors(SqlConnection conn, SqlTransaction tran, int current_interval_id)
+		{
+
+			if (errorData == null)
+				PrepareDataTables();
+
+			lock (errorData)
+			{
+				using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+												SqlBulkCopyOptions.KeepIdentity |
+												SqlBulkCopyOptions.FireTriggers |
+												SqlBulkCopyOptions.CheckConstraints |
+												SqlBulkCopyOptions.TableLock,
+												tran))
+				{
+
+					bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[Errors]";
+					bulkCopy.BatchSize = 1000;
+					bulkCopy.BulkCopyTimeout = 300;
+
+
+					var Table = from t in errorData.AsEnumerable()
+								group t by new
+								{
+									message = t.Field<long>("message")
+								}
+								into grp
+								select new
+								{
+									interval_id = current_interval_id,
+									grp.Key.message,
+									error_count = grp.Count()
+								};
+
+					bulkCopy.WriteToServer(DataUtils.ToDataTable(Table));
+				}
+				errorData.Rows.Clear();
+			}
+		}
+
+		private void WriteDictionary(Dictionary<string, int> values, SqlConnection conn, SqlTransaction tran, string name)
         {
 
             // create a temporary table
@@ -680,7 +730,7 @@ namespace WorkloadTools.Consumer.Analysis
             return interval_id;
         }
 
-        private void PrepareDataTable()
+        private void PrepareDataTables()
         {
             rawData = new DataTable();
 
@@ -695,7 +745,9 @@ namespace WorkloadTools.Consumer.Analysis
             rawData.Columns.Add("writes", typeof(long));
             rawData.Columns.Add("duration_ms", typeof(long));
 
-        }
+			errorData = new DataTable();
+			errorData.Columns.Add("message", typeof(string));
+		}
 
 
         private void PrepareDictionaries()

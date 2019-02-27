@@ -40,6 +40,18 @@ ADD EVENT sqlserver.sql_batch_completed (
 		sqlserver.session_id
 	) 
 	{0}
+),
+ADD EVENT sqlserver.user_event(
+	ACTION(
+		package0.event_sequence, 
+		sqlserver.client_app_name, 
+		sqlserver.client_hostname, 
+		sqlserver.database_id, 
+		sqlserver.database_name, 
+		sqlserver.{2}, 
+		sqlserver.session_id
+	) 
+    WHERE [sqlserver].[like_i_sql_unicode_string]([user_info],N'WorkloadTools%')
 )
 WITH (
 	MAX_MEMORY = 40960 KB,

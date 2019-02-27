@@ -222,6 +222,7 @@
     <Compile Include="Consumer\WorkloadFile\WorkloadFileWriterConsumer.cs" />
     <Compile Include="CounterWorkloadEvent.cs" />
     <Compile Include="BufferedEventQueue.cs" />
+    <Compile Include="ErrorWorkloadEvent.cs" />
     <Compile Include="MMFEventQueue.cs" />
     <Compile Include="ExecutionWorkloadEvent.cs" />
     <Compile Include="FilterPredicate.cs" />

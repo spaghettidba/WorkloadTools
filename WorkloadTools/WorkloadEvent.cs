@@ -16,6 +16,7 @@ namespace WorkloadTools
             PerformanceCounter= 4,
             Timeout = 5,
             WAIT_stats = 6,
+			Error = 7,
             Unknown = -1
         }
 

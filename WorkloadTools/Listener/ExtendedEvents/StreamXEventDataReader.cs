@@ -62,7 +62,16 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         commandText = (string)TryGetValue(evt, FieldType.Action, "sql_text");
                         evnt.Type = WorkloadEvent.EventType.Timeout;
                     }
-                    else
+					else if (evt.Name == "user_event")
+					{
+						int num = (int)TryGetValue(evt, FieldType.Field, "event_id");
+						if(num == 83)
+						{
+							commandText = (string)TryGetValue(evt, FieldType.Field, "user_data");
+							evnt.Type = WorkloadEvent.EventType.Error;
+						}
+					}
+					else
                     {
                         evnt.Type = WorkloadEvent.EventType.Unknown;
                         continue;
@@ -83,7 +92,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                         evnt.StartTime = evt.Timestamp.LocalDateTime;
 
-                        if (evnt.Type == WorkloadEvent.EventType.Timeout)
+						if (evnt.Type == WorkloadEvent.EventType.Error)
+						{
+							// do nothing
+						}
+                        else if (evnt.Type == WorkloadEvent.EventType.Timeout)
                         {
                             evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
                             evnt.CPU = Convert.ToInt64(evnt.Duration);
@@ -103,10 +116,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         throw;
                     }
 
-                    if (transformer.Skip(evnt.Text))
-                        continue;
+					if(evnt.Type <= WorkloadEvent.EventType.BatchCompleted)
+					{
+						if (transformer.Skip(evnt.Text))
+							continue;
 
-                    evnt.Text = transformer.Transform(evnt.Text);
+						evnt.Text = transformer.Transform(evnt.Text);
+					}
 
                     Events.Enqueue(evnt);
 

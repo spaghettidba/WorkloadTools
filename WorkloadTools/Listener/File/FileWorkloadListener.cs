@@ -78,7 +78,8 @@ namespace WorkloadTools.Listener.File
                 // 4 - PerformanceCounter
                 // 5 - Timeout
                 // 6 - WaitStats
-                filters += "OR event_type IN (4,5,6)"; 
+				// 7 - Error
+                filters += "OR event_type IN (4,5,6,7)"; 
             }
 
 
@@ -213,7 +214,13 @@ namespace WorkloadTools.Listener.File
                     wr.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
                     wr.Type = type;
                     return wr;
-                default:
+				case WorkloadEvent.EventType.Error:
+					ErrorWorkloadEvent er = new ErrorWorkloadEvent();
+					er.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
+					er.Type = type;
+					er.Text = reader.GetString(reader.GetOrdinal("sql_text")); 
+					return er;
+				default:
                     ExecutionWorkloadEvent result = new ExecutionWorkloadEvent();
                     result.ApplicationName = reader.GetString(reader.GetOrdinal("client_app_name"));
                     result.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));

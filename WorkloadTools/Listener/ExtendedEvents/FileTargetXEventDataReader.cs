@@ -101,7 +101,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                     {
                                         evt.Type = WorkloadEvent.EventType.Timeout;
                                     }
-                                    else
+									else if (name == "user_event")
+									{
+										evt.Type = WorkloadEvent.EventType.Error;
+									}
+									else
                                     {
                                         evt.Type = WorkloadEvent.EventType.Unknown;
                                         continue;
@@ -166,16 +170,21 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                             case "writes":
                                                 evt.Writes = Convert.ToInt64(node.FirstChild.FirstChild.Value);
                                                 break;
-                                            default:
+											case "user_data":
+												evt.Text = (string)node.FirstChild.FirstChild.Value;
+												break;
+											default:
                                                 break;
                                         }
                                     }
 
+									if (evt.Type <= WorkloadEvent.EventType.BatchCompleted)
+									{
+										if (transformer.Skip(evt.Text))
+											continue;
 
-                                    if (transformer.Skip(evt.Text))
-                                        continue;
-
-                                    evt.Text = transformer.Transform(evt.Text);
+										evt.Text = transformer.Transform(evt.Text);
+									}
 
                                     Events.Enqueue(evt);
 

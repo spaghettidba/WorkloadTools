@@ -57,6 +57,17 @@ exec sp_trace_setevent @TraceID, 82, 35, @on
 exec sp_trace_setevent @TraceID, 82,  3, @on
 exec sp_trace_setevent @TraceID, 82, 51, @on
 
+exec sp_trace_setevent @TraceID, 83,  1, @on
+exec sp_trace_setevent @TraceID, 83,  2, @on
+exec sp_trace_setevent @TraceID, 83, 11, @on
+exec sp_trace_setevent @TraceID, 83,  8, @on
+exec sp_trace_setevent @TraceID, 83, 10, @on
+exec sp_trace_setevent @TraceID, 83, 12, @on
+exec sp_trace_setevent @TraceID, 83, 14, @on
+exec sp_trace_setevent @TraceID, 83, 35, @on 
+exec sp_trace_setevent @TraceID, 83,  3, @on
+exec sp_trace_setevent @TraceID, 83, 51, @on
+
 
 -- Set the Filters
 exec sp_trace_setfilter @TraceID, 10 ,  0, 1, N'WorkloadTools'; 

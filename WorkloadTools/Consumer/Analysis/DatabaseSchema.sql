@@ -109,3 +109,12 @@ CREATE TABLE [{SchemaName}].[WaitStats](
     [signal_sec] [float] NOT NULL,
     [wait_count] [bigint] NOT NULL
 )
+
+
+IF OBJECT_ID('{SchemaName}.Errors') IS NULL
+
+CREATE TABLE [{SchemaName}].[Errors](
+	[interval_id] [int] NOT NULL,
+	[message] [nvarchar](max) NULL,
+	[error_count] int NULL
+)
