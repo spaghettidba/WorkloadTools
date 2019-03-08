@@ -587,7 +587,7 @@ namespace WorkloadViewer.ViewModel
                         select new
                         {
                             offset_minutes = grp.Key.offset,
-                            execution_count = grp.Sum(t => t.ExecutionCount / (t.DurationMinutes * 60))
+                            execution_count = grp.Sum(t => t.ExecutionCount / ((t.DurationMinutes == 0 ? 1 : t.DurationMinutes) * 60))
                         };
 
             foreach (var p in Table)
