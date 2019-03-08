@@ -247,10 +247,14 @@ namespace WorkloadTools.Consumer.Replay
                         int handle = -1;
                         try
                         {
-                            handle = (int)cmd.ExecuteScalar();
-                            if (!preparedStatements.ContainsKey(nst.Handle))
+                            object res = cmd.ExecuteScalar();
+                            if (res != null)
                             {
-                                preparedStatements.Add(nst.Handle, handle);
+                                handle = (int)res;
+                                if (!preparedStatements.ContainsKey(nst.Handle))
+                                {
+                                    preparedStatements.Add(nst.Handle, handle);
+                                }
                             }
                         }
                         catch (NullReferenceException)
@@ -363,7 +367,7 @@ namespace WorkloadTools.Consumer.Replay
 				msg += ErrorMessage + Environment.NewLine;
 				msg += "--------------------" + Environment.NewLine;
 				msg += Command.CommandText;
-				cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(msg.Substring(0,8000)));
+                cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(msg.Substring(0, msg.Length > 8000 ? 8000 : msg.Length)));
 				cmd.ExecuteNonQuery();
 			}
 		}

@@ -101,11 +101,11 @@ namespace WorkloadTools.Listener.File
         }
 
 
-        // returns the number of events to replay 
+        // returns 1 if there are events to replay 
         // or -1 in case the file format is invalid
         private int ValidateFile()
         {
-            string sql = "SELECT COUNT(*) FROM Events";
+            string sql = "SELECT 1 FROM Events LIMIT 1";
             int result = -1;
 
             try
@@ -207,40 +207,61 @@ namespace WorkloadTools.Listener.File
         {
             WorkloadEvent.EventType type = (WorkloadEvent.EventType)reader.GetInt32(reader.GetOrdinal("event_type"));
             int sequence = reader.GetInt32(reader.GetOrdinal("event_sequence"));
-            switch (type)
+            try
             {
-                case WorkloadEvent.EventType.PerformanceCounter:
-                    CounterWorkloadEvent cr = new CounterWorkloadEvent();
-                    cr.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
-                    ReadCounters(sequence, cr);
-                    return cr;
-                case WorkloadEvent.EventType.WAIT_stats:
-                    WaitStatsWorkloadEvent wr = new WaitStatsWorkloadEvent();
-                    wr.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
-                    wr.Type = type;
-                    return wr;
-				case WorkloadEvent.EventType.Error:
-					ErrorWorkloadEvent er = new ErrorWorkloadEvent();
-					er.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
-					er.Type = type;
-					er.Text = reader.GetString(reader.GetOrdinal("sql_text")); 
-					return er;
-				default:
-                    ExecutionWorkloadEvent result = new ExecutionWorkloadEvent();
-                    result.ApplicationName = reader.GetString(reader.GetOrdinal("client_app_name"));
-                    result.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
-                    result.HostName = reader.GetString(reader.GetOrdinal("client_host_name"));
-                    result.DatabaseName = reader.GetString(reader.GetOrdinal("database_name"));
-                    result.LoginName = reader.GetString(reader.GetOrdinal("server_principal_name"));
-                    result.SPID = reader.GetInt32(reader.GetOrdinal("session_id"));
-                    result.Text = reader.GetString(reader.GetOrdinal("sql_text"));
-                    result.CPU = reader.GetInt64(reader.GetOrdinal("cpu"));
-                    result.Duration = reader.GetInt64(reader.GetOrdinal("duration"));
-                    result.Reads = reader.GetInt64(reader.GetOrdinal("reads"));
-                    result.Writes = reader.GetInt64(reader.GetOrdinal("writes"));
-                    result.Type = type;
-                    return result;
+                switch (type)
+                {
+                    case WorkloadEvent.EventType.PerformanceCounter:
+                        CounterWorkloadEvent cr = new CounterWorkloadEvent();
+                        cr.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
+                        ReadCounters(sequence, cr);
+                        return cr;
+                    case WorkloadEvent.EventType.WAIT_stats:
+                        WaitStatsWorkloadEvent wr = new WaitStatsWorkloadEvent();
+                        wr.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
+                        wr.Type = type;
+                        return wr;
+                    case WorkloadEvent.EventType.Error:
+                        ErrorWorkloadEvent er = new ErrorWorkloadEvent();
+                        er.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
+                        er.Type = type;
+                        er.Text = GetString(reader, "sql_text");
+                        return er;
+                    default:
+                        ExecutionWorkloadEvent result = new ExecutionWorkloadEvent();
+                        result.ApplicationName = GetString(reader, "client_app_name");
+                        result.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
+                        result.HostName = GetString(reader, "client_host_name");
+                        result.DatabaseName = GetString(reader, "database_name");
+                        result.LoginName = GetString(reader, "server_principal_name");
+                        result.SPID = reader.GetInt32(reader.GetOrdinal("session_id"));
+                        result.Text = GetString(reader, "sql_text");
+                        result.CPU = reader.GetInt64(reader.GetOrdinal("cpu"));
+                        result.Duration = reader.GetInt64(reader.GetOrdinal("duration"));
+                        result.Reads = reader.GetInt64(reader.GetOrdinal("reads"));
+                        result.Writes = reader.GetInt64(reader.GetOrdinal("writes"));
+                        result.Type = type;
+                        return result;
+                }
             }
+            catch(Exception e)
+            {
+                throw new InvalidOperationException($"Invalid data at event_sequence {sequence}",e);
+            }
+        }
+
+
+        private string GetString(SQLiteDataReader reader, string columnName)
+        {
+            object result = reader[columnName];
+            if(result != null)
+            {
+                if(result.GetType() == typeof(DBNull))
+                { 
+                    result = null;
+                }
+            }
+            return (string)result;
         }
     
 

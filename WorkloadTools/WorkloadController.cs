@@ -42,19 +42,28 @@ namespace WorkloadTools
 
                 while (!stopped)
                 {
-                    if ((!Listener.IsRunning) || (endTime < DateTime.Now))
-                        Stop();
-
-					if (endTime == DateTime.MaxValue && Listener.TimeoutMinutes != 0)
-						endTime = startTime.AddMinutes(Listener.TimeoutMinutes);
-
-                    var evt = Listener.Read();
-                    if (evt == null)
-                        continue;
-                    Parallel.ForEach(Consumers, (cons) =>
+                    try
                     {
-                        cons.Consume(evt);
-                    });
+                        if ((!Listener.IsRunning) || (endTime < DateTime.Now))
+                            Stop();
+
+                        if (endTime == DateTime.MaxValue && Listener.TimeoutMinutes != 0)
+                            endTime = startTime.AddMinutes(Listener.TimeoutMinutes);
+
+                        var evt = Listener.Read();
+                        if (evt == null)
+                            continue;
+                        Parallel.ForEach(Consumers, (cons) =>
+                        {
+                            cons.Consume(evt);
+                        });
+                    }
+                    catch (Exception e)
+                    {
+                        logger.Error("Exception reading event");
+                        logger.Error(e.Message);
+                        logger.Error(e.StackTrace);
+                    }
                 }
                 if (!disposed)
                 {
