@@ -616,7 +616,11 @@ namespace WorkloadViewer.ViewModel
                         select grp.Key.application
                     ).Distinct();
             }
-            ApplicationList = new List<FilterDefinition>(from name in baseApplications orderby name  select new FilterDefinition() { Name = name, IsChecked = true });
+            ApplicationList = new List<FilterDefinition>(
+                    from name in baseApplications
+                    orderby name
+                    select new FilterDefinition() { Name = name, IsChecked = true }
+                );
 
             var baseHosts = (
                 from t in _baselineWorkloadAnalysis.Points
@@ -633,7 +637,11 @@ namespace WorkloadViewer.ViewModel
                         select grp.Key.host
                     ).Distinct();
             }
-            HostList = new List<FilterDefinition>(from name in baseHosts orderby name select new FilterDefinition() { Name = name, IsChecked = true });
+            HostList = new List<FilterDefinition>(
+                    from name in baseHosts
+                    orderby name
+                    select new FilterDefinition() { Name = name, IsChecked = true }
+                );
 
             var baseDatabases = (
                 from t in _baselineWorkloadAnalysis.Points
@@ -650,7 +658,11 @@ namespace WorkloadViewer.ViewModel
                         select grp.Key.database
                     ).Distinct();
             }
-            DatabaseList = new List<FilterDefinition>(from name in baseDatabases orderby name select new FilterDefinition() { Name = name, IsChecked = true });
+            DatabaseList = new List<FilterDefinition>(
+                    from name in baseDatabases
+                    orderby name
+                    select new FilterDefinition() { Name = name, IsChecked = true }
+                );
 
             var baseLogins = (
                 from t in _baselineWorkloadAnalysis.Points
@@ -667,7 +679,11 @@ namespace WorkloadViewer.ViewModel
                         select grp.Key.login
                     ).Distinct();
             }
-            LoginList = new List<FilterDefinition>(from name in baseLogins orderby name select new FilterDefinition() { Name = name, IsChecked = true });
+            LoginList = new List<FilterDefinition>(
+                    from name in baseLogins
+                    orderby name
+                    select new FilterDefinition() { Name = name, IsChecked = true }
+                );
 
             RaisePropertyChanged("ApplicationList");
             RaisePropertyChanged("HostList");
