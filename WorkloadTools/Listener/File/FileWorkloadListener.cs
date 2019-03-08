@@ -190,7 +190,12 @@ namespace WorkloadTools.Listener.File
             }
             catch (Exception e)
             {
-                logger.Error($"Unable to read next event. Current event date: {result.StartTime}  Last event date: {previousDate}  Requested sleep: {msSleep}");
+                DateTime? eventDate = null;
+                if(result != null)
+                    eventDate = result.StartTime;
+
+                logger.Error(e);
+                logger.Error($"Unable to read next event. Current event date: {eventDate}  Last event date: {previousDate}  Requested sleep: {msSleep}");
                 throw;
             }
 
