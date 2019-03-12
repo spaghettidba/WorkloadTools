@@ -69,6 +69,7 @@ namespace WorkloadViewer.ViewModel
 
         public IEnumerable<object> Queries { get; private set; }
 
+        public bool Initialized { get; private set; } = false;
 
 
         private IDialogCoordinator _dialogCoordinator;
@@ -113,6 +114,7 @@ namespace WorkloadViewer.ViewModel
 
             try
             {
+                Initialized = false;
                 await Task.Run(() =>
                     {
                         InitializeWorkloadAnalysis();
@@ -125,6 +127,7 @@ namespace WorkloadViewer.ViewModel
                 // in AvalonEdit.TextEditor
                 // "TextDocument can be accessed only from the thread that owns it"
                 InitializeQueries();
+                Initialized = true;
             }
             catch (Exception e)
             {
@@ -162,7 +165,7 @@ namespace WorkloadViewer.ViewModel
         }
 
 
-        public void SetConnectionInfo(ConnectionInfoEditorViewModel viewModel)
+        public async void SetConnectionInfo(ConnectionInfoEditorViewModel viewModel)
         {
             _options.BaselineServer = viewModel.BaselineServer;
             _options.BaselineDatabase = viewModel.BaselineDatabase;
@@ -181,6 +184,13 @@ namespace WorkloadViewer.ViewModel
             ShowStatusMessage("Pre InitializeAll");
             // now that the options are filled, I can invoke the initialization
             InitializeAll();
+            BaseMetroDialog showingDialog = null;
+            showingDialog = await _dialogCoordinator.GetCurrentDialogAsync<BaseMetroDialog>(this);
+            if(showingDialog != null)
+            {
+                await _dialogCoordinator.HideMetroDialogAsync(this, showingDialog);
+            }
+            
             ShowStatusMessage("Post InitializeAll");
         }
 
