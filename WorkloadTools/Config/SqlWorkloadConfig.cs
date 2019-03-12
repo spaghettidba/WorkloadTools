@@ -35,8 +35,26 @@ namespace WorkloadTools.Config
                 // minify JSON to strip away comments
                 // Comments in config files are very useful but JSON parsers
                 // do not allow comments. Minification solves the issue.
-                string jsonMin = minifier.Minify(json);
-                return ser.Deserialize<SqlWorkloadConfig>(jsonMin);
+                SqlWorkloadConfig result = null;
+                string jsonMin = null;
+                try
+                {
+                    jsonMin = minifier.Minify(json);
+                }
+                catch (Exception e)
+                {
+                    throw new FormatException($"Unable to load configuration from '{path}'. The file contains syntax errors.", e);
+                }
+
+                try
+                {
+                    result = ser.Deserialize<SqlWorkloadConfig>(jsonMin);
+                }
+                catch (Exception e)
+                {
+                    throw new FormatException($"Unable to load configuration from '{path}'. The file contains semantic errors.", e);
+                }
+                return result;
             }
         }
 
