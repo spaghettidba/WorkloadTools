@@ -6,6 +6,8 @@
 
 If you're looking for detailed documentation on the individual tools, please have a look at the [Wiki](https://github.com/spaghettidba/WorkloadTools/wiki)
 
+If you're looking for usage scenarios and examples, see the [posts tagged WorkloadTools at my blog](https://spaghettidba.com/tag/workloadtools/)
+
 ## SqlWorkload
 
 SqlWorkload is a command line tool to start workload collection, analyze the collected data and replay the workload to a target machine, all in real-time.
