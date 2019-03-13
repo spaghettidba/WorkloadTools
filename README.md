@@ -35,28 +35,17 @@ SqlWorkload accepts two command line switches:
 
 In fact, SqlWorkload supports a multitude of parameters and specifying them all in the command line can become really tedious. For this reason, SqlWorkload supports `.JSON` configuration files.
 
-Here is the list of the parameters that can be supplied in the configuration file:
+This is a sample configuration file. Please refer to [the documentation](./Wiki/SqlWorkload) to see the full list of available configuration options.
 
 ```javascript
 {
-    // This section is fixed
     "Controller": {
 
         // The Listener section describes how to capture the events
         "Listener":
         {
             // The main parameter here is the class type of the Listener
-            // At the moment, three Listener types are supported
-            // - ExtendedEventsWorkloadListener
-            // - SqlTraceWorkloadListener
-            // - ProfilerWorkloadListener
             "__type": "ExtendedEventsWorkloadListener",
-
-            // For each Listener type you can supply your own script
-            // to customize the SqlTrace definition or the XE session
-            // definition. If you omit this parameter, the default
-            // definition will be used, which is fine 99% of the time.
-            "Source": "Listener\\ExtendedEvents\\sqlworkload.sql",
 
             // The ConnectionInfo describes how to connect the Listener
             "ConnectionInfo":
@@ -69,9 +58,6 @@ Here is the list of the parameters that can be supplied in the configuration fil
             },
 
             // Filters for the workload
-            // These are not mandatory, you can omit them
-            // if you don't need to filter.
-            // Prepend the '^' character to exclude the value
             "DatabaseFilter": "DS3",
             "ApplicationFilter" : "SomeAppName",
             "HostFilter" : "MyComputer",
@@ -84,10 +70,6 @@ Here is the list of the parameters that can be supplied in the configuration fil
         [
             {
                 // This is the type of the consumer
-                // Three types are available at the moment:
-                // - ReplayConsumer
-                // - AnalysisConsumer
-                // - WorkloadFileWriterConsumer
                 "__type": "ReplayConsumer",
 
                 // The same considerations for ConnectionInfo
