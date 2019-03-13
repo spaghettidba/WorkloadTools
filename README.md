@@ -37,7 +37,7 @@ In fact, SqlWorkload supports a multitude of parameters and specifying them all 
 
 Here is the list of the parameters that can be supplied in the configuration file:
 
-```TEXT
+```javascript
 {
     // This section is fixed
     "Controller": {
