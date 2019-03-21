@@ -2,6 +2,10 @@
 
 *WorkloadTools is a collection of tools to collect, analyze and replay SQL Server workloads, on premises and in the cloud .*
 
+## Download
+
+Go to the [release page](https://github.com/spaghettidba/WorkloadTools/releases/latest) and download the msi installer for your target bitness (x86 or x64) 
+
 ## Documentation
 
 If you're looking for detailed documentation on the individual tools, please have a look at the [Wiki](https://github.com/spaghettidba/WorkloadTools/wiki)
