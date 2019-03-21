@@ -29,6 +29,7 @@
       <ComponentGroupRef Id="ProductComponents" />
       <ComponentGroupRef Id="WorkloadViewerComponents" />
       <ComponentGroupRef Id="ProductReports" />
+      <ComponentGroupRef Id="ConvertWorkload" />
     </Feature>
     
   </Product>
@@ -54,7 +55,14 @@
       </Component>
     </ComponentGroup>
   </Fragment>
-
+  <Fragment>
+    <ComponentGroup Id="ConvertWorkload">
+      <Component Id="ConvertWorkloadId" Directory="INSTALLFOLDER" Guid="633CDC2A-00D2-403D-BBD3-5E96A79AA5A8">
+        <File Id="ConvertWorkloadExeId" Source="..\ConvertWorkload\bin\release\ConvertWorkload.exe" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+  
   <Fragment>
     <ComponentGroup Id="ProductLicense">
       <Component Id="cmpE591726ED3774E44B75D7106236DD456" Directory="INSTALLFOLDER" Guid="2CA2DACC-347C-449E-A39E-4A68310BDAB1">

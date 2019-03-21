@@ -38,6 +38,7 @@ namespace ConvertWorkload
                 var options = new Options();
                 if (!CommandLine.Parser.Default.ParseArguments(args, options))
                 {
+                    
                     return;
                 }
                 Run(options);
@@ -134,10 +135,10 @@ namespace ConvertWorkload
         [Option('L', "Log", HelpText = "Log file")]
         public string LogFile { get; set; }
 
-        [Option('I', "Input", HelpText = "Input file")]
+        [Option('I', "Input", HelpText = "Input file", Required = true)]
         public string InputFile { get; set; }
 
-        [Option('O', "Output", HelpText = "Output file")]
+        [Option('O', "Output", HelpText = "Output file", Required = true)]
         public string OutputFile { get; set; }
 
         [Option('A', "ApplicationFilter", HelpText = "Application filter")]

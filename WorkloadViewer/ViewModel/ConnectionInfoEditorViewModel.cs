@@ -61,8 +61,7 @@ namespace WorkloadViewer.ViewModel
         {
             Cancel = true;
             await _dialogCoordinator.HideMetroDialogAsync(Context, Dialog);
-            if(!Context.Initialized)
-                App.Current.Shutdown();
+            //App.Current.Shutdown();
         }
 
         private async void OK_Pressed(RoutedEventArgs e)
