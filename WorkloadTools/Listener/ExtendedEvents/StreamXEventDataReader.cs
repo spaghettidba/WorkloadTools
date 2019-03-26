@@ -60,12 +60,19 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     else if (evt.Name == "attention")
                     {
                         object value = TryGetValue(evt, FieldType.Action, "sql_text");
-                        if (value is string)
-                            commandText = (string)value;
-                        else if (value is byte[])
-                            commandText = Encoding.Unicode.GetString((byte[])value);
-                        else throw new ArgumentException($"Unable to extract sql_text from attention event. Value is of type ${value.GetType().FullName}");
+                        try
+                        {
+                            if (value is string)
+                                commandText = (string)value;
+                            else if (value is byte[])
+                                commandText = Encoding.Unicode.GetString((byte[])value);
+                            else throw new ArgumentException("Argument is of the wrong type");
+                        }
+                        catch(Exception e)
+                        {
+                            logger.Error(e,$"Unable to extract sql_text from attention event. Value is of type ${value.GetType().FullName}");
 
+                        }
                         evnt.Type = WorkloadEvent.EventType.Timeout;
                     }
 					else if (evt.Name == "user_event")
