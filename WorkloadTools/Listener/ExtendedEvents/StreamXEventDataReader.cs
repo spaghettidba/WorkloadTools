@@ -125,7 +125,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     }
                     catch (Exception e)
                     {
-                        logger.Error(e, "Error converting XE data from the stream.");
+                        logger.Error(e, $"Error converting XE data from the stream: {e.Message}");
                         throw;
                     }
 
