@@ -62,6 +62,10 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         else if (evt.Name == "attention")
                         {
                             object value = TryGetValue(evt, FieldType.Action, "sql_text");
+
+                            if (value == null)
+                                continue;
+
                             try
                             {
                                 if (value is string)
@@ -75,6 +79,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                 logger.Error(e, $"Unable to extract sql_text from attention event. Value is of type ${value.GetType().FullName}");
 
                             }
+                            evnt.Text = commandText;
                             evnt.Type = WorkloadEvent.EventType.Timeout;
                         }
                         else if (evt.Name == "user_event")
@@ -82,7 +87,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             int num = (int)TryGetValue(evt, FieldType.Field, "event_id");
                             if (num == 83)
                             {
-                                commandText = (string)TryGetValue(evt, FieldType.Field, "user_data");
+                                object value = TryGetValue(evt, FieldType.Field, "user_data");
+
+                                if (value is string)
+                                    commandText = (string)value;
+                                else if (value is byte[])
+                                    commandText = Encoding.Unicode.GetString((byte[])value);                    
+                                else throw new ArgumentException("Argument is of the wrong type");
+
+                                evnt.Text = commandText;
                                 evnt.Type = WorkloadEvent.EventType.Error;
                             }
                         }
@@ -113,15 +126,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             }
                             else if (evnt.Type == WorkloadEvent.EventType.Timeout)
                             {
-                                evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
+                                evnt.Duration = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "duration"));
                                 evnt.CPU = Convert.ToInt64(evnt.Duration);
                             }
                             else
                             {
-                                evnt.Reads = Convert.ToInt64(evt.Fields["logical_reads"].Value);
-                                evnt.Writes = Convert.ToInt64(evt.Fields["writes"].Value);
-                                evnt.CPU = Convert.ToInt64(evt.Fields["cpu_time"].Value);
-                                evnt.Duration = Convert.ToInt64(evt.Fields["duration"].Value);
+                                evnt.Reads = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "logical_reads"));
+                                evnt.Writes = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "writes"));
+                                evnt.CPU = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "cpu_time"));
+                                evnt.Duration = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "duration"));
                             }
 
                         }
@@ -148,6 +161,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         logger.Error($"Error converting XE data from the stream: {ex.Message}");
                         try
                         {
+                            
+                            logger.Error($"    event type            : {evnt.Type}");
                             logger.Error($"    client_app_name       : {evt.Actions["client_app_name"].Value}");
                             logger.Error($"    database_name         : {evt.Actions["database_name"].Value}");
                             logger.Error($"    client_hostname       : {evt.Actions["client_hostname"].Value}");
