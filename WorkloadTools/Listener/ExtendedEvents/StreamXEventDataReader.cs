@@ -145,16 +145,23 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     }
                     catch (Exception ex)
                     {
-                        logger.Error(e, $"Error converting XE data from the stream: {e.Message}");
-                        logger.Error(e, $"    client_app_name       : {evt.Actions["client_app_name"].Value}");
-                        logger.Error(e, $"    database_name         : {evt.Actions["database_name"].Value}");
-                        logger.Error(e, $"    client_hostname       : {evt.Actions["client_hostname"].Value}");
-                        logger.Error(e, $"    server_principal_name : {evt.Actions["server_principal_name"].Value}");
-                        logger.Error(e, $"    session_id            : {evt.Actions["session_id"].Value}");
-                        logger.Error(e, $"    duration              : {evt.Actions["duration"].Value}");
-                        logger.Error(e, $"    logical_reads         : {evt.Actions["logical_reads"].Value}");
-                        logger.Error(e, $"    writes                : {evt.Actions["writes"].Value}");
-                        logger.Error(e, $"    cpu_time              : {evt.Actions["cpu_time"].Value}");
+                        logger.Error($"Error converting XE data from the stream: {ex.Message}");
+                        try
+                        {
+                            logger.Error($"    client_app_name       : {evt.Actions["client_app_name"].Value}");
+                            logger.Error($"    database_name         : {evt.Actions["database_name"].Value}");
+                            logger.Error($"    client_hostname       : {evt.Actions["client_hostname"].Value}");
+                            logger.Error($"    server_principal_name : {evt.Actions["server_principal_name"].Value}");
+                            logger.Error($"    session_id            : {evt.Actions["session_id"].Value}");
+                            logger.Error($"    duration              : {evt.Actions["duration"].Value}");
+                            logger.Error($"    logical_reads         : {evt.Actions["logical_reads"].Value}");
+                            logger.Error($"    writes                : {evt.Actions["writes"].Value}");
+                            logger.Error($"    cpu_time              : {evt.Actions["cpu_time"].Value}");
+                        }
+                        catch (Exception)
+                        {
+                            //ignore, it is only logging
+                        }
                         throw;
                     }
                 }
