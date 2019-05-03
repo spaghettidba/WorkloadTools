@@ -13,6 +13,22 @@ BEGIN
 	DECLARE @sql nvarchar(max);
 	DECLARE @sql_alldata nvarchar(max);
 
+	SET @sql_alldata = N'IF OBJECT_ID(''[{0}].[AllData]'') IS NOT NULL DROP VIEW [{0}].[AllData]'
+	SET @sql = REPLACE(@sql_alldata, '{0}', @baselineSchema);
+	BEGIN TRY
+		EXEC(@sql);
+	END TRY
+	BEGIN CATCH
+		PRINT 'Unable to drop ' + @baselineSchema + '.AllData'
+	END CATCH
+	SET @sql = REPLACE(@sql_alldata, '{0}', @replaySchema);
+	BEGIN TRY
+		EXEC(@sql);
+	END TRY
+	BEGIN CATCH
+		PRINT 'Unable to drop ' + @replaySchema + '.AllData'
+	END CATCH
+
 	SET @sql_alldata = N'
 CREATE VIEW {0}.[AllData]
 AS
@@ -136,7 +152,7 @@ AllCorrelatedData AS (
 		WHERE r.sql_hash = b.sql_hash
 			AND r.interval_id = (
 				SELECT TOP(1) interval_id 
-				FROM replay.Intervals 
+				FROM '+ @replaySchema +'.Intervals 
 				WHERE end_time > b.end_time
 				ORDER BY interval_id ASC
 			)
