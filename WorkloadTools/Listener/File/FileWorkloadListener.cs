@@ -190,6 +190,8 @@ namespace WorkloadTools.Listener.File
             }
             catch (Exception e)
             {
+                if (stopped) return null;
+
                 DateTime? eventDate = null;
                 if(result != null)
                     eventDate = result.StartTime;

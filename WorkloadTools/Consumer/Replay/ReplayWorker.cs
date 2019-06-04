@@ -399,8 +399,10 @@ namespace WorkloadTools.Consumer.Replay
             if (conn != null)
             {
                 if (conn.State == System.Data.ConnectionState.Open)
-                    conn.Close();
-                conn.Dispose();
+                {
+                    try { conn.Close(); } catch (Exception) { /* swallow */ }
+                    try { conn.Dispose(); } catch (Exception) { /* swallow */ }
+                }
                 conn = null;
             }
             if (runner != null)
