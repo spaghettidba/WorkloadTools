@@ -221,6 +221,17 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     result = fld.Value;
                 }
             }
+
+            // check whether last char is a null char (\0)
+            // because this breaks writing this string to the sqlite database
+            // which considers it as a BLOB
+            if(result is string)
+            {
+                while (((string)result).EndsWith("\0"))
+                {
+                    result = ((string)result).Remove(((string)result).Length - 1);
+                }
+            }
             return result;
         }
 
