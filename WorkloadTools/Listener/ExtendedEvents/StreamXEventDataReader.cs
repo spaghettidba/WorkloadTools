@@ -85,18 +85,34 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         else if (evt.Name == "user_event")
                         {
                             int num = (int)TryGetValue(evt, FieldType.Field, "event_id");
-                            if (num == 83)
+                            if (num == 83 || num == 82)
                             {
-                                object value = TryGetValue(evt, FieldType.Field, "user_data");
+                                if (((string)TryGetValue(evt, FieldType.Field, "event_id")).StartsWith("WorkloadTools."))
+                                {
+                                    object value = TryGetValue(evt, FieldType.Field, "user_data");
 
-                                if (value is string)
-                                    commandText = (string)value;
-                                else if (value is byte[])
-                                    commandText = Encoding.Unicode.GetString((byte[])value);                    
-                                else throw new ArgumentException("Argument is of the wrong type");
+                                    if (value is string)
+                                        commandText = (string)value;
+                                    else if (value is byte[])
+                                        commandText = Encoding.Unicode.GetString((byte[])value);
+                                    else throw new ArgumentException("Argument is of the wrong type");
 
-                                evnt.Text = commandText;
-                                evnt.Type = WorkloadEvent.EventType.Error;
+                                    evnt.Text = commandText;
+
+                                    if (num == 83)
+                                    {
+                                        evnt.Type = WorkloadEvent.EventType.Error;
+                                    }
+                                    else
+                                    {
+                                        evnt.Type = WorkloadEvent.EventType.Timeout;
+                                    }
+                                }
+                                else
+                                {
+                                    evnt.Type = WorkloadEvent.EventType.Unknown;
+                                    continue;
+                                }
                             }
                         }
                         else

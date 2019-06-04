@@ -256,9 +256,13 @@ namespace WorkloadTools.Listener.File
             object result = reader[columnName];
             if(result != null)
             {
-                if(result.GetType() == typeof(DBNull))
-                { 
+                if (result.GetType() == typeof(DBNull))
+                {
                     result = null;
+                }
+                else if (result is byte[])
+                {
+                    result = Encoding.Unicode.GetString((byte[])result);
                 }
             }
             return (string)result;
