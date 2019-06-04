@@ -44,7 +44,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 while (!stopped && eventsEnumerator.MoveNext())
                 {
                     PublishedEvent evt = eventsEnumerator.Current;
-                    ExecutionWorkloadEvent evnt = new ExecutionWorkloadEvent();
+                    ExecutionWorkloadEvent workloadEvent = new ExecutionWorkloadEvent();
                     try
                     {
 
@@ -52,15 +52,16 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         if (evt.Name == "rpc_completed")
                         {
                             commandText = (string)TryGetValue(evt, FieldType.Field, "statement");
-                            evnt.Type = WorkloadEvent.EventType.RPCCompleted;
+                            workloadEvent.Type = WorkloadEvent.EventType.RPCCompleted;
                         }
                         else if (evt.Name == "sql_batch_completed")
                         {
                             commandText = (string)TryGetValue(evt, FieldType.Field, "batch_text");
-                            evnt.Type = WorkloadEvent.EventType.BatchCompleted;
+                            workloadEvent.Type = WorkloadEvent.EventType.BatchCompleted;
                         }
                         else if (evt.Name == "attention")
                         {
+                            workloadEvent = new ErrorWorkloadEvent();
                             object value = TryGetValue(evt, FieldType.Action, "sql_text");
 
                             if (value == null)
@@ -79,11 +80,12 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                 logger.Error(e, $"Unable to extract sql_text from attention event. Value is of type ${value.GetType().FullName}");
 
                             }
-                            evnt.Text = commandText;
-                            evnt.Type = WorkloadEvent.EventType.Timeout;
+                            workloadEvent.Text = commandText;
+                            workloadEvent.Type = WorkloadEvent.EventType.Timeout;
                         }
                         else if (evt.Name == "user_event")
                         {
+                            workloadEvent = new ErrorWorkloadEvent();
                             int num = (int)TryGetValue(evt, FieldType.Field, "event_id");
                             if (num == 83 || num == 82)
                             {
@@ -97,60 +99,60 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                         commandText = Encoding.Unicode.GetString((byte[])value);
                                     else throw new ArgumentException("Argument is of the wrong type");
 
-                                    evnt.Text = commandText;
+                                    workloadEvent.Text = commandText;
 
                                     if (num == 83)
                                     {
-                                        evnt.Type = WorkloadEvent.EventType.Error;
+                                        workloadEvent.Type = WorkloadEvent.EventType.Error;
                                     }
                                     else
                                     {
-                                        evnt.Type = WorkloadEvent.EventType.Timeout;
+                                        workloadEvent.Type = WorkloadEvent.EventType.Timeout;
                                     }
                                 }
                                 else
                                 {
-                                    evnt.Type = WorkloadEvent.EventType.Unknown;
+                                    workloadEvent.Type = WorkloadEvent.EventType.Unknown;
                                     continue;
                                 }
                             }
                         }
                         else
                         {
-                            evnt.Type = WorkloadEvent.EventType.Unknown;
+                            workloadEvent.Type = WorkloadEvent.EventType.Unknown;
                             continue;
                         }
 
                         try
                         {
-                            evnt.ApplicationName = (string)TryGetValue(evt, FieldType.Action, "client_app_name");
-                            evnt.DatabaseName = (string)TryGetValue(evt, FieldType.Action, "database_name");
-                            evnt.HostName = (string)TryGetValue(evt, FieldType.Action, "client_hostname");
-                            evnt.LoginName = (string)TryGetValue(evt, FieldType.Action, "server_principal_name");
+                            workloadEvent.ApplicationName = (string)TryGetValue(evt, FieldType.Action, "client_app_name");
+                            workloadEvent.DatabaseName = (string)TryGetValue(evt, FieldType.Action, "database_name");
+                            workloadEvent.HostName = (string)TryGetValue(evt, FieldType.Action, "client_hostname");
+                            workloadEvent.LoginName = (string)TryGetValue(evt, FieldType.Action, "server_principal_name");
                             object oSession = TryGetValue(evt, FieldType.Action, "session_id");
                             if (oSession != null)
-                                evnt.SPID = Convert.ToInt32(oSession);
+                                workloadEvent.SPID = Convert.ToInt32(oSession);
                             if (commandText != null)
-                                evnt.Text = commandText;
+                                workloadEvent.Text = commandText;
 
 
-                            evnt.StartTime = evt.Timestamp.LocalDateTime;
+                            workloadEvent.StartTime = evt.Timestamp.LocalDateTime;
 
-                            if (evnt.Type == WorkloadEvent.EventType.Error)
+                            if (workloadEvent.Type == WorkloadEvent.EventType.Error)
                             {
                                 // do nothing
                             }
-                            else if (evnt.Type == WorkloadEvent.EventType.Timeout)
+                            else if (workloadEvent.Type == WorkloadEvent.EventType.Timeout)
                             {
-                                evnt.Duration = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "duration"));
-                                evnt.CPU = Convert.ToInt64(evnt.Duration);
+                                workloadEvent.Duration = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "duration"));
+                                workloadEvent.CPU = Convert.ToInt64(workloadEvent.Duration);
                             }
                             else
                             {
-                                evnt.Reads = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "logical_reads"));
-                                evnt.Writes = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "writes"));
-                                evnt.CPU = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "cpu_time"));
-                                evnt.Duration = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "duration"));
+                                workloadEvent.Reads = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "logical_reads"));
+                                workloadEvent.Writes = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "writes"));
+                                workloadEvent.CPU = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "cpu_time"));
+                                workloadEvent.Duration = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "duration"));
                             }
 
                         }
@@ -160,15 +162,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             throw;
                         }
 
-                        if (evnt.Type <= WorkloadEvent.EventType.BatchCompleted)
+                        if (workloadEvent.Type <= WorkloadEvent.EventType.BatchCompleted)
                         {
-                            if (transformer.Skip(evnt.Text))
+                            if (transformer.Skip(workloadEvent.Text))
                                 continue;
 
-                            evnt.Text = transformer.Transform(evnt.Text);
+                            workloadEvent.Text = transformer.Transform(workloadEvent.Text);
                         }
 
-                        Events.Enqueue(evnt);
+                        Events.Enqueue(workloadEvent);
 
                         EventCount++;
                     }
@@ -178,7 +180,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         try
                         {
                             
-                            logger.Error($"    event type            : {evnt.Type}");
+                            logger.Error($"    event type            : {workloadEvent.Type}");
                             logger.Error($"    client_app_name       : {evt.Actions["client_app_name"].Value}");
                             logger.Error($"    database_name         : {evt.Actions["database_name"].Value}");
                             logger.Error($"    client_hostname       : {evt.Actions["client_hostname"].Value}");
