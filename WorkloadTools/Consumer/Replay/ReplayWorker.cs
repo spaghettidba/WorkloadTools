@@ -61,6 +61,12 @@ namespace WorkloadTools.Consumer.Replay
 
         private Dictionary<int, int> preparedStatements = new Dictionary<int, int>();
 
+        private enum UserErrorType
+        {
+            Timeout = 82,
+            Error = 83
+        }
+
         private void InitializeConnection()
         {
             logger.Info(String.Format("Worker [{0}] - Connecting to server {1} for replay...", Name, ConnectionInfo.ServerName));
@@ -284,15 +290,15 @@ namespace WorkloadTools.Consumer.Replay
                     previousCPSComputeTime = DateTime.Now;
                     previousCommandCount = commandCount;
 
-					if (DisplayWorkerStats)
-					{
-						commandsPerSecond.Add((int)cps);
-						cps = commandsPerSecond.Average();
+                    if (DisplayWorkerStats)
+                    {
+                        commandsPerSecond.Add((int)cps);
+                        cps = commandsPerSecond.Average();
 
-						logger.Info(String.Format("Worker [{0}] - {1} commands executed.", Name, commandCount));
-						logger.Info(String.Format("Worker [{0}] - {1} commands pending.", Name, Commands.Count));
-						logger.Info(String.Format("Worker [{0}] - {1} commands per second.", Name, (int)cps));
-					}
+                        logger.Info(String.Format("Worker [{0}] - {1} commands executed.", Name, commandCount));
+                        logger.Info(String.Format("Worker [{0}] - {1} commands pending.", Name, Commands.Count));
+                        logger.Info(String.Format("Worker [{0}] - {1} commands per second.", Name, (int)cps));
+                    }
                 }
             }
             catch(SqlException e)
@@ -302,10 +308,10 @@ namespace WorkloadTools.Consumer.Replay
                 {
                     RaiseTimeoutEvent(command.CommandText, conn);
                 }
-				else
-				{
-					RaiseErrorEvent(command, e.Message, conn);
-				}
+                else
+                {
+                    RaiseErrorEvent(command, e.Message, conn);
+                }
 
                 if (StopOnError)
                 {
@@ -336,44 +342,40 @@ namespace WorkloadTools.Consumer.Replay
 
         private void RaiseTimeoutEvent(string commandText, SqlConnection conn)
         {
-            // This event is used by the SqlTraceWorkloadListener to identify timeout events
-            // ExtendedEventsWorkloadListener does not need this event, because the Attention
-            // event already contains the text of the command
-            string sql = "EXEC sp_trace_generateevent @eventid = 82, @userinfo = @userinfo, @userdata = @userdata;";
+            RaiseErrorEvent(String.Format("WorkloadTools.Timeout[{0}]", QueryTimeoutSeconds), commandText, UserErrorType.Timeout, conn);
+        }
+
+
+        private void RaiseErrorEvent(ReplayCommand Command, string ErrorMessage, SqlConnection conn)
+        {
+            string msg = "";
+            msg += "DATABASE:" + Environment.NewLine;
+            msg += Command.Database + Environment.NewLine;
+            msg += "MESSAGE:" + Environment.NewLine;
+            msg += ErrorMessage + Environment.NewLine;
+            msg += "--------------------" + Environment.NewLine;
+            msg += Command.CommandText;
+
+            RaiseErrorEvent("WorkloadTools.Replay",msg,UserErrorType.Error,conn);
+        }
+
+
+        private void RaiseErrorEvent(string info, string message, UserErrorType type, SqlConnection conn)
+        {
+            // Raise a custom event. Both SqlTrace and Extended Events can capture this event.
+            string sql = "EXEC sp_trace_generateevent @eventid = @eventid, @userinfo = @userinfo, @userdata = @userdata;";
 
             using (SqlCommand cmd = new SqlCommand(sql))
             {
                 cmd.Connection = conn;
-                cmd.Parameters.AddWithValue("@userinfo", String.Format("WorkloadTools.Timeout[{0}]", QueryTimeoutSeconds));
-                cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(commandText));
+                cmd.Parameters.AddWithValue("@eventid", type);
+                cmd.Parameters.AddWithValue("@userinfo", info);
+                cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(message.Substring(0, message.Length > 8000 ? 8000 : message.Length)));
                 cmd.ExecuteNonQuery();
             }
         }
 
-
-		private void RaiseErrorEvent(ReplayCommand Command, string ErrorMessage, SqlConnection conn)
-		{
-			// Raise a custom event. Both SqlTrace and Extended Events can capture this event.
-			string sql = "EXEC sp_trace_generateevent @eventid = 83, @userinfo = @userinfo, @userdata = @userdata;";
-
-			using (SqlCommand cmd = new SqlCommand(sql))
-			{
-				cmd.Connection = conn;
-				cmd.Parameters.AddWithValue("@userinfo", "WorkloadTools.Replay");
-				string msg = "";
-				msg += "DATABASE:" + Environment.NewLine;
-				msg += Command.Database + Environment.NewLine;
-				msg += "MESSAGE:" + Environment.NewLine;
-				msg += ErrorMessage + Environment.NewLine;
-				msg += "--------------------" + Environment.NewLine;
-				msg += Command.CommandText;
-                cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(msg.Substring(0, msg.Length > 8000 ? 8000 : msg.Length)));
-				cmd.ExecuteNonQuery();
-			}
-		}
-
-
-		public void AppendCommand(ReplayCommand cmd)
+        public void AppendCommand(ReplayCommand cmd)
         {
             Commands.Enqueue(cmd);
         }
@@ -397,8 +399,10 @@ namespace WorkloadTools.Consumer.Replay
             if (conn != null)
             {
                 if (conn.State == System.Data.ConnectionState.Open)
-                    conn.Close();
-                conn.Dispose();
+                {
+                    try { conn.Close(); } catch (Exception) { /* swallow */ }
+                    try { conn.Dispose(); } catch (Exception) { /* swallow */ }
+                }
                 conn = null;
             }
             if (runner != null)

@@ -115,6 +115,7 @@ IF OBJECT_ID('{SchemaName}.Errors') IS NULL
 
 CREATE TABLE [{SchemaName}].[Errors](
 	[interval_id] [int] NOT NULL,
+	[error_type] [nvarchar](30) NOT NULL,
 	[message] [nvarchar](max) NULL,
 	[error_count] int NULL
 )

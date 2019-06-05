@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 namespace WorkloadTools
 {
 	[Serializable]
-	public class ErrorWorkloadEvent : WorkloadEvent
+	public class ErrorWorkloadEvent : ExecutionWorkloadEvent
 	{
-		public string Text { get; set; }
+		public ErrorWorkloadEvent()
+        {
+            Type = EventType.Error;
+        }
 	}
 }

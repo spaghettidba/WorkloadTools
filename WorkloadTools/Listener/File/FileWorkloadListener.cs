@@ -190,6 +190,8 @@ namespace WorkloadTools.Listener.File
             }
             catch (Exception e)
             {
+                if (stopped) return null;
+
                 DateTime? eventDate = null;
                 if(result != null)
                     eventDate = result.StartTime;
@@ -236,10 +238,10 @@ namespace WorkloadTools.Listener.File
                         result.LoginName = GetString(reader, "server_principal_name");
                         result.SPID = reader.GetInt32(reader.GetOrdinal("session_id"));
                         result.Text = GetString(reader, "sql_text");
-                        result.CPU = reader.GetInt64(reader.GetOrdinal("cpu"));
-                        result.Duration = reader.GetInt64(reader.GetOrdinal("duration"));
-                        result.Reads = reader.GetInt64(reader.GetOrdinal("reads"));
-                        result.Writes = reader.GetInt64(reader.GetOrdinal("writes"));
+                        result.CPU = GetInt64(reader, "cpu");
+                        result.Duration = GetInt64(reader, "duration");
+                        result.Reads = GetInt64(reader, "reads");
+                        result.Writes = GetInt64(reader, "writes");
                         result.Type = type;
                         return result;
                 }
@@ -256,14 +258,30 @@ namespace WorkloadTools.Listener.File
             object result = reader[columnName];
             if(result != null)
             {
-                if(result.GetType() == typeof(DBNull))
-                { 
+                if (result.GetType() == typeof(DBNull))
+                {
                     result = null;
+                }
+                else if (result is byte[])
+                {
+                    result = Encoding.Unicode.GetString((byte[])result);
                 }
             }
             return (string)result;
         }
     
+		private long? GetInt64(SQLiteDataReader reader, string columnName)
+		{
+			object result = reader[columnName];
+			if (result != null)
+			{
+				if (result.GetType() == typeof(DBNull))
+				{
+					result = null;
+				}
+			}
+			return (long?)result;
+		}
 
         protected override void Dispose(bool disposing)
         {

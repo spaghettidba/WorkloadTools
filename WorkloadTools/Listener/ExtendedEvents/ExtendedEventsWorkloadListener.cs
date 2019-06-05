@@ -151,15 +151,23 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         public override WorkloadEvent Read()
         {
-            WorkloadEvent result = null;
-            while (!Events.TryDequeue(out result))
+            try
             {
-                if (stopped)
-                    return null;
+                WorkloadEvent result = null;
+                while (!Events.TryDequeue(out result))
+                {
+                    if (stopped)
+                        return null;
 
-                spin.SpinOnce();
+                    spin.SpinOnce();
+                }
+                return result;
             }
-            return result;
+            catch (Exception)
+            {
+                if (stopped) return null;
+                else throw;
+            }
         }
 
         protected override void Dispose(bool disposing)

@@ -189,7 +189,8 @@ namespace WorkloadTools.Consumer.Analysis
 		{
 			DataRow row = errorData.NewRow();
 			row.SetField("message", evt.Text);
-			errorData.Rows.Add(row);
+            row.SetField("type", evt.Type);
+            errorData.Rows.Add(row);
 		}
 
 		private void _internalAdd(WaitStatsWorkloadEvent evt)
@@ -544,12 +545,14 @@ namespace WorkloadTools.Consumer.Analysis
 					var Table = from t in errorData.AsEnumerable()
 								group t by new
 								{
-									message = t.Field<long>("message")
+                                    type = t.Field<int>("type"),
+									message = t.Field<string>("message")
 								}
 								into grp
 								select new
 								{
 									interval_id = current_interval_id,
+                                    error_type = ((WorkloadEvent.EventType)grp.Key.type).ToString(),
 									grp.Key.message,
 									error_count = grp.Count()
 								};
@@ -746,7 +749,8 @@ namespace WorkloadTools.Consumer.Analysis
             rawData.Columns.Add("duration_ms", typeof(long));
 
 			errorData = new DataTable();
-			errorData.Columns.Add("message", typeof(string));
+            errorData.Columns.Add("type", typeof(int));
+            errorData.Columns.Add("message", typeof(string));
 		}
 
 

@@ -17,6 +17,11 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         public string OutputFile { get; set; }
         public static int CACHE_SIZE = 1000;
+        // controls how often the data is written to the database
+        // if not enough events are generated to flush the cache
+        // a flush is forced every CACHE_FLUSH_HEARTBEAT_MINUTES 
+        public static int CACHE_FLUSH_HEARTBEAT_MINUTES = 1;
+        public DateTime lastFlush = DateTime.Now;
 
         private bool databaseInitialized = false;
         private int event_sequence = 1;
@@ -113,6 +118,11 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         private void Flush()
         {
+            if(DateTime.Now.Subtract(lastFlush).TotalMinutes >= CACHE_FLUSH_HEARTBEAT_MINUTES)
+            {
+                forceFlush = true;
+            }
+
             if (cache.Count == CACHE_SIZE || forceFlush)
             {
                 InitializeConnection();
@@ -132,6 +142,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                 }
                 finally
                 {
+                    lastFlush = DateTime.Now;
                     forceFlush = false;
                 }
             }
@@ -198,8 +209,9 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     InsertWaitEvent(evnt);
 
                 _rowsInserted++;
-                if(_rowsInserted % 1000 == 0)
+                if((_rowsInserted % CACHE_SIZE == 0) || forceFlush)
                 {
+                    if (forceFlush) forceFlush = false;
                     logger.Info($"{_rowsInserted} events saved");
                 }
             }

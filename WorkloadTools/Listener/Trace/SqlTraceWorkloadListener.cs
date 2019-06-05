@@ -133,16 +133,24 @@ namespace WorkloadTools.Listener.Trace
 
         public override WorkloadEvent Read()
         {
-            WorkloadEvent result = null;
-            while (!Events.TryDequeue(out result))
-            {
-                if (stopped)
-                    return null;
+            try
+            { 
+                WorkloadEvent result = null;
+                while (!Events.TryDequeue(out result))
+                {
+                    if (stopped)
+                        return null;
 
-                Thread.Sleep(5);
+                    Thread.Sleep(5);
+                }
+                return result;
             }
-            return result;
-        }
+            catch (Exception)
+            {
+                if (stopped) return null;
+                else throw;
+            }
+}
 
 
         // Read Workload events directly from the trace files
