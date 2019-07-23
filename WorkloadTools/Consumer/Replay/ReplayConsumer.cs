@@ -14,9 +14,9 @@ namespace WorkloadTools.Consumer.Replay
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static readonly int SEMAPHORE_LIMIT = Properties.Settings.Default.ReplayConsumer_SEMAPHORE_LIMIT;
-        private static readonly int WORKER_EXPIRY_TIMEOUT_SECONDS = Properties.Settings.Default.ReplayConsumer_WORKER_EXPIRY_TIMEOUT_SECONDS;
-        private static readonly Semaphore WorkLimiter = new Semaphore(SEMAPHORE_LIMIT, SEMAPHORE_LIMIT);
+        public int ThreadLimit = 32;
+        public int InactiveWorkerTerminationTimeoutSeconds = 15;
+        private Semaphore WorkLimiter;
 
 		public bool DisplayWorkerStats { get; set; } = true;
 		public bool ConsumeResults { get; set; } = true;
@@ -25,7 +25,7 @@ namespace WorkloadTools.Consumer.Replay
 		public bool MimicApplicationName { get; set; } = false;
 
 		public SqlConnectionInfo ConnectionInfo { get; set; }
-        public SynchronizationModeEnum SynchronizationMode { get; set; } = SynchronizationModeEnum.None;
+        public SynchronizationModeEnum SynchronizationMode { get; set; } = SynchronizationModeEnum.WorkerTask;
 
         private ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
         private Thread runner;
@@ -35,10 +35,14 @@ namespace WorkloadTools.Consumer.Replay
         {
             ThreadPools,
             Tasks,
-            None
+            WorkerTask,
+            Serial
         }
 
-
+        public ReplayConsumer()
+        {
+            WorkLimiter = new Semaphore(ThreadLimit, ThreadLimit);
+        }
 
         public override void ConsumeBuffered(WorkloadEvent evnt)
         {
@@ -158,7 +162,7 @@ namespace WorkloadTools.Consumer.Replay
 
                     foreach (ReplayWorker wrk in ReplayWorkers.Values)
                     {
-                        if (wrk.LastCommandTime < DateTime.Now.AddSeconds(-WORKER_EXPIRY_TIMEOUT_SECONDS) && !wrk.HasCommands)
+                        if (wrk.LastCommandTime < DateTime.Now.AddSeconds(-InactiveWorkerTerminationTimeoutSeconds) && !wrk.HasCommands)
                         {
                             RemoveWorker(wrk.Name);
                         }
@@ -172,7 +176,7 @@ namespace WorkloadTools.Consumer.Replay
                     logger.Warn(e.Message);
                 }
 
-                Thread.Sleep(WORKER_EXPIRY_TIMEOUT_SECONDS * 1000); // sleep some seconds
+                Thread.Sleep(InactiveWorkerTerminationTimeoutSeconds * 1000); // sleep some seconds
             }
             logger.Trace("Sweeper thread stopped.");
         }
@@ -202,7 +206,6 @@ namespace WorkloadTools.Consumer.Replay
 
                 try
                 {
-                    //Parallel.ForEach(ReplayWorkers.Values, (ReplayWorker wrk) =>
                     foreach (ReplayWorker wrk in ReplayWorkers.Values)
                     {
                         if (stopped) return;
@@ -250,7 +253,7 @@ namespace WorkloadTools.Consumer.Replay
                                     WorkLimiter.Release();
                                 }
                             }
-                            else if (SynchronizationMode == SynchronizationModeEnum.None)
+                            else if (SynchronizationMode == SynchronizationModeEnum.WorkerTask)
                             {
                                 try
                                 {
@@ -268,7 +271,7 @@ namespace WorkloadTools.Consumer.Replay
                     };
 
 
-                    if (SynchronizationMode == SynchronizationModeEnum.None)
+                    if (SynchronizationMode == SynchronizationModeEnum.WorkerTask)
                     {
                         // Sleep 1 second before checking whether more workers
                         // are available and not started
@@ -291,7 +294,7 @@ namespace WorkloadTools.Consumer.Replay
             }
 
 
-            if (SynchronizationMode == SynchronizationModeEnum.None)
+            if (SynchronizationMode == SynchronizationModeEnum.WorkerTask)
             {
                 foreach (ReplayWorker wrk in ReplayWorkers.Values)
                 {
