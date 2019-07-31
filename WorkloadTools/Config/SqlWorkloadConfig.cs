@@ -11,6 +11,7 @@ using DouglasCrockford.JsMin;
 using WorkloadTools.Listener.ExtendedEvents;
 using WorkloadTools.Consumer.Replay;
 using WorkloadTools.Consumer.Analysis;
+using WorkloadTools.Util;
 
 namespace WorkloadTools.Config
 {
@@ -28,6 +29,7 @@ namespace WorkloadTools.Config
         public static SqlWorkloadConfig LoadFromFile(string path)
         {
             JavaScriptSerializer ser = new JavaScriptSerializer(new SqlWorkloadConfigTypeResolver());
+            ser.RegisterConverters(new JavaScriptConverter[] { new ModelConverter<WorkloadController>() });
             using (StreamReader r = new StreamReader(path))
             {
                 string json = r.ReadToEnd();

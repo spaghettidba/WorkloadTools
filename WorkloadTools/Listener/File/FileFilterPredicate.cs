@@ -16,8 +16,14 @@ namespace WorkloadTools.Listener.File
                 return String.Empty;
 
             IsPushedDown = true;
-            string result = ColumnName.ToString();
-            result += " " + FilterPredicate.ComparisonOperatorAsString(ComparisonOperator) + " N'" + EscapeFilter(PredicateValue) + "'";
+            string result = "(";
+            for (int i = 0; i < PredicateValue.Length; i++)
+            {
+                if (i > 0) { result += " OR "; }
+                result += ColumnName.ToString();
+                result += " " + FilterPredicate.ComparisonOperatorAsString(ComparisonOperator) + " '" + EscapeFilter(PredicateValue[i]) + "'";
+            }
+            result += ")";
             return result;
         }
     }

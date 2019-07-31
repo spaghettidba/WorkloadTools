@@ -83,10 +83,10 @@ namespace ConvertWorkload
             }
             EventWriter writer = new WorkloadFileEventWriter(options.OutputFile);
             WorkloadConverter converter = new WorkloadConverter(reader, writer);
-            converter.ApplicationFilter = options.ApplicationFilter;
-            converter.DatabaseFilter = options.DatabaseFilter;
-            converter.HostFilter = options.HostFilter;
-            converter.LoginFilter = options.LoginFilter;
+            converter.ApplicationFilter = new string[1] { options.ApplicationFilter };
+            converter.DatabaseFilter = new string[1] { options.DatabaseFilter };
+            converter.HostFilter = new string[1] { options.HostFilter };
+            converter.LoginFilter = new string[1] { options.LoginFilter };
 
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
                 e.Cancel = true;

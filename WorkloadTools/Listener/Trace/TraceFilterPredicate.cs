@@ -17,7 +17,12 @@ namespace WorkloadTools.Listener.Trace
                 return String.Empty;
 
             IsPushedDown = true;
-            return "exec sp_trace_setfilter @TraceID, " + (byte)ColumnName + " ,  0, "+ (byte)ComparisonOperator +", N'" + EscapeFilter(PredicateValue) + "'"; 
+            string result = "";
+            for (int i = 0; i < PredicateValue.Length; i++)
+            {
+                result += "exec sp_trace_setfilter @TraceID, " + (byte)ColumnName + " ,  " + (i == 0 ? 0:1) +", " + (byte)ComparisonOperator + ", N'" + EscapeFilter(PredicateValue[i]) + "'";
+            }
+            return result;
         }
 
     }

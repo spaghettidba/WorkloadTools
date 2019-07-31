@@ -18,10 +18,11 @@ namespace WorkloadTools
         public SqlConnectionInfo ConnectionInfo { get; set; }
         public string Source { get; set; }
 
-        public string ApplicationFilter { get; set; }
-        public string DatabaseFilter { get; set; }
-        public string HostFilter { get; set; } 
-        public string LoginFilter { get; set; }
+
+        public string[] ApplicationFilter { get; set; }
+        public string[] DatabaseFilter { get; set; }
+        public string[] HostFilter { get; set; } 
+        public string[] LoginFilter { get; set; }
 
         public int StatsCollectionIntervalSeconds { get; set; } = 60;
 		public int TimeoutMinutes { get; set; } = 0;
