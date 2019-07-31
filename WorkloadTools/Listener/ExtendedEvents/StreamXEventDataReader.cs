@@ -140,7 +140,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                             if (workloadEvent.Type == WorkloadEvent.EventType.Error)
                             {
-                                // do nothing
+                                workloadEvent.Duration = 0;
+                                workloadEvent.CPU = 0;
                             }
                             else if (workloadEvent.Type == WorkloadEvent.EventType.Timeout)
                             {
@@ -181,15 +182,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         {
                             
                             logger.Error($"    event type            : {workloadEvent.Type}");
-                            logger.Error($"    client_app_name       : {evt.Actions["client_app_name"].Value}");
-                            logger.Error($"    database_name         : {evt.Actions["database_name"].Value}");
-                            logger.Error($"    client_hostname       : {evt.Actions["client_hostname"].Value}");
-                            logger.Error($"    server_principal_name : {evt.Actions["server_principal_name"].Value}");
-                            logger.Error($"    session_id            : {evt.Actions["session_id"].Value}");
-                            logger.Error($"    duration              : {evt.Actions["duration"].Value}");
-                            logger.Error($"    logical_reads         : {evt.Actions["logical_reads"].Value}");
-                            logger.Error($"    writes                : {evt.Actions["writes"].Value}");
-                            logger.Error($"    cpu_time              : {evt.Actions["cpu_time"].Value}");
+                            logger.Error($"    client_app_name       : {TryGetString(evt, FieldType.Action, "client_app_name")}");
+                            logger.Error($"    database_name         : {TryGetString(evt, FieldType.Action, "database_name")}");
+                            logger.Error($"    client_hostname       : {TryGetString(evt, FieldType.Action, "client_hostname")}");
+                            logger.Error($"    server_principal_name : {TryGetString(evt, FieldType.Action, "server_principal_name")}");
+                            logger.Error($"    session_id            : {TryGetString(evt, FieldType.Action, "session_id")}");
+                            logger.Error($"    duration              : {TryGetString(evt, FieldType.Field, "duration")}");
+                            logger.Error($"    logical_reads         : {TryGetString(evt, FieldType.Field, "logical_reads")}");
+                            logger.Error($"    writes                : {TryGetString(evt, FieldType.Field, "writes")}");
+                            logger.Error($"    cpu_time              : {TryGetString(evt, FieldType.Field, "cpu_time")}");
                         }
                         catch (Exception)
                         {
@@ -235,6 +236,20 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 }
             }
             return result;
+        }
+
+        private string TryGetString(PublishedEvent evt, FieldType t, string name)
+        {
+            object tmp = TryGetValue(evt, t, name);
+            string ret = null;
+            if(tmp != null)
+            {
+                return ret.ToString();
+            }
+            else
+            {
+                return "(null)";
+            }
         }
 
         public override void Stop()
