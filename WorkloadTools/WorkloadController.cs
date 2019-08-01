@@ -17,7 +17,7 @@ namespace WorkloadTools
 
 
         public WorkloadListener Listener { get; set; }
-        public List<WorkloadConsumer> Consumers = new List<WorkloadConsumer>();
+        public List<WorkloadConsumer> Consumers { get; set; } = new List<WorkloadConsumer>();
 
         private bool stopped = false;
         private bool disposed = false;

@@ -29,7 +29,7 @@ namespace WorkloadTools.Config
         public static SqlWorkloadConfig LoadFromFile(string path)
         {
             JavaScriptSerializer ser = new JavaScriptSerializer(new SqlWorkloadConfigTypeResolver());
-            ser.RegisterConverters(new JavaScriptConverter[] { new ModelConverter<WorkloadController>() });
+            ser.RegisterConverters(new JavaScriptConverter[] { new ModelConverter() });
             using (StreamReader r = new StreamReader(path))
             {
                 string json = r.ReadToEnd();

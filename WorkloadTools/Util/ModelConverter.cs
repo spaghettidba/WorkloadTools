@@ -12,13 +12,28 @@ using WorkloadTools;
 
 namespace WorkloadTools.Util
 {
-    public class ModelConverter<T> : JavaScriptConverter where T: new()
+    public class ModelConverter : JavaScriptConverter
     {
         public override IEnumerable<Type> SupportedTypes
         {
             get
             {
-                return new[] { typeof(T) };
+                List<Type> result = new List<Type>();
+                Assembly currentAssembly = Assembly.GetExecutingAssembly();
+                string nameSpace = "WorkloadTools";
+                Type[] types = currentAssembly.GetTypes().Where(t => t != null && t.FullName.StartsWith(nameSpace) & !t.FullName.Contains("+")).ToArray();
+                foreach (Type t in types)
+                {
+                    try
+                    {
+                        result.Add(t);
+                    }
+                    catch (Exception)
+                    {
+                        throw;
+                    }
+                }
+                return result;
             }
         }
 
@@ -26,9 +41,19 @@ namespace WorkloadTools.Util
 
         public override object Deserialize(IDictionary<string, object> dictionary, Type type, JavaScriptSerializer serializer)
         {
-            T p = new T();
+            object p;
+            try
+            {
+                // try to create the object using its parameterless constructor
+                p = Activator.CreateInstance(type);
+            }
+            catch {
+                // try to create the object using this scary initializer that 
+                // doesn't need the parameterless constructor
+                p = System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
+            }
 
-            var props = typeof(T).GetProperties();
+            var props = type.GetProperties();
 
             foreach (string key in dictionary.Keys)
             {
@@ -44,7 +69,23 @@ namespace WorkloadTools.Util
                     }
                     else
                     {
-                        prop.SetValue(p, dictionary[key], null);
+                        if((dictionary[key] is Dictionary<string, object>))
+                            prop.SetValue(p, Deserialize((Dictionary<string, object>)dictionary[key], prop.PropertyType, serializer), null);
+                        else
+                        {
+                            if (dictionary[key] is IList && prop.PropertyType.IsGenericType)
+                            {
+                                object obj = Activator.CreateInstance(prop.PropertyType);
+                                foreach(var itm in (IEnumerable)dictionary[key])
+                                {
+                                    ((IList)obj).Add(itm);
+                                }
+                                prop.SetValue(p, obj, null);
+                            }
+                            else
+                                prop.SetValue(p, dictionary[key], null);
+                        }
+                           
                     }
                 }
             }
@@ -55,15 +96,7 @@ namespace WorkloadTools.Util
 
         public override IDictionary<string, object> Serialize(object obj, JavaScriptSerializer serializer)
         {
-            T p = (T)obj;
-            IDictionary<string, object> serialized = new Dictionary<string, object>();
-
-            foreach (PropertyInfo pi in typeof(T).GetProperties())
-            {
-                serialized[pi.Name] = pi.GetValue(p, null);
-            }
-
-            return serialized;
+            throw new NotImplementedException();
         }
 
     }
