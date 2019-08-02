@@ -125,13 +125,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                         try
                         {
-                            workloadEvent.ApplicationName = (string)TryGetValue(evt, FieldType.Action, "client_app_name");
-                            workloadEvent.DatabaseName = (string)TryGetValue(evt, FieldType.Action, "database_name");
-                            workloadEvent.HostName = (string)TryGetValue(evt, FieldType.Action, "client_hostname");
-                            workloadEvent.LoginName = (string)TryGetValue(evt, FieldType.Action, "server_principal_name");
-                            object oSession = TryGetValue(evt, FieldType.Action, "session_id");
-                            if (oSession != null)
-                                workloadEvent.SPID = Convert.ToInt32(oSession);
+                            workloadEvent.ApplicationName = TryGetString(evt, FieldType.Action, "client_app_name");
+                            workloadEvent.DatabaseName = TryGetString(evt, FieldType.Action, "database_name");
+                            workloadEvent.HostName = TryGetString(evt, FieldType.Action, "client_hostname");
+                            workloadEvent.LoginName = TryGetString(evt, FieldType.Action, "server_principal_name");
+                            workloadEvent.SPID = TryGetInt32(evt, FieldType.Action, "session_id");
                             if (commandText != null)
                                 workloadEvent.Text = commandText;
 
@@ -145,15 +143,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             }
                             else if (workloadEvent.Type == WorkloadEvent.EventType.Timeout)
                             {
-                                workloadEvent.Duration = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "duration"));
+                                workloadEvent.Duration = TryGetInt64(evt, FieldType.Field, "duration");
                                 workloadEvent.CPU = Convert.ToInt64(workloadEvent.Duration);
                             }
                             else
                             {
-                                workloadEvent.Reads = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "logical_reads"));
-                                workloadEvent.Writes = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "writes"));
-                                workloadEvent.CPU = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "cpu_time"));
-                                workloadEvent.Duration = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "duration"));
+                                workloadEvent.Reads = TryGetInt64(evt, FieldType.Field, "logical_reads");
+                                workloadEvent.Writes = TryGetInt64(evt, FieldType.Field, "writes");
+                                workloadEvent.CPU = TryGetInt64(evt, FieldType.Field, "cpu_time");
+                                workloadEvent.Duration = TryGetInt64(evt, FieldType.Field, "duration");
                             }
 
                         }
@@ -241,14 +239,40 @@ namespace WorkloadTools.Listener.ExtendedEvents
         private string TryGetString(PublishedEvent evt, FieldType t, string name)
         {
             object tmp = TryGetValue(evt, t, name);
-            string ret = null;
-            if(tmp != null)
+            if(tmp != null && tmp.GetType() != typeof(DBNull))
             {
-                return ret.ToString();
+                return tmp.ToString();
             }
             else
             {
-                return "(null)";
+                return null;
+            }
+        }
+
+
+        private int? TryGetInt32(PublishedEvent evt, FieldType t, string name)
+        {
+            object tmp = TryGetValue(evt, t, name);
+            if (tmp != null && tmp.GetType() != typeof(DBNull))
+            {
+                return Convert.ToInt32(tmp);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        private long? TryGetInt64(PublishedEvent evt, FieldType t, string name)
+        {
+            object tmp = TryGetValue(evt, t, name);
+            if (tmp != null && tmp.GetType() != typeof(DBNull))
+            {
+                return Convert.ToInt64(tmp);
+            }
+            else
+            {
+                return null;
             }
         }
 
