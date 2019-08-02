@@ -89,16 +89,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             int num = (int)TryGetValue(evt, FieldType.Field, "event_id");
                             if (num == 83 || num == 82)
                             {
-                                if (((string)TryGetValue(evt, FieldType.Field, "event_id")).StartsWith("WorkloadTools."))
+                                if (TryGetString(evt, FieldType.Field, "user_info").StartsWith("WorkloadTools."))
                                 {
-                                    object value = TryGetValue(evt, FieldType.Field, "user_data");
-
-                                    if (value is string)
-                                        commandText = (string)value;
-                                    else if (value is byte[])
-                                        commandText = Encoding.Unicode.GetString((byte[])value);
-                                    else throw new ArgumentException("Argument is of the wrong type");
-
+                                    commandText = TryGetString(evt, FieldType.Field, "user_data");
                                     workloadEvent.Text = commandText;
 
                                     if (num == 83)
@@ -241,7 +234,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
             object tmp = TryGetValue(evt, t, name);
             if(tmp != null && tmp.GetType() != typeof(DBNull))
             {
-                return tmp.ToString();
+                if (tmp is string)
+                    return (string)tmp;
+                else if (tmp is byte[])
+                    return Encoding.Unicode.GetString((byte[])tmp);
+                else throw new ArgumentException("Argument is of the wrong type");
             }
             else
             {
