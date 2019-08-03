@@ -83,7 +83,7 @@ namespace WorkloadTools.Util
                                 prop.SetValue(p, obj, null);
                             }
                             else
-                                prop.SetValue(p, dictionary[key], null);
+                                prop.SetValue(p, GetValueOfType(dictionary[key], prop.PropertyType), null);
                         }
                            
                     }
@@ -93,6 +93,27 @@ namespace WorkloadTools.Util
             return p;
         }
 
+        private object GetValueOfType(object v, Type propertyType)
+        {
+            if (propertyType == typeof(string))
+            {
+                return (string)v;
+            }
+            else if (propertyType == typeof(Boolean))
+            {
+                return Convert.ToBoolean(v);
+            }
+            else if (propertyType == typeof(Int32))
+            {
+                return Convert.ToInt32(v);
+            }
+            else if (propertyType == typeof(Int64))
+            {
+                return Convert.ToInt64(v);
+            }
+            else
+                return v;
+        }
 
         public override IDictionary<string, object> Serialize(object obj, JavaScriptSerializer serializer)
         {
