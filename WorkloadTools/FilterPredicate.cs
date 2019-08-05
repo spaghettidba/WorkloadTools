@@ -38,19 +38,24 @@ namespace WorkloadTools
                 _predicateValue = value;
                 if (value != null)
                 {
-                    for(int i = 0; i < value.Length; i++)
+                    ComparisonOperator = new FilterComparisonOperator[_predicateValue.Length];
+                    for (int i = 0; i < value.Length; i++)
                     {
                         string thisValue = value[i];
                         if (!String.IsNullOrEmpty(thisValue) && thisValue.StartsWith("^"))
                         {
                             _predicateValue[i] = thisValue.Substring(1);
-                            ComparisonOperator = FilterComparisonOperator.Not_Equal;
+                            ComparisonOperator[i] = FilterComparisonOperator.Not_Equal;
+                        }
+                        else
+                        {
+                            ComparisonOperator[i] = FilterComparisonOperator.Equal;
                         }
                     }
                 }
             }
         }
-        public FilterComparisonOperator ComparisonOperator { get; set; } = FilterComparisonOperator.Equal;
+        public FilterComparisonOperator[] ComparisonOperator { get; set; }
         public bool IsPredicateSet { get { return PredicateValue != null; } }
         public bool IsPushedDown { get; set; } = false;
 

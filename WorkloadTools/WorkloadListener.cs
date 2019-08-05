@@ -18,11 +18,46 @@ namespace WorkloadTools
         public SqlConnectionInfo ConnectionInfo { get; set; }
         public string Source { get; set; }
 
+        private string[] _applicationFilter;
+        private string[] _databaseFilter;
+        private string[] _hostFilter;
+        private string[] _loginFilter;
 
-        public string[] ApplicationFilter { get; set; }
-        public string[] DatabaseFilter { get; set; }
-        public string[] HostFilter { get; set; } 
-        public string[] LoginFilter { get; set; }
+        public string[] ApplicationFilter
+        {
+            get { return _applicationFilter; }
+            set {
+                _applicationFilter = value;
+                if(_filter != null) _filter.ApplicationFilter.PredicateValue = _applicationFilter;
+            }
+        }
+        public string[] DatabaseFilter
+        {
+            get { return _databaseFilter; }
+            set
+            {
+                _databaseFilter = value;
+                if (_filter != null) _filter.DatabaseFilter.PredicateValue = _databaseFilter;
+            }
+        }
+        public string[] HostFilter
+        {
+            get { return _hostFilter; }
+            set
+            {
+                _hostFilter = value;
+                if (_filter != null) _filter.HostFilter.PredicateValue = _hostFilter;
+            }
+        } 
+        public string[] LoginFilter
+        {
+            get { return _loginFilter; }
+            set
+            {
+                _loginFilter = value;
+                if (_filter != null) _filter.LoginFilter.PredicateValue = _loginFilter;
+            }
+        }
 
         public int StatsCollectionIntervalSeconds { get; set; } = 60;
 		public int TimeoutMinutes { get; set; } = 0;
@@ -34,10 +69,6 @@ namespace WorkloadTools
             {
                 if(_filter != null)
                 {
-                    _filter.ApplicationFilter.PredicateValue = ApplicationFilter;
-                    _filter.DatabaseFilter.PredicateValue = DatabaseFilter;
-                    _filter.HostFilter.PredicateValue = HostFilter;
-                    _filter.LoginFilter.PredicateValue = LoginFilter;
                     return _filter;
                 }
                 else

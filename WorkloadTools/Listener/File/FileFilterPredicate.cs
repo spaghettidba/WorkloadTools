@@ -17,11 +17,34 @@ namespace WorkloadTools.Listener.File
 
             IsPushedDown = true;
             string result = "(";
+
+            bool hasPositives = false;
+            bool hasNegatives = false;
+
+            for (int i = 0; i < ComparisonOperator.Length; i++)
+            {
+                if (ComparisonOperator[i] == FilterComparisonOperator.Not_Equal)
+                    hasNegatives = true;
+                else
+                    hasPositives = true;
+            }
+
             for (int i = 0; i < PredicateValue.Length; i++)
             {
-                if (i > 0) { result += " OR "; }
+                if (hasNegatives && hasPositives && ComparisonOperator[i] == FilterComparisonOperator.Not_Equal)
+                {
+                    // In this case I only care for the positives
+                    continue;
+                }
+
+                if (i > 0)
+                {
+                    if (hasNegatives && !hasPositives) result += " AND ";
+                    else result += " OR ";
+                }
+
                 result += ColumnName.ToString();
-                result += " " + FilterPredicate.ComparisonOperatorAsString(ComparisonOperator) + " '" + EscapeFilter(PredicateValue[i]) + "'";
+                result += " " + FilterPredicate.ComparisonOperatorAsString(ComparisonOperator[i]) + " '" + EscapeFilter(PredicateValue[i]) + "'";
             }
             result += ")";
             return result;

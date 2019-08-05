@@ -18,9 +18,40 @@ namespace WorkloadTools.Listener.ExtendedEvents
             IsPushedDown = true;
             string result = "(";
 
+            // Implementing multivalued filters with negative values
+            // requires analyzing the syntax of the filters
+            //
+            // Let's say I have a filter like this:
+            // "DatabaseFilter" = ["master","model","^tempdb","msdb"]
+            //
+            // It literally says I want master, model and msdb, but I don't want tempdb
+            // In this case, it means that I want master, model and tempdb
+            // But if I only had negative filters, it would mean anything but those databases.
+
+            bool hasPositives = false;
+            bool hasNegatives = false;
+
+            for (int i = 0; i < ComparisonOperator.Length; i++)
+            {
+                if (ComparisonOperator[i] == FilterComparisonOperator.Not_Equal)
+                    hasNegatives = true;
+                else
+                    hasPositives = true;
+            }
+
             for (int i = 0; i < PredicateValue.Length; i++)
             {
-                if (i > 0) result += " OR ";
+                if (hasNegatives && hasPositives && ComparisonOperator[i] == FilterComparisonOperator.Not_Equal)
+                {
+                    // In this case I only care for the positives
+                    continue;
+                }
+
+                if (i > 0)
+                {
+                    if (hasNegatives && !hasPositives) result += " AND ";
+                    else result += " OR ";
+                }
 
                 switch (ColumnName)
                 {
@@ -44,7 +75,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         result += "sqlserver.database_name";
                         break;
                 }
-                result += " " + FilterPredicate.ComparisonOperatorAsString(ComparisonOperator) + " N'" + EscapeFilter(PredicateValue[i]) + "'";
+                result += " " + FilterPredicate.ComparisonOperatorAsString(ComparisonOperator[i]) + " N'" + EscapeFilter(PredicateValue[i]) + "'";
             }
             result += ")";
             return result;
