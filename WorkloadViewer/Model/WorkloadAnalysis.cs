@@ -37,11 +37,11 @@ namespace WorkloadViewer.Model
                     cmd.CommandText = "SELECT COUNT(*) FROM " + ConnectionInfo.SchemaName + ".Intervals WHERE duration_minutes > 0;";
                     numIntervals = (int)cmd.ExecuteScalar();
                 }
-                if (numIntervals > 500)
+                if (numIntervals > 500) // around 8 hours
                     preaggregation = 15;
-                if (numIntervals > 1000)
+                if (numIntervals > 1000) // around 16 hours
                     preaggregation = 30;
-                if (numIntervals > 2000)
+                if (numIntervals > 2000) // around 32 hours
                     preaggregation = 60;
 
                 using (SqlCommand cmd = conn.CreateCommand())
