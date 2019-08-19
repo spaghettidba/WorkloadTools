@@ -16,10 +16,10 @@ namespace ConvertWorkload
         private EventReader reader;
         private EventWriter writer;
 
-        public string ApplicationFilter { get; set; }
-        public string DatabaseFilter { get; set; }
-        public string HostFilter { get; set; }
-        public string LoginFilter { get; set; }
+        public string[] ApplicationFilter { get; set; }
+        public string[] DatabaseFilter { get; set; }
+        public string[] HostFilter { get; set; }
+        public string[] LoginFilter { get; set; }
 
         public WorkloadConverter(EventReader reader, EventWriter writer)
         {
@@ -31,10 +31,10 @@ namespace ConvertWorkload
         {
             try
             {
-                reader.ApplicationFilter = "";
-                reader.DatabaseFilter = "";
-                reader.HostFilter = "";
-                reader.LoginFilter = "";
+                reader.ApplicationFilter = new string[1] { "" };
+                reader.DatabaseFilter = new string[1] { "" };
+                reader.HostFilter = new string[1] { "" };
+                reader.LoginFilter = new string[1] { "" };
                 if (ApplicationFilter != null) reader.ApplicationFilter = ApplicationFilter;
                 if (DatabaseFilter != null) reader.DatabaseFilter = DatabaseFilter;
                 if (HostFilter != null) reader.HostFilter = HostFilter;

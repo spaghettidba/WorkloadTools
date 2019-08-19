@@ -89,16 +89,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             int num = (int)TryGetValue(evt, FieldType.Field, "event_id");
                             if (num == 83 || num == 82)
                             {
-                                if (((string)TryGetValue(evt, FieldType.Field, "event_id")).StartsWith("WorkloadTools."))
+                                if (TryGetString(evt, FieldType.Field, "user_info").StartsWith("WorkloadTools."))
                                 {
-                                    object value = TryGetValue(evt, FieldType.Field, "user_data");
-
-                                    if (value is string)
-                                        commandText = (string)value;
-                                    else if (value is byte[])
-                                        commandText = Encoding.Unicode.GetString((byte[])value);
-                                    else throw new ArgumentException("Argument is of the wrong type");
-
+                                    commandText = TryGetString(evt, FieldType.Field, "user_data");
                                     workloadEvent.Text = commandText;
 
                                     if (num == 83)
@@ -125,13 +118,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                         try
                         {
-                            workloadEvent.ApplicationName = (string)TryGetValue(evt, FieldType.Action, "client_app_name");
-                            workloadEvent.DatabaseName = (string)TryGetValue(evt, FieldType.Action, "database_name");
-                            workloadEvent.HostName = (string)TryGetValue(evt, FieldType.Action, "client_hostname");
-                            workloadEvent.LoginName = (string)TryGetValue(evt, FieldType.Action, "server_principal_name");
-                            object oSession = TryGetValue(evt, FieldType.Action, "session_id");
-                            if (oSession != null)
-                                workloadEvent.SPID = Convert.ToInt32(oSession);
+                            workloadEvent.ApplicationName = TryGetString(evt, FieldType.Action, "client_app_name");
+                            workloadEvent.DatabaseName = TryGetString(evt, FieldType.Action, "database_name");
+                            workloadEvent.HostName = TryGetString(evt, FieldType.Action, "client_hostname");
+                            workloadEvent.LoginName = TryGetString(evt, FieldType.Action, "server_principal_name");
+                            workloadEvent.SPID = TryGetInt32(evt, FieldType.Action, "session_id");
                             if (commandText != null)
                                 workloadEvent.Text = commandText;
 
@@ -140,19 +131,20 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                             if (workloadEvent.Type == WorkloadEvent.EventType.Error)
                             {
-                                // do nothing
+                                workloadEvent.Duration = 0;
+                                workloadEvent.CPU = 0;
                             }
                             else if (workloadEvent.Type == WorkloadEvent.EventType.Timeout)
                             {
-                                workloadEvent.Duration = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "duration"));
+                                workloadEvent.Duration = TryGetInt64(evt, FieldType.Field, "duration");
                                 workloadEvent.CPU = Convert.ToInt64(workloadEvent.Duration);
                             }
                             else
                             {
-                                workloadEvent.Reads = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "logical_reads"));
-                                workloadEvent.Writes = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "writes"));
-                                workloadEvent.CPU = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "cpu_time"));
-                                workloadEvent.Duration = Convert.ToInt64(TryGetValue(evt, FieldType.Field, "duration"));
+                                workloadEvent.Reads = TryGetInt64(evt, FieldType.Field, "logical_reads");
+                                workloadEvent.Writes = TryGetInt64(evt, FieldType.Field, "writes");
+                                workloadEvent.CPU = TryGetInt64(evt, FieldType.Field, "cpu_time");
+                                workloadEvent.Duration = TryGetInt64(evt, FieldType.Field, "duration");
                             }
 
                         }
@@ -181,15 +173,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         {
                             
                             logger.Error($"    event type            : {workloadEvent.Type}");
-                            logger.Error($"    client_app_name       : {evt.Actions["client_app_name"].Value}");
-                            logger.Error($"    database_name         : {evt.Actions["database_name"].Value}");
-                            logger.Error($"    client_hostname       : {evt.Actions["client_hostname"].Value}");
-                            logger.Error($"    server_principal_name : {evt.Actions["server_principal_name"].Value}");
-                            logger.Error($"    session_id            : {evt.Actions["session_id"].Value}");
-                            logger.Error($"    duration              : {evt.Actions["duration"].Value}");
-                            logger.Error($"    logical_reads         : {evt.Actions["logical_reads"].Value}");
-                            logger.Error($"    writes                : {evt.Actions["writes"].Value}");
-                            logger.Error($"    cpu_time              : {evt.Actions["cpu_time"].Value}");
+                            logger.Error($"    client_app_name       : {TryGetString(evt, FieldType.Action, "client_app_name")}");
+                            logger.Error($"    database_name         : {TryGetString(evt, FieldType.Action, "database_name")}");
+                            logger.Error($"    client_hostname       : {TryGetString(evt, FieldType.Action, "client_hostname")}");
+                            logger.Error($"    server_principal_name : {TryGetString(evt, FieldType.Action, "server_principal_name")}");
+                            logger.Error($"    session_id            : {TryGetString(evt, FieldType.Action, "session_id")}");
+                            logger.Error($"    duration              : {TryGetString(evt, FieldType.Field, "duration")}");
+                            logger.Error($"    logical_reads         : {TryGetString(evt, FieldType.Field, "logical_reads")}");
+                            logger.Error($"    writes                : {TryGetString(evt, FieldType.Field, "writes")}");
+                            logger.Error($"    cpu_time              : {TryGetString(evt, FieldType.Field, "cpu_time")}");
                         }
                         catch (Exception)
                         {
@@ -235,6 +227,50 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 }
             }
             return result;
+        }
+
+        private string TryGetString(PublishedEvent evt, FieldType t, string name)
+        {
+            object tmp = TryGetValue(evt, t, name);
+            if(tmp != null && tmp.GetType() != typeof(DBNull))
+            {
+                if (tmp is string)
+                    return (string)tmp;
+                else if (tmp is byte[])
+                    return Encoding.Unicode.GetString((byte[])tmp);
+                else throw new ArgumentException("Argument is of the wrong type");
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+
+        private int? TryGetInt32(PublishedEvent evt, FieldType t, string name)
+        {
+            object tmp = TryGetValue(evt, t, name);
+            if (tmp != null && tmp.GetType() != typeof(DBNull))
+            {
+                return Convert.ToInt32(tmp);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        private long? TryGetInt64(PublishedEvent evt, FieldType t, string name)
+        {
+            object tmp = TryGetValue(evt, t, name);
+            if (tmp != null && tmp.GetType() != typeof(DBNull))
+            {
+                return Convert.ToInt64(tmp);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public override void Stop()

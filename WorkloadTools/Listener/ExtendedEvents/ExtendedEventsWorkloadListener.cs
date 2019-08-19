@@ -42,6 +42,10 @@ namespace WorkloadTools.Listener.ExtendedEvents
         {
             using (SqlConnection conn = new SqlConnection())
             {
+                if(ConnectionInfo == null)
+                {
+                    throw new ArgumentNullException("You need to provide ConnectionInfo to inizialize an ExtendedEventsWorkloadListener");
+                }
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
 

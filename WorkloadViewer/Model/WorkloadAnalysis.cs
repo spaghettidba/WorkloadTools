@@ -29,6 +29,21 @@ namespace WorkloadViewer.Model
                 conn.Open();
 
                 Dictionary<long, NormalizedQuery> NormalizedQueries = new Dictionary<long, NormalizedQuery>();
+
+                int numIntervals = 0;
+                int preaggregation = 1;
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM " + ConnectionInfo.SchemaName + ".Intervals WHERE duration_minutes > 0;";
+                    numIntervals = (int)cmd.ExecuteScalar();
+                }
+                if (numIntervals > 500) // around 8 hours
+                    preaggregation = 15;
+                if (numIntervals > 1000) // around 16 hours
+                    preaggregation = 30;
+                if (numIntervals > 2000) // around 32 hours
+                    preaggregation = 60;
+
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM " + ConnectionInfo.SchemaName + ".NormalizedQueries";
@@ -51,6 +66,7 @@ namespace WorkloadViewer.Model
 
                     string sqlText = WorkloadViewer.Properties.Resources.WorkloadAnalysis;
                     cmd.CommandText = sqlText.Replace("capture", ConnectionInfo.SchemaName);
+                    cmd.CommandText = cmd.CommandText.Replace("preaggregation", preaggregation.ToString());
                     using (var rdr = cmd.ExecuteReader())
                     {
                         Points = new ObservableCollection<WorkloadAnalysisPoint>();

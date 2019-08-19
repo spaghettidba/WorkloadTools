@@ -38,22 +38,22 @@ namespace WorkloadTools
 
             if (ApplicationFilter.IsPredicateSet && !ApplicationFilter.IsPushedDown)
             {
-                applicationFilterResults = ApplicationFilter.PredicateValue.Split(',').Contains(evt.ApplicationName, StringComparer.CurrentCultureIgnoreCase);
+                applicationFilterResults = ApplicationFilter.PredicateValue.Contains(evt.ApplicationName, StringComparer.CurrentCultureIgnoreCase);
             }
 
             if (DatabaseFilter.IsPredicateSet && !DatabaseFilter.IsPushedDown)
             {
-                databaseFilterResults = DatabaseFilter.PredicateValue.Split(',').Contains(evt.DatabaseName, StringComparer.CurrentCultureIgnoreCase);
+                databaseFilterResults = DatabaseFilter.PredicateValue.Contains(evt.DatabaseName, StringComparer.CurrentCultureIgnoreCase);
             }
 
             if (LoginFilter.IsPredicateSet && !LoginFilter.IsPushedDown)
             {
-                loginFilterResults = LoginFilter.PredicateValue.Split(',').Contains(evt.LoginName, StringComparer.CurrentCultureIgnoreCase);
+                loginFilterResults = LoginFilter.PredicateValue.Contains(evt.LoginName, StringComparer.CurrentCultureIgnoreCase);
             }
 
             if (HostFilter.IsPredicateSet && !HostFilter.IsPushedDown)
             {
-                hostFilterResults = HostFilter.PredicateValue.Split(',').Contains(evt.HostName, StringComparer.CurrentCultureIgnoreCase);
+                hostFilterResults = HostFilter.PredicateValue.Contains(evt.HostName, StringComparer.CurrentCultureIgnoreCase);
             }
 
             return applicationFilterResults && databaseFilterResults && loginFilterResults && hostFilterResults;

@@ -7,10 +7,10 @@ namespace ConvertWorkload
     {
         private WorkloadEventFilter _filter;
 
-        public string ApplicationFilter { get; set; }
-        public string DatabaseFilter { get; set; }
-        public string HostFilter { get; set; }
-        public string LoginFilter { get; set; }
+        public string[] ApplicationFilter { get; set; }
+        public string[] DatabaseFilter { get; set; }
+        public string[] HostFilter { get; set; }
+        public string[] LoginFilter { get; set; }
 
         protected bool stopped;
         protected IEventQueue Events;

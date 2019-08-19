@@ -4,7 +4,7 @@ namespace WorkloadTools
 {
     public abstract class FilterPredicate
     {
-        private string _predicateValue;
+        private string[] _predicateValue;
 
         public enum FilterColumnName : byte
         {
@@ -32,22 +32,31 @@ namespace WorkloadTools
 
 
         public FilterColumnName ColumnName { get; set; }
-        public string PredicateValue {
+        public string[] PredicateValue {
             get => _predicateValue;
             set {
-                if (!String.IsNullOrEmpty(value) && value.StartsWith("^"))
+                _predicateValue = value;
+                if (value != null)
                 {
-                    _predicateValue = value.Substring(1);
-                    ComparisonOperator = FilterComparisonOperator.Not_Equal;
-                }
-                else
-                {
-                    _predicateValue = value;
+                    ComparisonOperator = new FilterComparisonOperator[_predicateValue.Length];
+                    for (int i = 0; i < value.Length; i++)
+                    {
+                        string thisValue = value[i];
+                        if (!String.IsNullOrEmpty(thisValue) && thisValue.StartsWith("^"))
+                        {
+                            _predicateValue[i] = thisValue.Substring(1);
+                            ComparisonOperator[i] = FilterComparisonOperator.Not_Equal;
+                        }
+                        else
+                        {
+                            ComparisonOperator[i] = FilterComparisonOperator.Equal;
+                        }
+                    }
                 }
             }
         }
-        public FilterComparisonOperator ComparisonOperator { get; set; } = FilterComparisonOperator.Equal;
-        public bool IsPredicateSet { get { return !String.IsNullOrEmpty(PredicateValue); } }
+        public FilterComparisonOperator[] ComparisonOperator { get; set; }
+        public bool IsPredicateSet { get { return PredicateValue != null; } }
         public bool IsPushedDown { get; set; } = false;
 
         public FilterPredicate(FilterColumnName name)

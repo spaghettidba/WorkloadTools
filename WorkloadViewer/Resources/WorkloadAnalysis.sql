@@ -45,8 +45,8 @@
 		ORDER BY interval_id
 	) AS Base
 )
-SELECT 	offset_minutes,
-		duration_minutes,
+SELECT 	(offset_minutes / preaggregation) * preaggregation AS offset_minutes,
+		preaggregation AS duration_minutes,
 		sql_hash,
 		application_name, 
 		database_name, 
@@ -71,8 +71,8 @@ SELECT 	offset_minutes,
 		SUM(execution_count) AS execution_count
 FROM baseData
 GROUP BY 
-		offset_minutes,
-		duration_minutes,
+		(offset_minutes / preaggregation) * preaggregation,
+		duration_minutes % preaggregation,
 		sql_hash,
 		application_name, 
 		database_name, 
