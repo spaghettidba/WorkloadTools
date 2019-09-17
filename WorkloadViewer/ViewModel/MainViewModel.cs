@@ -216,7 +216,7 @@ namespace WorkloadViewer.ViewModel
             };
             _baselineWorkloadAnalysis.Load();
 
-            if(_options.BenchmarkServer != null)
+            if(_options.BenchmarkSchema != null)
             {
                 _benchmarkWorkloadAnalysis = new WorkloadAnalysis() { Name = "Benchmark" };
                 _benchmarkWorkloadAnalysis.ConnectionInfo = new SqlConnectionInfo()
@@ -379,6 +379,10 @@ namespace WorkloadViewer.ViewModel
                 // TODO: refreshing should keep zoom and filters
                 InitializeAll();
             }
+            if (e.Key == Key.F8)
+            {
+                ShowConnectionInfoDialog();
+            }
         }
 
 
@@ -396,7 +400,7 @@ namespace WorkloadViewer.ViewModel
             CpuPlotModel.Axes[1].Title = "Cpu (ms)";
             CpuPlotModel.Title = "Cpu";
             CpuPlotModel.Series.Add(LoadCpuSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA")));
-            if(_options.BenchmarkServer != null)
+            if(_options.BenchmarkSchema != null)
             {
                 CpuPlotModel.Series.Add(LoadCpuSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000")));
             }
@@ -408,7 +412,7 @@ namespace WorkloadViewer.ViewModel
             DurationPlotModel.Axes[1].Title = "Duration (ms)";
             DurationPlotModel.Title = "Duration";
             DurationPlotModel.Series.Add(LoadDurationSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA")));
-            if (_options.BenchmarkServer != null)
+            if (_options.BenchmarkSchema != null)
             {
                 DurationPlotModel.Series.Add(LoadDurationSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000")));
             }
@@ -419,7 +423,7 @@ namespace WorkloadViewer.ViewModel
             BatchesPlotModel.Axes[1].Title = "Batches/second";
             BatchesPlotModel.Title = "Batches/second";
             BatchesPlotModel.Series.Add(LoadBatchesSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA")));
-            if (_options.BenchmarkServer != null)
+            if (_options.BenchmarkSchema != null)
             {
                 BatchesPlotModel.Series.Add(LoadBatchesSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000")));
             }
@@ -506,6 +510,9 @@ namespace WorkloadViewer.ViewModel
 
         private Series LoadCpuSeries(WorkloadAnalysis analysis, OxyColor color)
         {
+            if (analysis == null)
+                return null;
+
             LineSeries cpuSeries = new LineSeries()
             {
                 StrokeThickness = 2,
@@ -546,6 +553,9 @@ namespace WorkloadViewer.ViewModel
 
         private Series LoadDurationSeries(WorkloadAnalysis analysis, OxyColor color)
         {
+            if (analysis == null)
+                return null;
+
             LineSeries durationSeries = new LineSeries()
             {
                 StrokeThickness = 2,
@@ -587,6 +597,9 @@ namespace WorkloadViewer.ViewModel
 
         private Series LoadBatchesSeries(WorkloadAnalysis analysis, OxyColor color)
         {
+            if (analysis == null)
+                return null;
+
             LineSeries batchesSeries = new LineSeries()
             {
                 StrokeThickness = 2,
