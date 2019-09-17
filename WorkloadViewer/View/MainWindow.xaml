@@ -253,9 +253,9 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
 
-                            <oxy:PlotView x:Name="CpuChart" Model="{Binding CpuPlotModel, Mode=OneWay}" Margin="10" Grid.Row="0"  />
-                            <oxy:PlotView x:Name="DurationChart" Model="{Binding DurationPlotModel, Mode=OneWay}" Margin="10" Grid.Row="1"/>
-                            <oxy:PlotView x:Name="BatchesChart" Model="{Binding BatchesPlotModel, Mode=OneWay}" Margin="10" Grid.Row="2"/>
+                            <oxy:PlotView x:Name="CpuChart" Model="{Binding CpuPlotModel, Mode=OneWay}" IsMouseWheelEnabled="False" Margin="10" Grid.Row="0"  />
+                            <oxy:PlotView x:Name="DurationChart" Model="{Binding DurationPlotModel, Mode=OneWay}" IsMouseWheelEnabled="False" Margin="10" Grid.Row="1"/>
+                            <oxy:PlotView x:Name="BatchesChart" Model="{Binding BatchesPlotModel, Mode=OneWay}" IsMouseWheelEnabled="False" Margin="10" Grid.Row="2"/>
 
                         </Grid>
                     </ScrollViewer>

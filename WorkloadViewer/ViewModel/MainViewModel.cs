@@ -235,13 +235,27 @@ namespace WorkloadViewer.ViewModel
         private void InitializeQueries()
         {
             // Initialize the queries
-           logger.Info("Entering baseline evaluation");
+            logger.Info("Entering baseline evaluation");
+
+            bool zoomIsSet = PlotModels[0].DefaultXAxis != null;
+
+            double xstart = 0;
+            double xend = 0;
+
+            if (zoomIsSet)
+            {
+                xstart = PlotModels[0].DefaultXAxis.ActualMinimum;
+                xend = PlotModels[0].DefaultXAxis.ActualMaximum;
+                if (xstart < 0) xstart = 0;
+            }
 
             var baseline = from t in _baselineWorkloadAnalysis.Points
                            where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
                                 && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
                                 && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
                                 && LoginList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.LoginName)
+                                && (!zoomIsSet || t.OffsetMinutes >= xstart )
+                                && (!zoomIsSet || t.OffsetMinutes <= xend)
                            group t by new
                            {
                                query = t.NormalizedQuery
@@ -271,6 +285,8 @@ namespace WorkloadViewer.ViewModel
                                 && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
                                 && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
                                 && LoginList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.LoginName)
+                                && (!zoomIsSet || t.OffsetMinutes >= xstart)
+                                && (!zoomIsSet || t.OffsetMinutes <= xend)
                             group t by new
                             {
                                 query = t.NormalizedQuery
@@ -478,6 +494,8 @@ namespace WorkloadViewer.ViewModel
                     }
                     pm.InvalidatePlot(true);
                 }
+
+                InitializeQueries();
 
             }
             finally
