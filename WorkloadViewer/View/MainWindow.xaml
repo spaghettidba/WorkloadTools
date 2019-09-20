@@ -253,9 +253,9 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
 
-                            <oxy:PlotView x:Name="CpuChart" Model="{Binding CpuPlotModel, Mode=OneWay}" Margin="10" Grid.Row="0"  />
-                            <oxy:PlotView x:Name="DurationChart" Model="{Binding DurationPlotModel, Mode=OneWay}" Margin="10" Grid.Row="1"/>
-                            <oxy:PlotView x:Name="BatchesChart" Model="{Binding BatchesPlotModel, Mode=OneWay}" Margin="10" Grid.Row="2"/>
+                            <oxy:PlotView x:Name="CpuChart" Model="{Binding CpuPlotModel, Mode=OneWay}" IsMouseWheelEnabled="False" Margin="10" Grid.Row="0"  />
+                            <oxy:PlotView x:Name="DurationChart" Model="{Binding DurationPlotModel, Mode=OneWay}" IsMouseWheelEnabled="False" Margin="10" Grid.Row="1"/>
+                            <oxy:PlotView x:Name="BatchesChart" Model="{Binding BatchesPlotModel, Mode=OneWay}" IsMouseWheelEnabled="False" Margin="10" Grid.Row="2"/>
 
                         </Grid>
                     </ScrollViewer>
@@ -332,6 +332,8 @@
                         Padding="10,20,10,20"
                         ShowLineNumbers="True"
                         Document="{Binding ElementName=Queries, Path=SelectedItem.document}" 
+                        MouseDoubleClick="QueryText_MouseDoubleClick" 
+                        Tag="{Binding ElementName=Queries, Path=SelectedItem.query_hash}" 
                     />
                 </Grid>
             </TabItem>
@@ -360,6 +362,8 @@
                         Padding="0,20,0,20"
                         ShowLineNumbers="True"
                         Document="{Binding ElementName=Queries, Path=SelectedItem.document}" 
+                        MouseDoubleClick="QueryText_MouseDoubleClick" 
+                        Tag="{Binding ElementName=Queries, Path=SelectedItem.query_hash}"
                     />
                     
                     <DataGrid x:Name="QueryStats" AutoGenerateColumns="False" ItemsSource="{Binding ElementName=Queries, Path=SelectedItem.querydetails.QueryStats, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" IsReadOnly="True" SelectionUnit="FullRow" SelectionMode="Single" Grid.Row="1">

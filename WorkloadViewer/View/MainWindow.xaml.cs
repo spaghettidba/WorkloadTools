@@ -1,4 +1,5 @@
 ﻿using GalaSoft.MvvmLight.Messaging;
+using ICSharpCode.AvalonEdit;
 using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using WorkloadViewer.ViewModel;
+using Path = System.IO.Path;
 
 namespace WorkloadViewer
 {
@@ -71,6 +73,32 @@ namespace WorkloadViewer
                 return;
             }
             Dispatcher.BeginInvoke((Action)(() => MainTabControl.SelectedIndex = 2));
+        }
+
+        private void QueryText_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            OpenFileWithDefaultApp(sender);
+        }
+
+        private void OpenFileWithDefaultApp(object sender)
+        {
+            // save text to a temp file and open with windows
+            try
+            {
+                TextEditor editor = (TextEditor)sender;
+                string docPath = Path.Combine(Path.GetTempPath(), editor.Tag + ".sql");
+
+                // Write the string array to a new file named "WriteLines.txt".
+                using (StreamWriter outputFile = new StreamWriter(docPath))
+                {
+                    outputFile.WriteLine(editor.Text);
+                }
+                System.Diagnostics.Process.Start(docPath);
+            }
+            catch (Exception)
+            {
+                // swallow
+            }
         }
     }
 }

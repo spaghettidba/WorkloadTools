@@ -46,9 +46,9 @@
                     <ColumnDefinition Width="1*" />
                 </Grid.ColumnDefinitions>
                 <Label Grid.Row="0" Grid.Column="0">Server</Label>
-                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BaselineServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BaselineServer, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
                 <Label Grid.Row="1" Grid.Column="0">Database</Label>
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BaselineDatabase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BaselineDatabase, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
                 <Label Grid.Row="2" Grid.Column="0">Schema</Label>
                 <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BaselineSchema, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <Label Grid.Row="3" Grid.Column="0">UserName</Label>

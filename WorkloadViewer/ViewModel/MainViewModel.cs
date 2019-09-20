@@ -216,7 +216,7 @@ namespace WorkloadViewer.ViewModel
             };
             _baselineWorkloadAnalysis.Load();
 
-            if(_options.BenchmarkServer != null)
+            if(_options.BenchmarkSchema != null)
             {
                 _benchmarkWorkloadAnalysis = new WorkloadAnalysis() { Name = "Benchmark" };
                 _benchmarkWorkloadAnalysis.ConnectionInfo = new SqlConnectionInfo()
@@ -235,13 +235,27 @@ namespace WorkloadViewer.ViewModel
         private void InitializeQueries()
         {
             // Initialize the queries
-           logger.Info("Entering baseline evaluation");
+            logger.Info("Entering baseline evaluation");
+
+            bool zoomIsSet = PlotModels[0].DefaultXAxis != null;
+
+            double xstart = 0;
+            double xend = 0;
+
+            if (zoomIsSet)
+            {
+                xstart = PlotModels[0].DefaultXAxis.ActualMinimum;
+                xend = PlotModels[0].DefaultXAxis.ActualMaximum;
+                if (xstart < 0) xstart = 0;
+            }
 
             var baseline = from t in _baselineWorkloadAnalysis.Points
                            where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
                                 && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
                                 && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
                                 && LoginList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.LoginName)
+                                && (!zoomIsSet || t.OffsetMinutes >= xstart )
+                                && (!zoomIsSet || t.OffsetMinutes <= xend)
                            group t by new
                            {
                                query = t.NormalizedQuery
@@ -271,6 +285,8 @@ namespace WorkloadViewer.ViewModel
                                 && HostList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.HostName)
                                 && DatabaseList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.DatabaseName)
                                 && LoginList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.LoginName)
+                                && (!zoomIsSet || t.OffsetMinutes >= xstart)
+                                && (!zoomIsSet || t.OffsetMinutes <= xend)
                             group t by new
                             {
                                 query = t.NormalizedQuery
@@ -363,6 +379,10 @@ namespace WorkloadViewer.ViewModel
                 // TODO: refreshing should keep zoom and filters
                 InitializeAll();
             }
+            if (e.Key == Key.F8)
+            {
+                ShowConnectionInfoDialog();
+            }
         }
 
 
@@ -380,7 +400,7 @@ namespace WorkloadViewer.ViewModel
             CpuPlotModel.Axes[1].Title = "Cpu (ms)";
             CpuPlotModel.Title = "Cpu";
             CpuPlotModel.Series.Add(LoadCpuSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA")));
-            if(_options.BenchmarkServer != null)
+            if(_options.BenchmarkSchema != null)
             {
                 CpuPlotModel.Series.Add(LoadCpuSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000")));
             }
@@ -392,7 +412,7 @@ namespace WorkloadViewer.ViewModel
             DurationPlotModel.Axes[1].Title = "Duration (ms)";
             DurationPlotModel.Title = "Duration";
             DurationPlotModel.Series.Add(LoadDurationSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA")));
-            if (_options.BenchmarkServer != null)
+            if (_options.BenchmarkSchema != null)
             {
                 DurationPlotModel.Series.Add(LoadDurationSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000")));
             }
@@ -403,7 +423,7 @@ namespace WorkloadViewer.ViewModel
             BatchesPlotModel.Axes[1].Title = "Batches/second";
             BatchesPlotModel.Title = "Batches/second";
             BatchesPlotModel.Series.Add(LoadBatchesSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA")));
-            if (_options.BenchmarkServer != null)
+            if (_options.BenchmarkSchema != null)
             {
                 BatchesPlotModel.Series.Add(LoadBatchesSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000")));
             }
@@ -479,6 +499,8 @@ namespace WorkloadViewer.ViewModel
                     pm.InvalidatePlot(true);
                 }
 
+                InitializeQueries();
+
             }
             finally
             {
@@ -488,6 +510,9 @@ namespace WorkloadViewer.ViewModel
 
         private Series LoadCpuSeries(WorkloadAnalysis analysis, OxyColor color)
         {
+            if (analysis == null)
+                return null;
+
             LineSeries cpuSeries = new LineSeries()
             {
                 StrokeThickness = 2,
@@ -528,6 +553,9 @@ namespace WorkloadViewer.ViewModel
 
         private Series LoadDurationSeries(WorkloadAnalysis analysis, OxyColor color)
         {
+            if (analysis == null)
+                return null;
+
             LineSeries durationSeries = new LineSeries()
             {
                 StrokeThickness = 2,
@@ -569,6 +597,9 @@ namespace WorkloadViewer.ViewModel
 
         private Series LoadBatchesSeries(WorkloadAnalysis analysis, OxyColor color)
         {
+            if (analysis == null)
+                return null;
+
             LineSeries batchesSeries = new LineSeries()
             {
                 StrokeThickness = 2,

@@ -15,6 +15,7 @@ namespace ConvertWorkload
 
         private EventReader reader;
         private EventWriter writer;
+        private bool stopped = false;
 
         public string[] ApplicationFilter { get; set; }
         public string[] DatabaseFilter { get; set; }
@@ -40,19 +41,21 @@ namespace ConvertWorkload
                 if (HostFilter != null) reader.HostFilter = HostFilter;
                 if (LoginFilter != null) reader.LoginFilter = LoginFilter;
 
-                while (!reader.HasFinished())
+                while (!reader.HasFinished() && !stopped)
                 {
                     writer.Write(reader.Read());
                 }
             }
             catch(Exception ex)
             {
+                stopped = true;
                 logger.Error(ex);
             }
         }
 
         public void Stop()
         {
+            stopped = true;
             reader.Dispose();
             writer.Dispose();
         }

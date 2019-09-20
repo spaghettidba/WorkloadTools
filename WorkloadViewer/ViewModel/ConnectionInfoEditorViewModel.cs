@@ -14,9 +14,35 @@ namespace WorkloadViewer.ViewModel
 {
     public class ConnectionInfoEditorViewModel : ViewModelBase
     {
+        private string _baselineServer;
+        private string _baselineDatabase;
 
-        public string BaselineServer { get; set; }
-        public string BaselineDatabase { get; set; }
+        public string BaselineServer {
+            get { return _baselineServer; }
+            set {
+                _baselineServer = value;
+                if (String.IsNullOrEmpty(BenchmarkServer))
+                {
+                    BenchmarkServer = _baselineServer;
+                    RaisePropertyChanged("BenchmarkServer");
+                }
+                    
+            }
+        }
+        public string BaselineDatabase
+        {
+            get { return _baselineDatabase; }
+            set
+            {
+                _baselineDatabase = value;
+                if (String.IsNullOrEmpty(BenchmarkDatabase))
+                {
+                    BenchmarkDatabase = _baselineDatabase;
+                    RaisePropertyChanged("BenchmarkDatabase");
+                }
+
+            }
+        }
         public string BaselineSchema { get; set; }
         public string BaselineUsername { get; set; }
         public string BaselinePassword { get; set; }
@@ -77,7 +103,8 @@ namespace WorkloadViewer.ViewModel
             }
             finally
             {
-                await _dialogCoordinator.HideMetroDialogAsync(Context, Dialog);
+                if(Dialog.IsVisible)
+                    await _dialogCoordinator.HideMetroDialogAsync(Context, Dialog);
             }
         }
     }
