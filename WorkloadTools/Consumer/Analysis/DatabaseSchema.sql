@@ -12,10 +12,10 @@ CREATE TABLE [{SchemaName}].[WorkloadDetails](
 	[host_id] [int] NOT NULL,
 	[login_id] [int] NOT NULL,
 
-	[avg_cpu_ms] [bigint] NULL,
-    [min_cpu_ms] [bigint] NULL,
-    [max_cpu_ms] [bigint] NULL,
-    [sum_cpu_ms] [bigint] NULL,
+	[avg_cpu_us] [bigint] NULL,
+    [min_cpu_us] [bigint] NULL,
+    [max_cpu_us] [bigint] NULL,
+    [sum_cpu_us] [bigint] NULL,
 
 	[avg_reads] [bigint] NULL,
     [min_reads] [bigint] NULL,
@@ -27,10 +27,10 @@ CREATE TABLE [{SchemaName}].[WorkloadDetails](
     [max_writes] [bigint] NULL,
     [sum_writes] [bigint] NULL,
 
-	[avg_duration_ms] [bigint] NULL,
-    [min_duration_ms] [bigint] NULL,
-    [max_duration_ms] [bigint] NULL,
-    [sum_duration_ms] [bigint] NULL,
+	[avg_duration_us] [bigint] NULL,
+    [min_duration_us] [bigint] NULL,
+    [max_duration_us] [bigint] NULL,
+    [sum_duration_us] [bigint] NULL,
 
     [execution_count] [bigint] NULL,
 

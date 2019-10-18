@@ -15,10 +15,10 @@ namespace WorkloadViewer.Model
         public string DatabaseName { get; set; }
         public string LoginName { get; set; }
         public string HostName { get; set; }
-        public long AvgCpuMs { get; set; }
-	    public long MinCpuMs { get; set; } 
-	    public long MaxCpuMs { get; set; } 
-	    public long SumCpuMs { get; set; } 
+        public long AvgCpuUs { get; set; }
+	    public long MinCpuUs { get; set; } 
+	    public long MaxCpuUs { get; set; } 
+	    public long SumCpuUs { get; set; } 
 	    public long AvgReads { get; set; } 
 	    public long MinReads { get; set; } 
 	    public long MaxReads { get; set; } 
@@ -27,10 +27,10 @@ namespace WorkloadViewer.Model
 	    public long MinWrites { get; set; } 
 	    public long MaxWrites { get; set; } 
 	    public long SumWrites { get; set; } 
-	    public long AvgDurationMs { get; set; } 
-	    public long MinDurationMs { get; set; } 
-	    public long MaxDurationMs { get; set; } 
-	    public long SumDurationMs { get; set; } 
+	    public long AvgDurationUs { get; set; } 
+	    public long MinDurationUs { get; set; } 
+	    public long MaxDurationUs { get; set; } 
+	    public long SumDurationUs { get; set; } 
 	    public long ExecutionCount { get; set; }
     }
 
