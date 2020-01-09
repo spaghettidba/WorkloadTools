@@ -49,10 +49,10 @@ namespace WorkloadViewer.Model
             result.Columns.Add(new DataColumn("Database", typeof(String)));
             result.Columns.Add(new DataColumn("Host", typeof(String)));
             result.Columns.Add(new DataColumn("Login", typeof(String)));
-            result.Columns.Add(new DataColumn("avg_duration_ms", typeof(Int64)));
-            result.Columns.Add(new DataColumn("avg_duration_ms2", typeof(Int64)));
-            result.Columns.Add(new DataColumn("avg_cpu_ms", typeof(Int64)));
-            result.Columns.Add(new DataColumn("avg_cpu_ms2", typeof(Int64)));
+            result.Columns.Add(new DataColumn("avg_duration_us", typeof(Int64)));
+            result.Columns.Add(new DataColumn("avg_duration_us2", typeof(Int64)));
+            result.Columns.Add(new DataColumn("avg_cpu_us", typeof(Int64)));
+            result.Columns.Add(new DataColumn("avg_cpu_us2", typeof(Int64)));
             result.Columns.Add(new DataColumn("avg_reads", typeof(Int64)));
             result.Columns.Add(new DataColumn("avg_reads2", typeof(Int64)));
             result.Columns.Add(new DataColumn("avg_writes", typeof(Int64)));
@@ -76,14 +76,14 @@ namespace WorkloadViewer.Model
                                grp.Key.DatabaseName,
                                grp.Key.HostName,
                                grp.Key.LoginName,
-                               avg_duration_ms = grp.Average(t => t.AvgDurationMs),
-                               avg_cpu_ms = grp.Average(t => t.AvgCpuMs),
+                               avg_duration_us = grp.Average(t => t.AvgDurationUs),
+                               avg_cpu_us = grp.Average(t => t.AvgCpuUs),
                                avg_reads = grp.Average(t => t.AvgReads),
                                avg_writes = grp.Average(t => t.AvgWrites),
                                execution_count = grp.Sum(t => t.ExecutionCount)
                            };
 
-            var benchmark = from t in baseline where false select new { t.ApplicationName, t.DatabaseName, t.HostName, t.LoginName, t.avg_duration_ms, t.avg_cpu_ms, t.avg_reads, t.avg_writes, t.execution_count };
+            var benchmark = from t in baseline where false select new { t.ApplicationName, t.DatabaseName, t.HostName, t.LoginName, t.avg_duration_us, t.avg_cpu_us, t.avg_reads, t.avg_writes, t.execution_count };
 
             if (Benchmark != null)
             {
@@ -103,8 +103,8 @@ namespace WorkloadViewer.Model
                                 grp.Key.DatabaseName,
                                 grp.Key.HostName,
                                 grp.Key.LoginName,
-                                avg_duration_ms = grp.Average(t => t.AvgDurationMs),
-                                avg_cpu_ms = grp.Average(t => t.AvgCpuMs),
+                                avg_duration_us = grp.Average(t => t.AvgDurationUs),
+                                avg_cpu_us = grp.Average(t => t.AvgCpuUs),
                                 avg_reads = grp.Average(t => t.AvgReads),
                                 avg_writes = grp.Average(t => t.AvgWrites),
                                 execution_count = grp.Sum(t => t.ExecutionCount)
@@ -118,8 +118,8 @@ namespace WorkloadViewer.Model
                 newRow["Database"] = itm.DatabaseName;
                 newRow["Host"] = itm.HostName;
                 newRow["Login"] = itm.LoginName;
-                newRow["avg_duration_ms"] = itm.avg_duration_ms;
-                newRow["avg_cpu_ms"] = itm.avg_cpu_ms;
+                newRow["avg_duration_us"] = itm.avg_duration_us;
+                newRow["avg_cpu_us"] = itm.avg_cpu_us;
                 newRow["avg_reads"] = itm.avg_reads;
                 newRow["avg_writes"] = itm.avg_reads;
                 newRow["execution_count"] = itm.execution_count;
@@ -131,22 +131,22 @@ namespace WorkloadViewer.Model
                                   && t.DatabaseName == itm.DatabaseName
                                   && t.HostName == itm.HostName
                                   && t.LoginName == itm.LoginName
-                               select new { t.avg_cpu_ms, t.avg_duration_ms, t.avg_reads, t.avg_writes, t.execution_count };
+                               select new { t.avg_cpu_us, t.avg_duration_us, t.avg_reads, t.avg_writes, t.execution_count };
 
                     var itm2 = _itm.ToList();
 
                     if(itm2.Count > 0)
                     {
-                        newRow["avg_duration_ms2"] = itm2[0].avg_duration_ms;
-                        newRow["avg_cpu_ms2"] = itm2[0].avg_cpu_ms;
+                        newRow["avg_duration_us2"] = itm2[0].avg_duration_us;
+                        newRow["avg_cpu_us2"] = itm2[0].avg_cpu_us;
                         newRow["avg_reads2"] = itm2[0].avg_reads;
                         newRow["avg_writes2"] = itm2[0].avg_reads;
                         newRow["execution_count2"] = itm2[0].execution_count;
                     }
                     else
                     {
-                        newRow["avg_duration_ms2"] = 0;
-                        newRow["avg_cpu_ms2"] = 0;
+                        newRow["avg_duration_us2"] = 0;
+                        newRow["avg_cpu_us2"] = 0;
                         newRow["avg_reads2"] = 0;
                         newRow["avg_writes2"] = 0;
                         newRow["execution_count2"] = 0;
@@ -171,8 +171,8 @@ namespace WorkloadViewer.Model
                     newRow["Database"] = itm.DatabaseName;
                     newRow["Host"] = itm.HostName;
                     newRow["Login"] = itm.LoginName;
-                    newRow["avg_duration_ms2"] = itm.avg_duration_ms;
-                    newRow["avg_cpu_ms2"] = itm.avg_cpu_ms;
+                    newRow["avg_duration_us2"] = itm.avg_duration_us;
+                    newRow["avg_cpu_us2"] = itm.avg_cpu_us;
                     newRow["avg_reads2"] = itm.avg_reads;
                     newRow["avg_writes2"] = itm.avg_reads;
                     newRow["execution_count2"] = itm.execution_count;
@@ -182,22 +182,22 @@ namespace WorkloadViewer.Model
                                     && t.DatabaseName == itm.DatabaseName
                                     && t.HostName == itm.HostName
                                     && t.LoginName == itm.LoginName
-                                select new { t.avg_cpu_ms, t.avg_duration_ms, t.avg_reads, t.avg_writes, t.execution_count };
+                                select new { t.avg_cpu_us, t.avg_duration_us, t.avg_reads, t.avg_writes, t.execution_count };
 
                     var itm2 = _itm.ToList();
 
                     if (itm2.Count > 0)
                     {
-                        newRow["avg_duration_ms"] = itm2[0].avg_duration_ms;
-                        newRow["avg_cpu_ms"] = itm2[0].avg_cpu_ms;
+                        newRow["avg_duration_us"] = itm2[0].avg_duration_us;
+                        newRow["avg_cpu_us"] = itm2[0].avg_cpu_us;
                         newRow["avg_reads"] = itm2[0].avg_reads;
                         newRow["avg_writes"] = itm2[0].avg_reads;
                         newRow["execution_count"] = itm2[0].execution_count;
                     }
                     else
                     {
-                        newRow["avg_duration_ms"] = 0;
-                        newRow["avg_cpu_ms"] = 0;
+                        newRow["avg_duration_us"] = 0;
+                        newRow["avg_cpu_us"] = 0;
                         newRow["avg_reads"] = 0;
                         newRow["avg_writes"] = 0;
                         newRow["execution_count"] = 0;
@@ -239,7 +239,7 @@ namespace WorkloadViewer.Model
                 AbsoluteMinimum = 0,
                 MaximumPadding = 0.2,
                 MinorTickSize = 0,
-                Title = "Duration (ms)"
+                Title = "Duration (us)"
             };
             plotModel.Axes.Add(valueAxis1);
 
@@ -281,7 +281,7 @@ namespace WorkloadViewer.Model
                         select new
                         {
                             offset_minutes = grp.Key.offset,
-                            duration = grp.Average(t => t.AvgDurationMs)
+                            duration = grp.Average(t => t.AvgDurationUs)
                         };
 
             foreach (var p in Table)

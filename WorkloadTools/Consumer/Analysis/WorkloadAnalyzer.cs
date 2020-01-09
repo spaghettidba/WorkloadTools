@@ -289,10 +289,10 @@ namespace WorkloadTools.Consumer.Analysis
             row.SetField("host_id", hostId);
             row.SetField("login_id", loginId);
             row.SetField("event_time", evt.StartTime);
-            row.SetField("cpu_ms", evt.CPU / 1000); // microseconds to milliseconds
+            row.SetField("cpu_us", evt.CPU); // keep microseconds 
             row.SetField("reads", evt.Reads);
             row.SetField("writes", evt.Writes);
-            row.SetField("duration_ms", evt.Duration / 1000); // microseconds to milliseconds
+            row.SetField("duration_us", evt.Duration); // keep microseconds
 
             rawData.Rows.Add(row);
         }
@@ -488,10 +488,10 @@ namespace WorkloadTools.Consumer.Analysis
                                     grp.Key.host_id,
                                     grp.Key.login_id,
 
-                                    avg_cpu_ms = grp.Average(t => t.Field<long?>("cpu_ms")),
-                                    min_cpu_ms = grp.Min(t => t.Field<long?>("cpu_ms")),
-                                    max_cpu_ms = grp.Max(t => t.Field<long?>("cpu_ms")),
-                                    sum_cpu_ms = grp.Sum(t => t.Field<long?>("cpu_ms")),
+                                    avg_cpu_us = grp.Average(t => t.Field<long?>("cpu_us")),
+                                    min_cpu_us = grp.Min(t => t.Field<long?>("cpu_us")),
+                                    max_cpu_us = grp.Max(t => t.Field<long?>("cpu_us")),
+                                    sum_cpu_us = grp.Sum(t => t.Field<long?>("cpu_us")),
 
                                     avg_reads = grp.Average(t => t.Field<long?>("reads")),
                                     min_reads = grp.Min(t => t.Field<long?>("reads")),
@@ -503,10 +503,10 @@ namespace WorkloadTools.Consumer.Analysis
                                     max_writes = grp.Max(t => t.Field<long?>("writes")),
                                     sum_writes = grp.Sum(t => t.Field<long?>("writes")),
 
-                                    avg_duration_ms = grp.Average(t => t.Field<long?>("duration_ms")),
-                                    min_duration_ms = grp.Min(t => t.Field<long?>("duration_ms")),
-                                    max_duration_ms = grp.Max(t => t.Field<long?>("duration_ms")),
-                                    sum_duration_ms = grp.Sum(t => t.Field<long?>("duration_ms")),
+                                    avg_duration_us = grp.Average(t => t.Field<long?>("duration_us")),
+                                    min_duration_us = grp.Min(t => t.Field<long?>("duration_us")),
+                                    max_duration_us = grp.Max(t => t.Field<long?>("duration_us")),
+                                    sum_duration_us = grp.Sum(t => t.Field<long?>("duration_us")),
 
                                     execution_count = grp.Count()
                                 };
@@ -743,10 +743,10 @@ namespace WorkloadTools.Consumer.Analysis
             rawData.Columns.Add("host_id", typeof(int));
             rawData.Columns.Add("login_id", typeof(int));
             rawData.Columns.Add("event_time", typeof(DateTime));
-            rawData.Columns.Add("cpu_ms", typeof(long));
+            rawData.Columns.Add("cpu_us", typeof(long));
             rawData.Columns.Add("reads", typeof(long));
             rawData.Columns.Add("writes", typeof(long));
-            rawData.Columns.Add("duration_ms", typeof(long));
+            rawData.Columns.Add("duration_us", typeof(long));
 
 			errorData = new DataTable();
             errorData.Columns.Add("type", typeof(int));
