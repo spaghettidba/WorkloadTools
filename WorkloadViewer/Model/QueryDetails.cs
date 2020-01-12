@@ -272,6 +272,7 @@ namespace WorkloadViewer.Model
             };
 
             var Table = from t in analysis.Points
+                        where t.NormalizedQuery.Hash == Query.Hash
                         group t by new
                         {
                             offset = t.OffsetMinutes
