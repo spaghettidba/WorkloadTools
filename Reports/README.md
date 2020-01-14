@@ -3,7 +3,7 @@
 To analyze the data produced by WorkloadTools you can use the provided Power BI Template.
 
 In this folder you will find:
-* A Sample Power Bi report "WorkloadTools Report - Sample.pbix", you can use it 
+* A Sample Power Bi report "WorkloadTools Report - Sample.pbix", use it play with the report
 * The Power BI template "WorkloadTools Report - Template.pbit", which defines a report structure and will ask for some input parameters before it loading data.
 
 ## Overview of the report pages
@@ -20,7 +20,7 @@ In this folder you will find:
 4. Explore your data
 5. (optional) Save the file for later use, it won't ask again for the parameters
 
-The report allows you to load one or two series of data, if you wanto to visualize only one series leave the optional parameters ("Benchmark *") empty
+The report allows you to load one or two series of data, if you want to visualize only one series leave the optional parameters ("Benchmark") empty
 
 Required parameters:
 * Baseline Server\Instance
@@ -60,10 +60,10 @@ In order to make the report more usable on Power BI Desktop you can set the foll
 
 ## Notes For Editors and Curious
 
-If you are new to Power BI and want to make some changes, make your own report or simply know how the report works you may want to know the following
+If you are new to Power BI and want to make some changes, make your own report or simply know how the report works you may need to know the following
 
 * **Hidden Objects** - to have a more readable report only the strictly necessary is visible in the "Field" panel, some tables, columns and measures (formulas) are hidden. To view them expand the "Field" side-bar, right click and enable "View hidden"
-* **Time Field** - For how the Power BI model works
-⋅⋅1. **always** use the field [Elapsed Time (min)] of the "Time" table in any visual that displayes the trend by time (or use the period in general)
-⋅⋅2. Any other [Elapsed Time (min)] Field (there is one in almost every table) will not propagate the filter correctly and you will obtain a flat chart or a static number
+* **Time Field** - For how the Power BI model works:
+⋅⋅1. **always** use the field [Elapsed Time (min)] of the "Time" table in any visual that displayes the trend by time (or use the time in general)
+⋅⋅2. Any other [Elapsed Time (min)] Field (there is one in almost every table, set as hidden) will not propagate the filter correctly. If used you will obtain flat charts and static numbers
 
