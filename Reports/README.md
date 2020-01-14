@@ -7,10 +7,10 @@ In this folder you will find:
 * The Power BI template "WorkloadTools Report - Template.pbit", which defines a report structure and will ask for some input parameters before it loading data.
 
 ## Overview of the report pages
-![Input Parameters](./Images/PowerBI_Overview.png)
-![Input Parameters](./Images/PowerBI_Queries.png)
-![Input Parameters](./Images/PowerBI_QueryDetail.png)
-![Input Parameters](./Images/PowerBI_WaitStats.png)
+![Overview](/Images/PowerBI_Overview.png)
+![Queries](/Images/PowerBI_Queries.png)
+![QueryDetail](/Images/PowerBI_QueryDetail.png)
+![WaitStats](/Images/PowerBI_WaitStats.png)
 
 
 ## Usage
@@ -22,17 +22,29 @@ In this folder you will find:
 
 The report allows you to load one or two series of data, if you wanto to visualize only one series leave the optional parameters ("Benchmark *") empty
 
-The required parameters are:
+Required parameters:
 * Baseline Server\Instance
 * Baseline Database
 * Baseline Schema
-The optional parameters are:
+
+Optional parameters:
 * Benchmark Server\Instance
 * Benchmark Database
 * Benchmark Schema
 
-**Note:**
-When using only one serie of data some charts and metrics will be empty, the deltas won't be meaningful
+![Input Parameters](/Images/PowerBI_InputParams.png)
 
-This is the 
-![Input Parameters](./Images/PowerBI_InputParams.png)
+**Note:**
+
+When using only one serie of data some charts and metrics will be empty, the deltas won't be meaningful.
+
+
+### Using "Drillthrough" for "Query Detail"
+
+In order to correctly filter the "Query Detail" sheet you need to use the "Drillthrough" function of Power BI.
+This function is available on any visual that contains a specific fields (In this case "Sql Hash") and has a properly configured Drillthrough page.
+
+ie: on the "Queries" page you can find several tables with the filed "Sql Hash", right click it and choose "Drillthrough", you will now see the available drillthrough pages, if you click the page, it will show up filtered by the selected "Sql Hash".
+To go back to the previous page you can use the arrow in the top-left corner of the page.
+
+![Drillthrough](/Images/PowerBI_InputParams.png)
