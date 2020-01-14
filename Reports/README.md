@@ -49,6 +49,14 @@ To go back to the previous page you can use the arrow in the top-left corner of 
 
 ![Drillthrough](/Images/PowerBI_DrillThrough.png)
 
+## Authentication
+
+When connecting to the specified source or sources (if the data are on 2 different server/databases) power Bi will use windows authentication.
+If the current user does not have the permission to access the data the load will fail.
+To use different credentials you will need to:
+* Run the Power BI template
+* Save it as a report even if it fails to load the data
+* Go to: "File -> options and settings -> data source settings" select the datasource and click "edit permission" now you can set the authentication method and credentials
 
 ## Additional Suggestions
 
@@ -64,6 +72,6 @@ If you are new to Power BI and want to make some changes, make your own report o
 
 * **Hidden Objects** - to have a more readable report only the strictly necessary is visible in the "Field" panel, some tables, columns and measures (formulas) are hidden. To view them expand the "Field" side-bar, right click and enable "View hidden"
 * **Time Field** - For how the Power BI model works:
-    1. **always** use the field [Elapsed Time (min)] of the "Time" table in any visual that displayes the trend by time (or use the time in general)
-    2. Any other [Elapsed Time (min)] Field (there is one in almost every table, set as hidden) will not propagate the filter correctly. If used you will obtain flat charts and static numbers
+    * **always** use the field [Elapsed Time (min)] of the "Time" table in any visual that displayes the trend by time (or use the time in general)
+    * Any other [Elapsed Time (min)] Field (there is one in almost every table, set as hidden) will not propagate the filter correctly. If used you will obtain flat charts and static numbers
 
