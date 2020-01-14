@@ -64,6 +64,6 @@ If you are new to Power BI and want to make some changes, make your own report o
 
 * **Hidden Objects** - to have a more readable report only the strictly necessary is visible in the "Field" panel, some tables, columns and measures (formulas) are hidden. To view them expand the "Field" side-bar, right click and enable "View hidden"
 * **Time Field** - For how the Power BI model works:
-⋅⋅* **always** use the field [Elapsed Time (min)] of the "Time" table in any visual that displayes the trend by time (or use the time in general)
-⋅⋅* Any other [Elapsed Time (min)] Field (there is one in almost every table, set as hidden) will not propagate the filter correctly. If used you will obtain flat charts and static numbers
+    1. **always** use the field [Elapsed Time (min)] of the "Time" table in any visual that displayes the trend by time (or use the time in general)
+    2. Any other [Elapsed Time (min)] Field (there is one in almost every table, set as hidden) will not propagate the filter correctly. If used you will obtain flat charts and static numbers
 
