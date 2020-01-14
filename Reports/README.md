@@ -14,7 +14,7 @@ In this folder you will find:
 
 
 ## Usage
-1. Download and install Power BI
+1. Download and install Power BI Desktop
 2. Open the provided template "WorkloadTools Report - Template.pbit" 
 3. Provide the connection parameters
 4. Explore your data
@@ -42,9 +42,28 @@ When using only one serie of data some charts and metrics will be empty, the del
 ### Using "Drillthrough" for "Query Detail"
 
 In order to correctly filter the "Query Detail" sheet you need to use the "Drillthrough" function of Power BI.
-This function is available on any visual that contains a specific fields (In this case "Sql Hash") and has a properly configured Drillthrough page.
+This function is available on any visual that contains a specific fields (in this case "Sql Hash") and has a properly configured Drillthrough page.
 
-ie: on the "Queries" page you can find several tables with the filed "Sql Hash", right click it and choose "Drillthrough", you will now see the available drillthrough pages, if you click the page, it will show up filtered by the selected "Sql Hash".
+ie: on the "Queries" page you can find several tables with the field "Sql Hash", right click it and choose "Drillthrough", you will now see the available drillthrough pages, if you click the page, it will show up, filtered by the selected "Sql Hash".
 To go back to the previous page you can use the arrow in the top-left corner of the page.
 
-![Drillthrough](/Images/PowerBI_InputParams.png)
+![Drillthrough](/Images/PowerBI_Drillthrough.png)
+
+
+## Additional Suggestions
+
+Power BI Desktop does not offer a "wiewer mode", it has been made to create and edit reports. Anyone with the file has full control over it, and can create/edit/delete any visual or measure in the frontend or tables, relationships and M script in the backend.
+
+In order to make the report more usable on Power BI Desktop you can set the following
+* **Lock Objects** - this prevents them from moving around while using the report (in the top bar "View" → "Lock Objects" checkbox)
+* **Collapse Unused Bars** - this allows you to recover plently of space to view the report, you can collapse the side-bars and the top bar (small arrow i the top right corner)
+
+## Notes For Editors and Curious
+
+If you are new to Power BI and want to make some changes, make your own report or simply know how the report works you may want to know the following
+
+* **Hidden Objects** - to have a more readable report only the strictly necessary is visible in the "Field" panel, some tables, columns and measures (formulas) are hidden. To view them expand the "Field" side-bar, right click and enable "View hidden"
+* **Time Field** - For how the Power BI model works
+⋅⋅1 **always** use the field [Elapsed Time (min)] of the "Time" table in any visual that displayes the trend by time (or use the period in general)
+⋅⋅2 Any other [Elapsed Time (min)] Field (there is one in almost every table) will not propagate the filter correctly and you will obtain a flat chart or a static number
+
