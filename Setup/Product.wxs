@@ -50,8 +50,9 @@
   <Fragment>
     <ComponentGroup Id="ProductReports">
       <Component Id="cmp20EE999FA46842A8A3E67D82FF987418" Directory="dirCD80900D3B5A452B876D2B896E10F051" Guid="9CDDBDE3-A115-4CEE-9F5F-41DCCABB618E">
-        <File Id="filF8339E0B13434A31BB913FADC4066D7D" Source="..\Reports\SqlWorkload.pbix" />
-        <File Id="fil9A72942DD7E14FC98051DF6EAA302AF0" Source="..\Reports\WorkloadAnalysis.pbix" />
+        <File Id="filF8339E0B13434A31BB913FADC4066D7D" Source="..\Reports\WorkloadTools Report - Sample.pbix" />
+        <File Id="fil9A72942DD7E14FC98051DF6EAA302AF0" Source="..\Reports\WorkloadTools Report - Template.pbit" />
+        <File Id="filB480F52C6274410197E5CB8F865AE5BB" Source="..\Reports\README.md" />
       </Component>
     </ComponentGroup>
   </Fragment>
