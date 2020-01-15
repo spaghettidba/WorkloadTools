@@ -58,6 +58,20 @@ To use different credentials you will need to:
 * Save it as a report even if it fails to load the data
 * Go to: "File -> options and settings -> data source settings" select the datasource and click "edit permission" now you can set the authentication method and credentials
 
+## Use the Power BI Report on Existing Databases
+
+**What if I already have the data and just want to use the Power BI report?**
+
+Power BI needs a bunch of views in order to load the data, those views are created when some workload data are written to the db for the first time.
+
+You can manually create the views by running the procedure in this folder:
+[WorkloadTools\Consumer\Analysis\createAnalysisView.sql](/WorkloadTools/Consumer/Analysis/createAnalysisView.sql)
+
+```
+--At least one of the two parameters must be provided, the schema must be the same of your data tables
+EXEC [dbo].[createAnalysisView]	@baselineSchema = N'<BaselineSchemaName>', @replaySchema = N'<BenchmarkSchemaName>'
+```
+
 ## Additional Suggestions
 
 Power BI Desktop does not offer a "wiewer mode", it has been made to create and edit reports. Anyone with the file has full control over it, and can create/edit/delete any visual or measure in the frontend or tables, relationships and M script in the backend.
