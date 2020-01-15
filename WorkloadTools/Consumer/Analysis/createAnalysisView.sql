@@ -1,4 +1,14 @@
-﻿CREATE PROCEDURE dbo.createAnalysisView
+﻿USE [SqlWorkload_Test_Gio]
+GO
+
+/****** Object:  StoredProcedure [dbo].[createAnalysisView]    Script Date: 1/15/2020 3:21:21 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[createAnalysisView]
 	@baselineSchema AS nvarchar(max),
 	@replaySchema AS nvarchar(max)
 AS
@@ -8,17 +18,12 @@ SET NOCOUNT ON;
 
 DECLARE @sql nvarchar(max);
 
--- DROP WorkloadOverView
-IF OBJECT_ID('dbo.WorkloadOverView') IS NOT NULL
-	EXEC('DROP VIEW dbo.WorkloadOverView');
-
 -- DROP PowerBI_WaitStats
 IF OBJECT_ID( QUOTENAME(@baselineSchema) +'.'+ QUOTENAME('PowerBI_WaitStats') ) IS NOT NULL
 BEGIN
     SET @sql = 'DROP VIEW ' + QUOTENAME(@baselineSchema) +'.'+ QUOTENAME('PowerBI_WaitStats')
     EXEC(@sql)
 END
-
 IF OBJECT_ID( QUOTENAME(@replaySchema) +'.'+ QUOTENAME('PowerBI_WaitStats') ) IS NOT NULL
 BEGIN
     SET @sql = 'DROP VIEW ' + QUOTENAME(@replaySchema) +'.'+ QUOTENAME('PowerBI_WaitStats')
@@ -31,7 +36,6 @@ BEGIN
     SET @sql = 'DROP VIEW ' + QUOTENAME(@baselineSchema) +'.'+ QUOTENAME('PowerBI_WinPerfCounters')
     EXEC(@sql)
 END
-
 IF OBJECT_ID( QUOTENAME(@replaySchema) +'.'+ QUOTENAME('PowerBI_WinPerfCounters') ) IS NOT NULL
 BEGIN
     SET @sql = 'DROP VIEW ' + QUOTENAME(@replaySchema) +'.'+ QUOTENAME('PowerBI_WinPerfCounters')
@@ -44,7 +48,6 @@ BEGIN
     SET @sql = 'DROP VIEW ' + QUOTENAME(@baselineSchema) +'.'+ QUOTENAME('PowerBI_WorkloadData')
     EXEC(@sql)
 END
-
 IF OBJECT_ID( QUOTENAME(@replaySchema) +'.'+ QUOTENAME('PowerBI_WorkloadData') ) IS NOT NULL
 BEGIN
     SET @sql = 'DROP VIEW ' + QUOTENAME(@replaySchema) +'.'+ QUOTENAME('PowerBI_WorkloadData')
@@ -57,7 +60,6 @@ BEGIN
     SET @sql = 'DROP VIEW ' + QUOTENAME(@baselineSchema) +'.'+ QUOTENAME('PowerBI_WorkloadQueries')
     EXEC(@sql)
 END
-
 IF OBJECT_ID( QUOTENAME(@replaySchema) +'.'+ QUOTENAME('PowerBI_WorkloadQueries') ) IS NOT NULL
 BEGIN
     SET @sql = 'DROP VIEW ' + QUOTENAME(@replaySchema) +'.'+ QUOTENAME('PowerBI_WorkloadQueries')
@@ -66,126 +68,6 @@ END
 
 
 -- CREATE VIEWS
-SET @sql = N'
-CREATE VIEW [dbo].[WorkloadOverview]
-AS
-WITH BaselineData AS (
-    SELECT 
-        bWD.*, bIn.duration_minutes, bIn.end_time, 
-        bNQ.normalized_text, bNQ.example_text, 
-        bAp.application_name, bDB.database_name, 
-        bHS.host_name, bLI.login_name
-    FROM '+ @baselineSchema +'.WorkloadDetails AS bWD
-    INNER JOIN '+ @baselineSchema +'.Intervals AS bIn
-        ON bIn.interval_id = bWD.interval_id
-    INNER JOIN '+ @baselineSchema +'.NormalizedQueries AS bNQ
-        ON bNQ.sql_hash = bWD.sql_hash
-    INNER JOIN '+ @baselineSchema +'.Applications AS bAp
-        ON bAp.application_id = bWD.application_id
-    INNER JOIN '+ @baselineSchema +'.Databases AS bDB
-        ON bDB.database_id = bWD.database_id
-    INNER JOIN '+ @baselineSchema +'.Hosts AS bHS
-        ON bHS.host_id = bWD.host_id
-    INNER JOIN '+ @baselineSchema +'.Logins AS bLI
-        ON bLI.login_id = bWD.login_id
-),
-ReplayData AS (
-    SELECT 
-        rWD.*, rIn.duration_minutes, rIn.end_time, 
-        rNQ.normalized_text, rNQ.example_text, 
-        rAp.application_name, rDB.database_name, 
-        rHS.host_name, rLI.login_name
-    FROM '+ @replaySchema +'.WorkloadDetails AS rWD
-    INNER JOIN '+ @replaySchema +'.Intervals AS rIn
-        ON rIn.interval_id = rWD.interval_id
-    INNER JOIN '+ @replaySchema +'.NormalizedQueries AS rNQ
-        ON rNQ.sql_hash = rWD.sql_hash
-    INNER JOIN '+ @replaySchema +'.Applications AS rAp
-        ON rAp.application_id = rWD.application_id
-    INNER JOIN '+ @replaySchema +'.Databases AS rDB
-        ON rDB.database_id = rWD.database_id
-    INNER JOIN '+ @replaySchema +'.Hosts AS rHS
-        ON rHS.host_id = rWD.host_id
-    INNER JOIN '+ @replaySchema +'.Logins AS rLI
-        ON rLI.login_id = rWD.login_id
-),
-AllCorrelatedData AS (
-    SELECT 
-        b.interval_id, b.application_name, b.database_name, b.host_name, b.login_name, b.sql_hash, b.avg_cpu_us, b.min_cpu_us, b.max_cpu_us, b.sum_cpu_us, b.avg_reads, b.min_reads, b.max_reads, b.sum_reads, b.avg_writes, b.min_writes, b.max_writes, b.sum_writes, b.avg_duration_us, b.min_duration_us, b.max_duration_us, b.sum_duration_us, b.execution_count, b.duration_minutes, b.end_time, b.normalized_text, b.example_text,
-        p.interval_id AS interval_id2, p.application_name AS application_name2, p.database_name AS database_name2, p.host_name AS host_name2, p.login_name AS login_name2, p.sql_hash AS sql_hash2, p.avg_cpu_us AS avg_cpu_us2, p.min_cpu_us AS min_cpu_us2, p.max_cpu_us AS max_cpu_us2, p.sum_cpu_us AS sum_cpu_us2, p.avg_reads AS avg_reads2, p.min_reads AS min_reads2, p.max_reads AS max_reads2, p.sum_reads AS sum_reads2, p.avg_writes AS avg_writes2, p.min_writes AS min_writes2, p.max_writes AS max_writes2, p.sum_writes AS sum_writes2, p.avg_duration_us AS avg_duration_us2, p.min_duration_us AS min_duration_us2, p.max_duration_us AS max_duration_us2, p.sum_duration_us AS sum_duration_us2, p.execution_count AS execution_count2, p.duration_minutes AS duration_minutes2, p.end_time AS end_time2
-    FROM BaselineData AS b
-    OUTER APPLY (
-        SELECT *
-        FROM ReplayData AS r
-        WHERE r.sql_hash = b.sql_hash
-            AND r.interval_id = (
-                SELECT TOP(1) interval_id 
-                FROM '+ @replaySchema +'.Intervals 
-                WHERE end_time > b.end_time
-                ORDER BY interval_id ASC
-            )
-    ) AS p
-)
-SELECT interval_id, 
-    end_time, 
-    duration_minutes,
-    sql_hash,
-    example_text,
-    normalized_text,
-    application_name,
-    database_name, 
-    host_name, 
-    login_name,
-    AVG(avg_duration_us) AS avg_duration_us,
-    MIN(min_duration_us) AS min_duration_us,
-    MAX(max_duration_us) AS max_duration_us,
-    SUM(sum_duration_us) AS sum_duration_us,
-    AVG(avg_cpu_us) AS avg_cpu_us,
-    MIN(min_cpu_us) AS min_cpu_us,
-    MAX(max_cpu_us) AS max_cpu_us,
-    SUM(sum_cpu_us) AS sum_cpu_us,
-    AVG(avg_reads) AS avg_reads,
-    MIN(min_reads) AS min_reads,
-    MAX(max_reads) AS max_reads,
-    SUM(sum_reads) AS sum_reads,
-    AVG(avg_writes) AS avg_writes,
-    MIN(min_writes) AS min_writes,
-    MAX(max_writes) AS max_writes,
-    SUM(sum_writes) AS sum_writes,
-    SUM(execution_count) AS execution_count,
-    AVG(avg_duration_us2) AS avg_duration_us2,
-    MIN(min_duration_us2) AS min_duration_us2,
-    MAX(max_duration_us2) AS max_duration_us2,
-    SUM(sum_duration_us2) AS sum_duration_us2,
-    SUM(execution_count2) AS execution_count2,
-    AVG(avg_cpu_us2) AS avg_cpu_us2,
-    MIN(min_cpu_us2) AS min_cpu_us2,
-    MAX(max_cpu_us2) AS max_cpu_us2,
-    SUM(sum_cpu_us2) AS sum_cpu_us2,
-    AVG(avg_reads2) AS avg_reads2,
-    MIN(min_reads2) AS min_reads2,
-    MAX(max_reads2) AS max_reads2,
-    SUM(sum_reads2) AS sum_reads2,
-    AVG(avg_writes2) AS avg_writes2,
-    MIN(min_writes2) AS min_writes2,
-    MAX(max_writes2) AS max_writes2,
-    SUM(sum_writes2) AS sum_writes2
-FROM AllCorrelatedData
-GROUP BY 
-    interval_id, 
-    end_time, 
-    duration_minutes,
-    sql_hash,
-    example_text,
-    normalized_text,
-    application_name,
-    database_name, 
-    host_name, 
-    login_name
-'
-
-EXEC(@sql);
-
 --===========================================================
 DECLARE @PowerBI_WorkloadQueries nvarchar(max) = N'
 CREATE VIEW {0}.[PowerBI_WorkloadQueries] 
@@ -197,27 +79,15 @@ SELECT
 FROM {0}.[NormalizedQueries] AS bNQ
 '
 
-IF OBJECT_ID(@baselineSchema + '.PowerBI_WorkloadQueries') IS NULL 
+IF @baselineSchema IS NOT NULL
 	BEGIN
 		SET @sql = REPLACE(@PowerBI_WorkloadQueries, '{0}', @baselineSchema);
-    
-		BEGIN TRY
-			EXEC(@sql);
-		END TRY
-		BEGIN CATCH
-			PRINT 'Unable to create ' + @baselineSchema + '.AllData'
-		END CATCH
-	END 
-IF OBJECT_ID(@replaySchema + '.PowerBI_WorkloadQueries') IS NULL
+		EXEC(@sql);
+	END
+IF @replaySchema IS NOT NULL
 	BEGIN
 		SET @sql = REPLACE(@PowerBI_WorkloadQueries, '{0}', @replaySchema);
-    
-		BEGIN TRY
-			EXEC(@sql);
-		END TRY
-		BEGIN CATCH
-			PRINT 'Unable to create ' + @replaySchema + '.AllData'
-		END CATCH
+		EXEC(@sql);
 	END
 
 --===========================================================
@@ -242,28 +112,16 @@ INNER JOIN (
     ON bPC.[interval_id] = bIn.[interval_id]
 '
 
-IF OBJECT_ID(@baselineSchema + '.PowerBI_WinPerfCounters') IS NULL 
+IF @baselineSchema IS NOT NULL
 	BEGIN
 		SET @sql = REPLACE(@PowerBI_WinPerfCounters, '{0}', @baselineSchema);
-    
-		BEGIN TRY
-			EXEC(@sql);
-		END TRY
-		BEGIN CATCH
-			PRINT 'Unable to create ' + @baselineSchema + '.AllData'
-		END CATCH
-	END 
-IF OBJECT_ID(@replaySchema + '.PowerBI_WinPerfCounters') IS NULL
+		EXEC(@sql);
+	END
+IF @replaySchema IS NOT NULL
 	BEGIN
 		SET @sql = REPLACE(@PowerBI_WinPerfCounters, '{0}', @replaySchema);
-    
-		BEGIN TRY
-			EXEC(@sql);
-		END TRY
-		BEGIN CATCH
-			PRINT 'Unable to create ' + @replaySchema + '.AllData'
-		END CATCH
-	END 
+		EXEC(@sql);
+	END
 
 --===========================================================
 DECLARE @PowerBI_WorkloadData nvarchar(max) = N'
@@ -315,28 +173,16 @@ INNER JOIN {0}.Logins AS bLI
 	ON bLI.[login_id] = bWD.[login_id]
 '
 
-IF OBJECT_ID(@baselineSchema + '.PowerBI_WorkloadData') IS NULL 
+IF @baselineSchema IS NOT NULL
 	BEGIN
 		SET @sql = REPLACE(@PowerBI_WorkloadData, '{0}', @baselineSchema);
-    
-		BEGIN TRY
-			EXEC(@sql);
-		END TRY
-		BEGIN CATCH
-			PRINT 'Unable to create ' + @baselineSchema + '.AllData'
-		END CATCH
-	END 
-IF OBJECT_ID(@replaySchema + '.PowerBI_WorkloadData') IS NULL
+		EXEC(@sql);
+	END
+IF @replaySchema IS NOT NULL
 	BEGIN
 		SET @sql = REPLACE(@PowerBI_WorkloadData, '{0}', @replaySchema);
-    
-		BEGIN TRY
-			EXEC(@sql);
-		END TRY
-		BEGIN CATCH
-			PRINT 'Unable to create ' + @replaySchema + '.AllData'
-		END CATCH
-	END 
+		EXEC(@sql);
+	END
 
 --===========================================================
 DECLARE @PowerBI_WaitStats nvarchar(max) = N'
@@ -999,27 +845,16 @@ VALUES
 	ON bWS.[wait_type] = WsCat.[Wait Type]
 '
 
-IF OBJECT_ID(@baselineSchema + '.PowerBI_WaitStats') IS NULL 
+IF @baselineSchema IS NOT NULL
 	BEGIN
 		SET @sql = REPLACE(@PowerBI_WaitStats, '{0}', @baselineSchema);
-    
-		BEGIN TRY
-			EXEC(@sql);
-		END TRY
-		BEGIN CATCH
-			PRINT 'Unable to create ' + @baselineSchema + '.AllData'
-		END CATCH
-	END 
-IF OBJECT_ID(@replaySchema + '.PowerBI_WaitStats') IS NULL
+		EXEC(@sql);
+	END
+IF @replaySchema IS NOT NULL
 	BEGIN
 		SET @sql = REPLACE(@PowerBI_WaitStats, '{0}', @replaySchema);
-    
-		BEGIN TRY
-			EXEC(@sql);
-		END TRY
-		BEGIN CATCH
-			PRINT 'Unable to create ' + @replaySchema + '.AllData'
-		END CATCH
-	END 
+		EXEC(@sql);
+	END
 
 END
+GO
