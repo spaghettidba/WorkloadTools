@@ -1,11 +1,4 @@
-﻿/****** Object:  StoredProcedure [dbo].[createAnalysisView]    Script Date: 1/15/2020 3:21:21 PM ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[createAnalysisView]
+﻿CREATE PROCEDURE [dbo].[createAnalysisView]
 	@baselineSchema AS nvarchar(max),
 	@replaySchema AS nvarchar(max)
 AS
@@ -854,4 +847,3 @@ IF @replaySchema IS NOT NULL
 	END
 
 END
-GO
