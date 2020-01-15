@@ -56,6 +56,18 @@ BEGIN
     EXEC(@sql)
 END
 
+-- DROP PowerBI_Time
+IF OBJECT_ID( QUOTENAME(@baselineSchema) +'.'+ QUOTENAME('PowerBI_Time') ) IS NOT NULL
+BEGIN
+    SET @sql = 'DROP VIEW ' + QUOTENAME(@baselineSchema) +'.'+ QUOTENAME('PowerBI_Time')
+    EXEC(@sql)
+END
+IF OBJECT_ID( QUOTENAME(@replaySchema) +'.'+ QUOTENAME('PowerBI_Time') ) IS NOT NULL
+BEGIN
+    SET @sql = 'DROP VIEW ' + QUOTENAME(@replaySchema) +'.'+ QUOTENAME('PowerBI_Time')
+    EXEC(@sql)
+END
+
 
 -- CREATE VIEWS
 --===========================================================
@@ -843,6 +855,26 @@ IF @baselineSchema IS NOT NULL
 IF @replaySchema IS NOT NULL
 	BEGIN
 		SET @sql = REPLACE(@PowerBI_WaitStats, '{0}', @replaySchema);
+		EXEC(@sql);
+	END
+
+--===========================================================
+DECLARE @PowerBI_Time nvarchar(max) = N'
+CREATE VIEW {0}.[PowerBI_Time] AS
+SELECT
+	SUM([duration_minutes]) OVER(ORDER BY [end_time] ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS [Elapsed Time (min)]
+FROM {0}.[Intervals]
+GO
+'
+
+IF @baselineSchema IS NOT NULL
+	BEGIN
+		SET @sql = REPLACE(@PowerBI_Time, '{0}', @baselineSchema);
+		EXEC(@sql);
+	END
+IF @replaySchema IS NOT NULL
+	BEGIN
+		SET @sql = REPLACE(@PowerBI_Time, '{0}', @replaySchema);
 		EXEC(@sql);
 	END
 
