@@ -1,7 +1,4 @@
-﻿USE [SqlWorkload_Test_Gio]
-GO
-
-/****** Object:  StoredProcedure [dbo].[createAnalysisView]    Script Date: 1/15/2020 3:21:21 PM ******/
+﻿/****** Object:  StoredProcedure [dbo].[createAnalysisView]    Script Date: 1/15/2020 3:21:21 PM ******/
 SET ANSI_NULLS ON
 GO
 
