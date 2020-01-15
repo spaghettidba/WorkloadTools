@@ -65,7 +65,7 @@ To use different credentials you will need to:
 Power BI needs a bunch of views in order to load the data, those views are created when some workload data are written to the db for the first time.
 
 You can manually create the views by running the procedure in this folder:
-[WorkloadTools\Consumer\Analysis\createAnalysisView](WorkloadTools/Consumer/Analysis/createAnalysisView.sql)
+[WorkloadTools\Consumer\Analysis\createAnalysisView.sql](/WorkloadTools/Consumer/Analysis/createAnalysisView.sql)
 
 ```
 --At least one of the two parameters must be provided, the schema must be the same of your data tables
