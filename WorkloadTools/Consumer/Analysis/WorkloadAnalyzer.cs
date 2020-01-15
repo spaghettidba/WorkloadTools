@@ -846,7 +846,7 @@ namespace WorkloadTools.Consumer.Analysis
                 sql = @"
                     DECLARE @name1 sysname, @name2 sysname;
 
-                    SELECT @name1 = ISNULL([1],'dbo'), @name2 = ISNULL([2],'dbo')
+                    SELECT @name1 = [1], @name2 = [2]
                     FROM (
                         SELECT TOP(2) OBJECT_SCHEMA_NAME(object_id) AS schema_name, ROW_NUMBER() OVER (ORDER BY create_date DESC) AS RN
                         FROM sys.tables
@@ -855,8 +855,9 @@ namespace WorkloadTools.Consumer.Analysis
                     ) AS src
                     PIVOT( MIN(schema_name) FOR RN IN ([1], [2])) AS p;
 
-                    IF OBJECT_ID(@name1 + '.WorkloadDetails') IS NOT NULL
-                        AND OBJECT_ID(@name2 + '.WorkloadDetails') IS NOT NULL
+                    SELECT @name1 ,@name2
+
+                    IF OBJECT_ID(@name1 + '.WorkloadDetails') IS NOT NULL OR OBJECT_ID(@name2 + '.WorkloadDetails') IS NOT NULL
                     BEGIN
                         EXEC createAnalysisView @name1, @name2;
                     END
