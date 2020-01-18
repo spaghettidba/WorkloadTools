@@ -17,6 +17,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         private SpinWait spin = new SpinWait();
 
+        protected XEventDataReader reader;
+
         public string SessionName { get; set; } = "sqlworkload";
 
         public enum ServerType
@@ -177,11 +179,20 @@ namespace WorkloadTools.Listener.ExtendedEvents
         protected override void Dispose(bool disposing)
         {
             stopped = true;
-            using (SqlConnection conn = new SqlConnection())
+            try
             {
-                conn.ConnectionString = ConnectionInfo.ConnectionString;
-                conn.Open();
-                StopSession(conn);
+                reader.Stop();
+                using (SqlConnection conn = new SqlConnection())
+                {
+                    conn.ConnectionString = ConnectionInfo.ConnectionString;
+                    conn.Open();
+                    StopSession(conn);
+                }
+            }
+            catch (Exception x)
+            {
+                // swallow
+                logger.Warn($"Error disposing ExtendedEventWorkloadListener: {x.Message}");
             }
             logger.Info($"Extended Events session [{SessionName}] stopped successfully.");
         }
@@ -240,8 +251,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
         private void ReadEvents()
         {
             try {
-
-                XEventDataReader reader;
 
                 if (serverType == ServerType.FullInstance && FileTargetPath == null)
                 {
