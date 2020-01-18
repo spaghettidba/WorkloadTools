@@ -36,7 +36,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                             ConnectionString,
                                             SessionName,
                                             EventStreamSourceOptions.EventStream,
-                                            EventStreamCacheOptions.DoNotCache))
+                                            EventStreamCacheOptions.CacheToDisk))
             {
 
                 var eventsEnumerator = eventstream.GetEnumerator();
