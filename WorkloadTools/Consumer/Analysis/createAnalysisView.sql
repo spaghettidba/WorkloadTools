@@ -199,7 +199,7 @@ SELECT
 	,bWS.[wait_count] AS [Wait Count]
 	,bIn.[Elapsed Time (min)]
 	,COALESCE(WsCat.[Wait Category],''<n/a>'') AS [Wait Type Category]
-FROM [SqlWorkload_DEMO_US_GioLui].{0}.[WaitStats] AS bWS
+FROM {0}.[WaitStats] AS bWS
 INNER JOIN (
 	SELECT
 		[interval_id],
