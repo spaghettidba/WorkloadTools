@@ -1,0 +1,25 @@
+{
+    "Controller": {
+ 
+        "Listener":
+        {
+            "__type": "FileWorkloadListener",
+            "Source": "C:\\temp\\workloadtools\\debug\\capture.sqlite",
+            // in this case you want to simulate the original query rate
+            "SynchronizationMode": "true"
+        },
+ 
+        "Consumers":
+        [
+            {
+                "__type": "ReplayConsumer",
+                "ConnectionInfo": 
+                {
+                    "ServerName": "(local)",
+                    "DatabaseName": "benchmark"
+                },
+                "ConsumeResults": "false"
+            }
+        ]
+    }
+}

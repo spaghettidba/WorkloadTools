@@ -18,6 +18,6 @@ namespace WorkloadTools
         public long? Writes { get; set; }
         public long? CPU { get; set; }      // MICROSECONDS
         public long? Duration { get; set; } // MICROSECONDS
-
+        public long? EventSequence { get; set; }
     }
 }

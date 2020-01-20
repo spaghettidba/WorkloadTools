@@ -1,0 +1,1 @@
+"c:\Program Files\WorkloadTools\WorkloadViewer.exe" --BaselineServer (local) --BaselineSchema test --BaselineDatabase benchmark_analysis

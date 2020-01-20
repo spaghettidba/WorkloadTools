@@ -1,0 +1,1 @@
+"c:\program files\workloadtools\sqlworkload.exe" --File "%CD%\capture_xel.json"

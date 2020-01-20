@@ -1,0 +1,34 @@
+{
+    "Controller": {
+
+        "Listener":
+        {
+            "__type": "ExtendedEventsWorkloadListener",
+            "ConnectionInfo":
+            {
+                "ServerName": "localhost"
+            },
+            "DatabaseFilter": "benchmark",
+            "TimeoutMinutes": 10,
+            "FileTargetPath": "C:\\temp\\WorkloadTools\\debug\\capture.xel"
+        },
+
+        "Consumers":
+        [
+            {
+                "__type": "WorkloadFileWriterConsumer",
+                "OutputFile": "C:\\temp\\WorkloadTools\\debug\\capture.sqlite"
+            }
+            ,{
+                "__type": "AnalysisConsumer",
+                "ConnectionInfo": 
+                {
+                    "ServerName": "(local)",
+                    "DatabaseName": "benchmark_analysis",
+                    "SchemaName": "test"
+                },
+                "UploadIntervalSeconds": 60
+            }
+        ]
+    }
+}
