@@ -8,8 +8,7 @@
             {
                 "ServerName": "localhost"
             },
-            "DatabaseFilter": "benchmark",
-            "TimeoutMinutes": 10,
+            "ApplicationFilter": "testapp",
             "FileTargetPath": "C:\\temp\\WorkloadTools\\debug\\capture.xel"
         },
 
