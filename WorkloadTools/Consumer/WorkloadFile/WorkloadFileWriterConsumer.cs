@@ -24,7 +24,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
         public DateTime lastFlush = DateTime.Now;
 
         private bool databaseInitialized = false;
-        private int event_sequence = 1;
+        private int row_id = 1;
         private string connectionString;
 
         private object syncRoot = new object();
@@ -38,6 +38,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         private string insert_events = @"
                 INSERT INTO Events (
+                    row_id,
                     event_sequence,
                     event_type,
                     start_time,
@@ -53,6 +54,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     writes
                 )
                 VALUES (
+                    $row_id,
                     $event_sequence,
                     $event_type,
                     $start_time,
@@ -70,7 +72,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         private string insert_waits = @"
                 INSERT INTO Waits (
-                    event_sequence,
+                    row_id,
                     wait_type,
                     wait_sec,
                     resource_sec,
@@ -78,7 +80,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     wait_count
                 )
                 VALUES (
-                    $event_sequence,
+                    $row_id,
                     $wait_type,
                     $wait_sec,
                     $resource_sec,
@@ -88,12 +90,12 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         private string insert_counters = @"
                 INSERT INTO Counters (
-                    event_sequence,
+                    row_id,
                     name,
                     value
                 )
                 VALUES (
-                    $event_sequence,
+                    $row_id,
                     $name,
                     $value
                 );";
@@ -137,7 +139,14 @@ namespace WorkloadTools.Consumer.WorkloadFile
                 }
                 catch
                 {
-                    tran.Rollback();
+                    try
+                    {
+                        tran.Rollback();
+                    }
+                    catch (Exception)
+                    {
+                        //swallow
+                    }
                     throw;
                 }
                 finally
@@ -179,7 +188,8 @@ namespace WorkloadTools.Consumer.WorkloadFile
         {
             ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
 
-            events_cmd.Parameters.AddWithValue("$event_sequence", event_sequence++);
+            events_cmd.Parameters.AddWithValue("$row_id", row_id++);
+            events_cmd.Parameters.AddWithValue("$event_sequence", evt.EventSequence);
             events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
             events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
             events_cmd.Parameters.AddWithValue("$client_app_name", evt.ApplicationName);
@@ -229,7 +239,8 @@ namespace WorkloadTools.Consumer.WorkloadFile
         {
             WaitStatsWorkloadEvent evt = (WaitStatsWorkloadEvent)evnt;
 
-            events_cmd.Parameters.AddWithValue("$event_sequence", event_sequence++);
+            events_cmd.Parameters.AddWithValue("$row_id", row_id++);
+            events_cmd.Parameters.AddWithValue("$event_sequence", null);
             events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
             events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
             events_cmd.Parameters.AddWithValue("$client_app_name", null);
@@ -251,7 +262,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
                 foreach (DataRow dr in evt.Waits.Rows)
                 {
-                    waits_cmd.Parameters.AddWithValue("$event_sequence", event_sequence);
+                    waits_cmd.Parameters.AddWithValue("$row_id", row_id);
                     waits_cmd.Parameters.AddWithValue("$wait_type", dr["wait_type"]);
                     waits_cmd.Parameters.AddWithValue("$wait_sec", dr["wait_sec"]);
                     waits_cmd.Parameters.AddWithValue("$resource_sec", dr["resource_sec"]);
@@ -274,7 +285,8 @@ namespace WorkloadTools.Consumer.WorkloadFile
         {
             CounterWorkloadEvent evt = (CounterWorkloadEvent)evnt;
 
-            events_cmd.Parameters.AddWithValue("$event_sequence", event_sequence++);
+            events_cmd.Parameters.AddWithValue("$row_id", row_id++);
+            events_cmd.Parameters.AddWithValue("$event_sequence", null);
             events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
             events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
             events_cmd.Parameters.AddWithValue("$client_app_name", null);
@@ -296,7 +308,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
                 foreach (var dr in evt.Counters)
                 {
-                    counters_cmd.Parameters.AddWithValue("$event_sequence", event_sequence);
+                    counters_cmd.Parameters.AddWithValue("$row_id", row_id);
                     counters_cmd.Parameters.AddWithValue("$name", dr.Key.ToString());
                     counters_cmd.Parameters.AddWithValue("$value", dr.Value);
 
@@ -330,7 +342,8 @@ namespace WorkloadTools.Consumer.WorkloadFile
                 );
 
                 CREATE TABLE IF NOT EXISTS Events (
-                    event_sequence INTEGER PRIMARY KEY,
+                    row_id INTEGER PRIMARY KEY,
+                    event_sequence INTEGER,
                     event_type INTEGER,
                     start_time date NOT NULL,
                     client_app_name TEXT NULL, 
@@ -346,13 +359,13 @@ namespace WorkloadTools.Consumer.WorkloadFile
                 );
 
                 CREATE TABLE IF NOT EXISTS Counters (
-                    event_sequence INTEGER,
+                    row_id INTEGER,
                     name TEXT NULL,
                     value FLOAT NULL
                 );
 
                 CREATE TABLE IF NOT EXISTS Waits (
-                    event_sequence INTEGER,
+                    row_id INTEGER,
                     wait_type TEXT NULL,
                     wait_sec INTEGER NULL,
                     resource_sec INTEGER NULL,
@@ -371,7 +384,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
             sqlCreateTable = String.Format(sqlCreateTable, Assembly.GetEntryAssembly().GetName().Version.ToString());
 
-            string sqlMaxSeq = @"SELECT COALESCE(MAX(event_sequence),0) + 1 FROM Events;";
+            string sqlMaxSeq = @"SELECT COALESCE(MAX(row_id),0) + 1 FROM Events;";
 
             connectionString = "Data Source=" + OutputFile + ";Version=3;Cache Size=10000;Locking Mode=Exclusive;Journal Mode=Memory;";
 
@@ -384,7 +397,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     command.ExecuteNonQuery();
 
                     command = new SQLiteCommand(sqlMaxSeq, m_dbConnection);
-                    event_sequence = Convert.ToInt32(command.ExecuteScalar());
+                    row_id = Convert.ToInt32(command.ExecuteScalar());
                 }
                 catch (Exception)
                 {
