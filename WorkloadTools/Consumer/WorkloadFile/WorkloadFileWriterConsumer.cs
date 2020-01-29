@@ -426,6 +426,12 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     conn.Close();
                     conn.Dispose();
                 }
+                if(events_cmd != null)
+                    events_cmd.Dispose();
+                if (waits_cmd != null)
+                    waits_cmd.Dispose();
+                if (counters_cmd != null)
+                    counters_cmd.Dispose();
             }
             catch(Exception)
             {

@@ -141,6 +141,7 @@ namespace WorkloadTools.Consumer.Replay
             {
                 r.Dispose();
             }
+            WorkLimiter.Dispose();
             stopped = true;
         }
 

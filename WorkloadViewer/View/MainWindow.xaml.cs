@@ -60,9 +60,9 @@ namespace WorkloadViewer
                     cvs.SortDescriptions.Add(new SortDescription(dgc.SortMemberPath, msg.Direction));
                 }
             }
-            catch(Exception e)
+            catch(Exception)
             {
-
+                //swallow
             }
         }
 

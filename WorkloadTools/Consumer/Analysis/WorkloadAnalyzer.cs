@@ -14,7 +14,7 @@ using WorkloadTools.Util;
 
 namespace WorkloadTools.Consumer.Analysis
 {
-    public class WorkloadAnalyzer
+    public class WorkloadAnalyzer : IDisposable
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -907,7 +907,17 @@ namespace WorkloadTools.Consumer.Analysis
 
 		}
 
-
+        public void Dispose()
+        {
+            if(rawData != null)
+                rawData.Dispose();
+            if (errorData != null)
+                errorData.Dispose();
+            if (counterData != null)
+                counterData.Dispose();
+            if (waitsData != null)
+                waitsData.Dispose();
+        }
     }
 }
 

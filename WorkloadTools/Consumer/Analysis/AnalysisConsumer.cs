@@ -39,7 +39,10 @@ namespace WorkloadTools.Consumer.Analysis
         protected override void Dispose(bool disposing)
         {
             if (analyzer != null)
+            {
                 analyzer.Stop();
+                analyzer.Dispose();
+            }
         }
 
     }
