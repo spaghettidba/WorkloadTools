@@ -13,7 +13,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
         public string ConnectionString { get; set; }
         public string SessionName { get; set; }
         public IEventQueue Events { get; set; }
-        public long EventCount { get; set; }
+        public long EventCount { get; protected set; }
         public ExtendedEventsWorkloadListener.ServerType ServerType { get; set; }
 
         public XEventDataReader(
