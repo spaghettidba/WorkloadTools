@@ -9,7 +9,7 @@ using WorkloadTools.Consumer;
 
 namespace WorkloadTools
 {
-    public class WorkloadController
+    public class WorkloadController : IDisposable
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -53,25 +53,19 @@ namespace WorkloadTools
                         var evt = Listener.Read();
                         if (evt == null)
                             continue;
-                        Parallel.ForEach(Consumers, (cons) =>
-                        {
+                        //Parallel.ForEach(Consumers, (cons) =>
+                        //{
+                        //  cons.Consume(evt);
+                        //});
+                        foreach (var cons in Consumers) { 
                             cons.Consume(evt);
-                        });
+                        }
                     }
                     catch (Exception e)
                     {
                         logger.Error("Exception reading event");
                         logger.Error(e.Message);
                         logger.Error(e.StackTrace);
-                    }
-                }
-                if (!disposed)
-                {
-                    disposed = true;
-                    Listener.Dispose();
-                    foreach (var cons in Consumers)
-                    {
-                        cons.Dispose();
                     }
                 }
             }
@@ -89,31 +83,27 @@ namespace WorkloadTools
             }
         }
 
-        public Task Start()
-        {
-            return Task.Factory.StartNew(() => Run());
-        }
+
 
         public void Stop()
         {
             stopped = true;
-            int timeout = 0;
-            while(!disposed && timeout < (MAX_DISPOSE_TIMEOUT_SECONDS * 1000))
-            {
-                Thread.Sleep(100);
-                timeout += 100;
-            }
+        }
+
+        public void Dispose()
+        {
             if (!disposed)
             {
                 disposed = true;
-                if(Listener != null)
-                    Listener.Dispose();
-
                 foreach (var cons in Consumers)
                 {
-                    if(cons != null)
+                    if (cons != null)
                         cons.Dispose();
                 }
+
+                if (Listener != null)
+                    Listener.Dispose();
+
             }
         }
 
