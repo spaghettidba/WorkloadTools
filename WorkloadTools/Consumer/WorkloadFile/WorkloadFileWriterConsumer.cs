@@ -131,9 +131,12 @@ namespace WorkloadTools.Consumer.WorkloadFile
                 var tran = conn.BeginTransaction();
                 try
                 {
-                    while (cache.Count > 0)
+                    lock (syncRoot)
                     {
-                        InsertEvent(cache.Dequeue());
+                        while (cache.Count > 0)
+                        {
+                            InsertEvent(cache.Dequeue());
+                        }
                     }
                     tran.Commit();
                 }
