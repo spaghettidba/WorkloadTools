@@ -34,6 +34,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
         // If not specified, On Premises SQLServer will use the streaming API
         public string FileTargetPath { get; set; }
 
+        private long eventCount;
+
         public ExtendedEventsWorkloadListener() : base()
         {
             Filter = new ExtendedEventsEventFilter();
@@ -167,6 +169,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                     spin.SpinOnce();
                 }
+                eventCount++;
                 return result;
             }
             catch (Exception)
@@ -181,6 +184,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
             stopped = true;
             try
             {
+                logger.Info($"Disposing ExtendedEventsWorkloadListener.");
+                logger.Debug($"[{eventCount}] events read.");
+                logger.Debug($"Events in the queue? [{Events.HasMoreElements()}]");
                 reader.Stop();
                 using (SqlConnection conn = new SqlConnection())
                 {
