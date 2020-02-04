@@ -8,6 +8,7 @@ In this folder you will find:
 
 ## Overview of the report pages
 ![Overview](/Images/PowerBI_Overview.png)
+![WeightOnTotal](/Images/PowerBI_WeightOnTotal.png)
 ![Queries](/Images/PowerBI_Queries.png)
 ![QueryDetail](/Images/PowerBI_QueryDetail.png)
 ![WaitStats](/Images/PowerBI_WaitStats.png)
