@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WorkloadTools.Util;
+using System.Collections.Concurrent;
 
 namespace WorkloadTools.Consumer.Analysis
 {
@@ -31,7 +32,7 @@ namespace WorkloadTools.Consumer.Analysis
         private Thread Worker;
         private bool stopped = false;
 
-        private DataTable rawData;
+        private ConcurrentDictionary<ExecutionDetailKey,List<ExecutionDetailValue>> rawData;
 		private DataTable errorData;
         private SqlTextNormalizer normalizer;
         private bool TargetTableCreated = false;
@@ -239,8 +240,6 @@ namespace WorkloadTools.Consumer.Analysis
                 PrepareDictionaries();
             }
 
-            DataRow row = rawData.NewRow();
-
             string normSql = null;
             var norm = normalizer.NormalizeSqlText(evt.Text, (int)evt.SPID);
 
@@ -283,18 +282,41 @@ namespace WorkloadTools.Consumer.Analysis
                 logins.Add(evt.LoginName, loginId = logins.Count);
             }
 
-            row.SetField("sql_hash", hash);
-            row.SetField("application_id", appId);
-            row.SetField("database_id", dbId);
-            row.SetField("host_id", hostId);
-            row.SetField("login_id", loginId);
-            row.SetField("event_time", evt.StartTime);
-            row.SetField("cpu_us", evt.CPU); // keep microseconds 
-            row.SetField("reads", evt.Reads);
-            row.SetField("writes", evt.Writes);
-            row.SetField("duration_us", evt.Duration); // keep microseconds
-
-            rawData.Rows.Add(row);
+            // Look up execution detail 
+            List<ExecutionDetailValue> theList = null;
+            ExecutionDetailKey theKey = new ExecutionDetailKey()
+            {
+                sql_hash = hash,
+                application_id = appId,
+                database_id = dbId,
+                host_id = hostId,
+                login_id = loginId
+            };
+            ExecutionDetailValue theValue = new ExecutionDetailValue()
+            {
+                event_time = evt.StartTime,
+                cpu_us = evt.CPU,
+                reads = evt.Reads,
+                writes = evt.Writes,
+                duration_us = evt.Duration
+            };
+            if (rawData.TryGetValue(theKey, out theList))
+            {
+                if(theList == null)
+                {
+                    theList = new List<ExecutionDetailValue>();
+                }
+                theList.Add(theValue);
+            }
+            else
+            {
+                theList = new List<ExecutionDetailValue>();
+                theList.Add(theValue);
+                if(!rawData.TryAdd(theKey, theList))
+                {
+                    throw new InvalidOperationException("Unable to add an event to the queue");
+                }
+            }
         }
 
         public void Stop()
@@ -468,14 +490,23 @@ namespace WorkloadTools.Consumer.Analysis
                     bulkCopy.BulkCopyTimeout = 300;
 
 
-                    var Table = from t in rawData.AsEnumerable()
-                                group t by new
+                    var Table = from t in rawData.Keys
+                                from v in rawData[t]
+                                group new
                                 {
-                                    sql_hash = t.Field<long>("sql_hash"),
-                                    application_id = t.Field<int>("application_id"),
-                                    database_id = t.Field<int>("database_id"),
-                                    host_id = t.Field<int>("host_id"),
-                                    login_id = t.Field<int>("login_id")
+                                    v.cpu_us,
+                                    v.duration_us,
+                                    v.event_time,
+                                    v.reads,
+                                    v.writes
+                                }
+                                by new
+                                {
+                                    sql_hash = t.sql_hash,
+                                    application_id = t.application_id,
+                                    database_id = t.database_id,
+                                    host_id = t.host_id,
+                                    login_id = t.login_id
                                 }
                                 into grp
                                 select new
@@ -488,36 +519,36 @@ namespace WorkloadTools.Consumer.Analysis
                                     grp.Key.host_id,
                                     grp.Key.login_id,
 
-                                    avg_cpu_us = grp.Average(t => t.Field<long?>("cpu_us")),
-                                    min_cpu_us = grp.Min(t => t.Field<long?>("cpu_us")),
-                                    max_cpu_us = grp.Max(t => t.Field<long?>("cpu_us")),
-                                    sum_cpu_us = grp.Sum(t => t.Field<long?>("cpu_us")),
+                                    avg_cpu_us = grp.Average(v => v.cpu_us),
+                                    min_cpu_us = grp.Min(v => v.cpu_us),
+                                    max_cpu_us = grp.Max(v => v.cpu_us),
+                                    sum_cpu_us = grp.Sum(v => v.cpu_us),
 
-                                    avg_reads = grp.Average(t => t.Field<long?>("reads")),
-                                    min_reads = grp.Min(t => t.Field<long?>("reads")),
-                                    max_reads = grp.Max(t => t.Field<long?>("reads")),
-                                    sum_reads = grp.Sum(t => t.Field<long?>("reads")),
+                                    avg_reads = grp.Average(v => v.reads),
+                                    min_reads = grp.Min(v => v.reads),
+                                    max_reads = grp.Max(v => v.reads),
+                                    sum_reads = grp.Sum(v => v.reads),
 
-                                    avg_writes = grp.Average(t => t.Field<long?>("writes")),
-                                    min_writes = grp.Min(t => t.Field<long?>("writes")),
-                                    max_writes = grp.Max(t => t.Field<long?>("writes")),
-                                    sum_writes = grp.Sum(t => t.Field<long?>("writes")),
+                                    avg_writes = grp.Average(v => v.writes),
+                                    min_writes = grp.Min(v => v.writes),
+                                    max_writes = grp.Max(v => v.writes),
+                                    sum_writes = grp.Sum(v => v.writes),
 
-                                    avg_duration_us = grp.Average(t => t.Field<long?>("duration_us")),
-                                    min_duration_us = grp.Min(t => t.Field<long?>("duration_us")),
-                                    max_duration_us = grp.Max(t => t.Field<long?>("duration_us")),
-                                    sum_duration_us = grp.Sum(t => t.Field<long?>("duration_us")),
+                                    avg_duration_us = grp.Average(v => v.duration_us),
+                                    min_duration_us = grp.Min(v => v.duration_us),
+                                    max_duration_us = grp.Max(v => v.duration_us),
+                                    sum_duration_us = grp.Sum(v => v.duration_us),
 
                                     execution_count = grp.Count()
                                 };
 
                     bulkCopy.WriteToServer(DataUtils.ToDataTable(Table));
-                    numRows = rawData.Rows.Count;
+                    numRows = rawData.Count;
                     logger.Info(String.Format("{0} rows aggregated", numRows));
                     numRows = Table.Count();
                     logger.Info(String.Format("{0} rows written", numRows));
                 }
-                rawData.Rows.Clear();
+                rawData.Clear();
             }
         }
 
@@ -735,19 +766,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         private void PrepareDataTables()
         {
-            rawData = new DataTable();
-
-            rawData.Columns.Add("sql_hash", typeof(long));
-            rawData.Columns.Add("application_id", typeof(int));
-            rawData.Columns.Add("database_id", typeof(int));
-            rawData.Columns.Add("host_id", typeof(int));
-            rawData.Columns.Add("login_id", typeof(int));
-            rawData.Columns.Add("event_time", typeof(DateTime));
-            rawData.Columns.Add("cpu_us", typeof(long));
-            rawData.Columns.Add("reads", typeof(long));
-            rawData.Columns.Add("writes", typeof(long));
-            rawData.Columns.Add("duration_us", typeof(long));
-
+            rawData = new ConcurrentDictionary<ExecutionDetailKey, List<ExecutionDetailValue>>();
 			errorData = new DataTable();
             errorData.Columns.Add("type", typeof(int));
             errorData.Columns.Add("message", typeof(string));
@@ -909,14 +928,36 @@ namespace WorkloadTools.Consumer.Analysis
 
         public void Dispose()
         {
-            if(rawData != null)
-                rawData.Dispose();
+            if (rawData != null)
+                rawData.Clear();
             if (errorData != null)
                 errorData.Dispose();
             if (counterData != null)
                 counterData.Dispose();
             if (waitsData != null)
                 waitsData.Dispose();
+        }
+
+
+
+
+
+        internal class ExecutionDetailKey
+        {
+            public long sql_hash { get; set; }
+            public int application_id { get; set; }
+            public int database_id { get; set; }
+            public int host_id { get; set; }
+            public int login_id { get; set; }
+        }
+
+        internal class ExecutionDetailValue
+        {
+            public DateTime event_time { get; set; }
+            public long? cpu_us { get; set; }
+            public long? reads { get; set; }
+            public long? writes { get; set; }
+            public long? duration_us { get; set; }
         }
     }
 }
