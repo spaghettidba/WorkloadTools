@@ -541,11 +541,13 @@ namespace WorkloadTools.Consumer.Analysis
 
                                     execution_count = grp.Count()
                                 };
-
+                    
+                    // todo: rewrite this part using a IDataReader to avoid
+                    // duplicating the memory footprint of the data
                     bulkCopy.WriteToServer(DataUtils.ToDataTable(Table));
-                    numRows = rawData.Count;
+                    numRows = rawData.Sum(x => x.Value.Count);
                     logger.Info(String.Format("{0} rows aggregated", numRows));
-                    numRows = Table.Count();
+                    numRows = rawData.Count();
                     logger.Info(String.Format("{0} rows written", numRows));
                 }
                 rawData.Clear();
@@ -942,13 +944,42 @@ namespace WorkloadTools.Consumer.Analysis
 
 
 
-        internal class ExecutionDetailKey
+        internal class ExecutionDetailKey : IEquatable<ExecutionDetailKey>
         {
             public long sql_hash { get; set; }
             public int application_id { get; set; }
             public int database_id { get; set; }
             public int host_id { get; set; }
             public int login_id { get; set; }
+
+            public override int GetHashCode()
+            {
+                int hash = 497;
+                unchecked
+                {
+                    hash = hash * 17 + sql_hash.GetHashCode();
+                    hash = hash * 17 + application_id.GetHashCode();
+                    hash = hash * 17 + database_id.GetHashCode();
+                    hash = hash * 17 + host_id.GetHashCode();
+                    hash = hash * 17 + login_id.GetHashCode();
+                }
+                return hash;
+            }
+
+            public override bool Equals(Object other)
+            {
+                return Equals(other as ExecutionDetailKey);
+            }
+
+            public bool Equals(ExecutionDetailKey other)
+            {
+                return other != null
+                    && sql_hash.Equals(other.sql_hash)
+                    && application_id.Equals(other.application_id)
+                    && database_id.Equals(other.database_id)
+                    && host_id.Equals(other.host_id)
+                    && login_id.Equals(other.login_id);
+            }
         }
 
         internal class ExecutionDetailValue
