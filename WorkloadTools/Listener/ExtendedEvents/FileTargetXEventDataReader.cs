@@ -18,23 +18,65 @@ namespace WorkloadTools.Listener.ExtendedEvents
         // of the files, offsets and event_sequences
         private class ReadIteration
         {
-            public static long DistinctPreviousOffset { get; private set; } = -1;
+            private static int _lastFileHash;
+            private static long _lastOffset;
 
-            private static long _currentDistinctOffset = -1;
-            private static long CurrentDistinctOffset {
-                get
+            private static Dictionary<string, SortedSet<long>> recordedOffsets = new Dictionary<string, SortedSet<long>>();
+
+            private static void AddOffset(string filename, long offset)
+            {
+                // perf optimization: most of the time the last 
+                // file/offset pair is passed over and over again
+                if (filename.GetHashCode() == _lastFileHash && offset == _lastOffset)
                 {
-                    return _currentDistinctOffset;
+                    return;
                 }
-                set
+
+                // new values? ok, let's add them
+                // one more check doesn't hurt though
+                SortedSet<long> offsets = null;
+                if(recordedOffsets.TryGetValue(filename, out offsets))
                 {
-                    if(_currentDistinctOffset != value)
+                    if (!offsets.Contains(offset))
                     {
-                        // keep track of the previous distinct offset
-                        DistinctPreviousOffset = _currentDistinctOffset;
+                        offsets.Add(offset);
                     }
-                    _currentDistinctOffset = value;
                 }
+                else
+                {
+                    offsets = new SortedSet<long>();
+                    offsets.Add(offset);
+                    recordedOffsets.Add(filename, offsets);
+                }
+
+                // let's keep track of the last inserted values
+                _lastFileHash = filename.GetHashCode();
+                _lastOffset = offset;
+            }
+
+            public static long GetLastOffset(string filename)
+            {
+                long result = -1;
+                SortedSet<long> offsets = null;
+                if (recordedOffsets.TryGetValue(filename, out offsets))
+                {
+                    result = offsets.Max();
+                }
+                return result;
+            }
+
+            public static long GetSecondLastOffset(string filename)
+            {
+                long result = -1;
+                SortedSet<long> offsets = null;
+                if (recordedOffsets.TryGetValue(filename, out offsets))
+                {
+                    if(offsets.Count >= 2)
+                    {
+                        result = offsets.ElementAt(offsets.Count - 2);
+                    }
+                }
+                return result;
             }
 
             public string StartFileName { get; set; }
@@ -49,8 +91,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 }
                 set
                 {
-                    // set current distinct offset
-                    CurrentDistinctOffset = value;
+                    // add current offset
+                    AddOffset(EndFileName, value);
 
                     // set new value
                     _endOffset = value;
@@ -187,7 +229,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 // don't pass initial file name and offset
                 // read directly from the initial file
                 // until we have some rows read already
-                if (EventCount == 0)
+                if (
+                       EventCount == 0 
+                    || currentIteration.StartOffset <=0 
+                    || currentIteration.StartOffset == currentIteration.MinOffset
+                )
                 {
                     paramPath.Value = currentIteration.StartFileName;
                     paramInitialFile.Value = DBNull.Value;
@@ -345,7 +391,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                 // to avoid skipping events. The function fn_xe_file_target_read_file
                                 // will skip all events up to the @initial_offset INCLUDED,
                                 // so we need to start from the previous offset and skip some rows
-                                currentIteration.StartOffset = ReadIteration.DistinctPreviousOffset;
+                                currentIteration.StartOffset = ReadIteration.GetSecondLastOffset(currentIteration.StartFileName);
 
                                 // we will use the previous event sequence as the boundary to where 
                                 // we need to start reading events again
