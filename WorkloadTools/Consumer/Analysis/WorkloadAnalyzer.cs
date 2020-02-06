@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WorkloadTools.Util;
 using System.Collections.Concurrent;
+using FastMember;
 
 namespace WorkloadTools.Consumer.Analysis
 {
@@ -541,10 +542,11 @@ namespace WorkloadTools.Consumer.Analysis
 
                                     execution_count = grp.Count()
                                 };
-                    
-                    // todo: rewrite this part using a IDataReader to avoid
-                    // duplicating the memory footprint of the data
-                    bulkCopy.WriteToServer(DataUtils.ToDataTable(Table));
+
+                    using (var reader = ObjectReader.Create(Table, "interval_id", "sql_hash", "application_id", "database_id", "host_id", "login_id", "avg_cpu_us", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "avg_reads", "min_reads", "max_reads", "sum_reads", "avg_writes", "min_writes", "max_writes", "sum_writes", "avg_duration_us", "min_duration_us", "max_duration_us", "sum_duration_us", "execution_count"))
+                    {
+                        bulkCopy.WriteToServer(reader);
+                    }
                     numRows = rawData.Sum(x => x.Value.Count);
                     logger.Info(String.Format("{0} rows aggregated", numRows));
                     numRows = rawData.Count();
