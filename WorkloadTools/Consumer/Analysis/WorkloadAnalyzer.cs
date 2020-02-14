@@ -548,9 +548,9 @@ namespace WorkloadTools.Consumer.Analysis
                         bulkCopy.WriteToServer(reader);
                     }
                     numRows = rawData.Sum(x => x.Value.Count);
-                    logger.Info(String.Format("{0} rows aggregated", numRows));
+                    logger.Info($"{numRows} rows aggregated");
                     numRows = rawData.Count();
-                    logger.Info(String.Format("{0} rows written", numRows));
+                    logger.Info($"{numRows} rows written");
                 }
                 rawData.Clear();
             }

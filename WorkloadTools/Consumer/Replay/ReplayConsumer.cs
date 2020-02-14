@@ -21,7 +21,7 @@ namespace WorkloadTools.Consumer.Replay
 		public bool DisplayWorkerStats { get; set; } = true;
 		public bool ConsumeResults { get; set; } = true;
 		public int QueryTimeoutSeconds { get; set; } = 30;
-		public int WorkerStatsCommandCount { get; set; } = 200;
+		public int WorkerStatsCommandCount { get; set; } = 1000;
 		public bool MimicApplicationName { get; set; } = false;
 
 		public SqlConnectionInfo ConnectionInfo { get; set; }
@@ -30,6 +30,8 @@ namespace WorkloadTools.Consumer.Replay
         private ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
         private Thread runner;
         private Thread sweeper;
+
+        private long eventCount;
 
         public enum SynchronizationModeEnum
         {
@@ -51,6 +53,12 @@ namespace WorkloadTools.Consumer.Replay
 
             if (evnt.Type != WorkloadEvent.EventType.RPCCompleted && evnt.Type != WorkloadEvent.EventType.BatchCompleted)
                 return;
+
+            eventCount++;
+            if ((eventCount > 0) && (eventCount % WorkerStatsCommandCount == 0))
+            {
+                logger.Info($"{eventCount} events queued for replay");
+            }
 
             ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
 
@@ -86,7 +94,7 @@ namespace WorkloadTools.Consumer.Replay
                 ReplayWorkers.TryAdd(session_id, rw);
                 rw.AppendCommand(command);
 
-                logger.Info(String.Format("Worker [{0}] - Starting", session_id));
+                logger.Info($"Worker [{session_id}] - Starting");
             }
 
             if(runner == null)
@@ -169,8 +177,8 @@ namespace WorkloadTools.Consumer.Replay
                         }
                     }
 
-                    logger.Info(String.Format("{0} registered active workers", ReplayWorkers.Count));
-                    logger.Info(String.Format("{0} oldest command date", ReplayWorkers.Min(x => x.Value.LastCommandTime)));
+                    logger.Trace($"{ReplayWorkers.Count} registered active workers");
+                    logger.Trace($"{ReplayWorkers.Min(x => x.Value.LastCommandTime)} oldest command date");
                 }
                 catch (Exception e)
                 {
@@ -188,7 +196,7 @@ namespace WorkloadTools.Consumer.Replay
         {
             ReplayWorker outWrk;
             ReplayWorkers.TryRemove(Int32.Parse(name), out outWrk);
-            logger.Info(String.Format("Worker [{0}] - Disposing", name));
+            logger.Trace($"Worker [{name}] - Disposing");
             outWrk.Stop();
             outWrk.Dispose();
         }

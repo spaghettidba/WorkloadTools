@@ -22,11 +22,12 @@ namespace WorkloadTools.Listener.File
         public bool SynchronizationMode { get; set; } = true;
 
         private DateTime startDate = DateTime.MinValue;
-        private DateTime previousDate = DateTime.MinValue;
-        private int totalEvents;
+        private long totalEvents;
         private SQLiteConnection conn;
         private SQLiteDataReader reader;
         private string connectionString;
+
+        private Dictionary<int, DateTime> lastEventEndTime = new Dictionary<int, DateTime>();
 
 
         public FileWorkloadListener() : base()
@@ -42,7 +43,7 @@ namespace WorkloadTools.Listener.File
             totalEvents = ValidateFile();
             if (totalEvents < 0)
             {
-                throw new FormatException(String.Format("The input file \"{0}\" is not a valid workload file",Source));
+                throw new FormatException($"The input file \"{Source}\" is not a valid workload file");
             }
 
             // Push Down EventFilters
@@ -103,10 +104,10 @@ namespace WorkloadTools.Listener.File
 
         // returns 1 if there are events to replay 
         // or -1 in case the file format is invalid
-        private int ValidateFile()
+        private long ValidateFile()
         {
-            string sql = "SELECT 1 FROM Events LIMIT 1";
-            int result = -1;
+            string sql = "SELECT COUNT(*) FROM Events";
+            long result = -1;
 
             try
             {
@@ -116,7 +117,7 @@ namespace WorkloadTools.Listener.File
                     try
                     {
                         SQLiteCommand command = new SQLiteCommand(sql, m_dbConnection);
-                        result = (int)(long)command.ExecuteScalar();
+                        result = (long)command.ExecuteScalar();
                     }
                     catch (Exception e)
                     {
@@ -124,6 +125,8 @@ namespace WorkloadTools.Listener.File
                         logger.Error(e, "Unable to query the Events table in source file");
                     }
                 }
+
+                logger.Info($"The source file contains {result} events.");
             }
             catch (Exception e)
             {
@@ -131,6 +134,33 @@ namespace WorkloadTools.Listener.File
                 result = -1;
             }
             return result;
+        }
+
+
+        private DateTime GetLastEventEndTime(int spid)
+        {
+            DateTime result = DateTime.MinValue;
+            if (lastEventEndTime.TryGetValue(spid, out result))
+            {
+                return result;
+            }
+            else
+            {
+                return DateTime.MinValue;
+            }
+        }
+
+        private void SetLastEventEndTime(int spid, DateTime endTime)
+        {
+            if (lastEventEndTime.ContainsKey(spid))
+            {
+                lastEventEndTime[spid] = endTime;
+            }
+            else
+            {
+                lastEventEndTime.Add(spid, endTime);
+            }
+            
         }
 
         public override WorkloadEvent Read()
@@ -208,7 +238,7 @@ namespace WorkloadTools.Listener.File
         private WorkloadEvent ReadEvent(SQLiteDataReader reader)
         {
             WorkloadEvent.EventType type = (WorkloadEvent.EventType)reader.GetInt32(reader.GetOrdinal("event_type"));
-            int sequence = reader.GetInt32(reader.GetOrdinal("event_sequence"));
+            long row_id = reader.GetInt64(reader.GetOrdinal("row_id"));
             try
             {
                 switch (type)
@@ -216,7 +246,7 @@ namespace WorkloadTools.Listener.File
                     case WorkloadEvent.EventType.PerformanceCounter:
                         CounterWorkloadEvent cr = new CounterWorkloadEvent();
                         cr.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
-                        ReadCounters(sequence, cr);
+                        ReadCounters(row_id, cr);
                         return cr;
                     case WorkloadEvent.EventType.WAIT_stats:
                         WaitStatsWorkloadEvent wr = new WaitStatsWorkloadEvent();
@@ -231,6 +261,7 @@ namespace WorkloadTools.Listener.File
                         return er;
                     default:
                         ExecutionWorkloadEvent result = new ExecutionWorkloadEvent();
+                        result.EventSequence = GetInt64(reader, "event_sequence");
                         result.ApplicationName = GetString(reader, "client_app_name");
                         result.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
                         result.HostName = GetString(reader, "client_host_name");
@@ -248,7 +279,7 @@ namespace WorkloadTools.Listener.File
             }
             catch(Exception e)
             {
-                throw new InvalidOperationException($"Invalid data at event_sequence {sequence}",e);
+                throw new InvalidOperationException($"Invalid data at row_id {row_id}",e);
             }
         }
 
@@ -300,9 +331,9 @@ namespace WorkloadTools.Listener.File
         {
         }
 
-        private void ReadCounters(int event_sequence, CounterWorkloadEvent cev)
+        private void ReadCounters(Int64 row_id, CounterWorkloadEvent cev)
         {
-            string sql = "SELECT * FROM Counters WHERE event_sequence = $event_sequence";
+            string sql = "SELECT * FROM Counters WHERE row_id = $row_id";
 
             try
             {
@@ -313,7 +344,7 @@ namespace WorkloadTools.Listener.File
                     {
                         using (SQLiteCommand command = new SQLiteCommand(sql, m_dbConnection))
                         {
-                            command.Parameters.AddWithValue("$event_sequence", event_sequence);
+                            command.Parameters.AddWithValue("$row_id", row_id);
                             using (SQLiteDataReader rdr = command.ExecuteReader())
                             {
                                 while (rdr.Read())
@@ -327,7 +358,7 @@ namespace WorkloadTools.Listener.File
                     }
                     catch (Exception e)
                     {
-                        logger.Error(e, String.Format("Unable to query Counters for sequence {0}",event_sequence));
+                        logger.Error(e, $"Unable to query Counters for row_id {row_id}");
                         throw;
                     }
                 }
@@ -339,9 +370,9 @@ namespace WorkloadTools.Listener.File
         }
 
 
-        private void ReadWaits(int event_sequence, WaitStatsWorkloadEvent wev)
+        private void ReadWaits(Int64 row_id, WaitStatsWorkloadEvent wev)
         {
-            string sql = "SELECT * FROM Waits WHERE event_sequence = $event_sequence";
+            string sql = "SELECT * FROM Waits WHERE row_id = $row_id";
 
             try
             {
@@ -352,17 +383,22 @@ namespace WorkloadTools.Listener.File
                     {
                         DataTable waits = null;
 
-                        using (SQLiteDataAdapter adapter = new SQLiteDataAdapter(sql, conn))
+                        using (SQLiteCommand command = new SQLiteCommand(sql, m_dbConnection))
                         {
-                            using (DataSet ds = new DataSet())
+                            command.Parameters.AddWithValue("$row_id", row_id);
+
+                            using (SQLiteDataAdapter adapter = new SQLiteDataAdapter(command))
                             {
-                                adapter.Fill(ds);
-                                waits = ds.Tables[0];
+                                using (DataSet ds = new DataSet())
+                                {
+                                    adapter.Fill(ds);
+                                    waits = ds.Tables[0];
+                                }
                             }
                         }
 
                         var results = from table1 in waits.AsEnumerable()
-                                      select new
+                              select new
                               {
                                   wait_type = Convert.ToString(table1["wait_type"]),
                                   wait_sec = Convert.ToDouble(table1["wait_sec"]),
@@ -376,7 +412,7 @@ namespace WorkloadTools.Listener.File
                     }
                     catch (Exception e)
                     {
-                        logger.Error(e, String.Format("Unable to query Waits for sequence {0}", event_sequence));
+                        logger.Error(e, $"Unable to query Waits for row_id {row_id}");
                         throw;
                     }
                 }

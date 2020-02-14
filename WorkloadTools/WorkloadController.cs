@@ -53,13 +53,10 @@ namespace WorkloadTools
                         var evt = Listener.Read();
                         if (evt == null)
                             continue;
-                        //Parallel.ForEach(Consumers, (cons) =>
-                        //{
-                        //  cons.Consume(evt);
-                        //});
-                        foreach (var cons in Consumers) { 
-                            cons.Consume(evt);
-                        }
+                        Parallel.ForEach(Consumers, (cons) =>
+                        {
+                          cons.Consume(evt);
+                        });
                     }
                     catch (Exception e)
                     {
