@@ -19,6 +19,7 @@ namespace WorkloadTools
         public WorkloadListener Listener { get; set; }
         public List<WorkloadConsumer> Consumers { get; set; } = new List<WorkloadConsumer>();
 
+        private bool forceStopped = false;
         private bool stopped = false;
         private bool disposed = false;
         private const int MAX_DISPOSE_TIMEOUT_SECONDS = 5;
@@ -45,7 +46,7 @@ namespace WorkloadTools
                     try
                     {
                         if ((!Listener.IsRunning) || (endTime < DateTime.Now))
-                            Stop();
+                            stopped = true;
 
                         if (endTime == DateTime.MaxValue && Listener.TimeoutMinutes != 0)
                             endTime = startTime.AddMinutes(Listener.TimeoutMinutes);
@@ -65,10 +66,15 @@ namespace WorkloadTools
                         logger.Error(e.StackTrace);
                     }
                 }
-                
-                // even when stopped, wait until all buffered consumers are finished
-                while(Consumers.Where(c => c is BufferedWorkloadConsumer).Any(c => c.HasMoreEvents())) {
-                    Thread.Sleep(10);
+
+                // even when the listener has finished, wait until all buffered consumers are finished
+                // unless the controller has been explicitly stopped by invoking Stop()
+                if (!forceStopped)
+                {
+                    while (Consumers.Where(c => c is BufferedWorkloadConsumer).Any(c => c.HasMoreEvents()))
+                    {
+                        Thread.Sleep(10);
+                    }
                 }
             }
             catch (Exception e)
@@ -89,6 +95,7 @@ namespace WorkloadTools
 
         public void Stop()
         {
+            forceStopped = true;
             stopped = true;
         }
 
