@@ -19,5 +19,6 @@ namespace WorkloadTools
         public long? CPU { get; set; }      // MICROSECONDS
         public long? Duration { get; set; } // MICROSECONDS
         public long? EventSequence { get; set; }
+        public int ReplaySleepMilliseconds { get; set; } = 0; // MILLISECONDS
     }
 }

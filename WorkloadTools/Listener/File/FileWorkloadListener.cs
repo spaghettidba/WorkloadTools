@@ -102,8 +102,8 @@ namespace WorkloadTools.Listener.File
         }
 
 
-        // returns 1 if there are events to replay 
-        // or -1 in case the file format is invalid
+        // returns the number of events to replay, if any
+        // returns -1 in case the file format is invalid
         private long ValidateFile()
         {
             string sql = "SELECT COUNT(*) FROM Events";
@@ -187,24 +187,37 @@ namespace WorkloadTools.Listener.File
                     }
                     result = ReadEvent(reader);
 
-                    if (SynchronizationMode)
+                    // Handle replay sleep for synchronization mode
+                    // The sleep cannot happen here, but it has to 
+                    // happen later in the replay workflow, because
+                    // it would only delay the insertion in the queue
+                    // and it would not separate the events during the replay
+                    if (result is ExecutionWorkloadEvent)
                     {
-                        if (previousDate != DateTime.MinValue)
+                        ExecutionWorkloadEvent execEvent = result as ExecutionWorkloadEvent;
+                        if (SynchronizationMode)
                         {
-                            msSleep = (result.StartTime - previousDate).TotalMilliseconds;
-                            if (msSleep > 0)
+                            DateTime lastEndTime = GetLastEventEndTime((int)execEvent.SPID);
+                            if (lastEndTime != DateTime.MinValue)
                             {
-                                if(msSleep > Int32.MaxValue)
+                                msSleep = (result.StartTime - lastEndTime).TotalMilliseconds;
+                                if (msSleep > 0)
                                 {
-                                    msSleep = Int32.MaxValue;
+                                    if (msSleep > Int32.MaxValue)
+                                    {
+                                        msSleep = Int32.MaxValue;
+                                    }
+                                    Thread.Sleep(Convert.ToInt32(msSleep));
                                 }
-                                Thread.Sleep(Convert.ToInt32(msSleep));
                             }
+
+                            SetLastEventEndTime((int)execEvent.SPID, execEvent.StartTime.AddMilliseconds((double)execEvent.Duration / 1000));
+                        }
+                        else
+                        {
+                            execEvent.ReplaySleepMilliseconds = 0;
                         }
                     }
-
-                    previousDate = result.StartTime;
-
                     // Filter events
                     if (result is ExecutionWorkloadEvent)
                     {
@@ -227,7 +240,7 @@ namespace WorkloadTools.Listener.File
                     eventDate = result.StartTime;
 
                 logger.Error(e);
-                logger.Error($"Unable to read next event. Current event date: {eventDate}  Last event date: {previousDate}  Requested sleep: {msSleep}");
+                logger.Error($"Unable to read next event. Current event date: {eventDate}");
                 throw;
             }
 

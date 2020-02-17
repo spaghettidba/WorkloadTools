@@ -66,7 +66,8 @@ namespace WorkloadTools.Consumer.Replay
             {
                 CommandText = evt.Text,
                 Database = evt.DatabaseName,
-                ApplicationName = evt.ApplicationName
+                ApplicationName = evt.ApplicationName,
+                BeforeSleepMilliseconds = evt.ReplaySleepMilliseconds
             };
 
             int session_id = -1;

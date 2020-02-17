@@ -242,6 +242,21 @@ namespace WorkloadTools.Consumer.Replay
                     conn.ChangeDatabase(command.Database);
                 }
 
+                // if the command comes with a replay sleep, do it now
+                // the amount of milliseconds to sleep is set in
+                // FileWorkloadListener
+                // The other listeners do not set this value, as they
+                // already come with the original timing
+                // 
+                // Don't remove the IF test: even Sleep(0) can end up
+                // sleeping for 10ms or more. Sleep guarantees that
+                // the current thread sleeps for AT LEAST the amount
+                // of milliseconds set.
+                if (command.BeforeSleepMilliseconds > 2)
+                {
+                    Thread.Sleep(command.BeforeSleepMilliseconds);
+                }
+
                 using (SqlCommand cmd = new SqlCommand(command.CommandText))
                 {
                     cmd.Connection = conn;
