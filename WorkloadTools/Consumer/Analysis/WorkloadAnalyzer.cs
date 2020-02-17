@@ -64,6 +64,16 @@ namespace WorkloadTools.Consumer.Analysis
 		}
 
 
+        public bool HasEventsQueued
+        {
+            get
+            {
+                return _internalQueue.Count > 0;
+            }
+        }
+        
+
+
         private void ProcessQueue()
         {
             DateTime lastDump = DateTime.Now;

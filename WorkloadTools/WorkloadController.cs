@@ -65,6 +65,11 @@ namespace WorkloadTools
                         logger.Error(e.StackTrace);
                     }
                 }
+                
+                // even when stopped, wait until all buffered consumers are finished
+                while(Consumers.Where(c => c is BufferedWorkloadConsumer).Any(c => c.HasMoreEvents())) {
+                    Thread.Sleep(10);
+                }
             }
             catch (Exception e)
             {

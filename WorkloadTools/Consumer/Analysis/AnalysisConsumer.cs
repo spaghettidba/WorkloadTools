@@ -36,6 +36,11 @@ namespace WorkloadTools.Consumer.Analysis
             analyzer.Add(evt);
         }
 
+        public override bool HasMoreEvents()
+        {
+            return analyzer.HasEventsQueued;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (analyzer != null)

@@ -9,6 +9,8 @@ namespace WorkloadTools.Consumer
     {
         public abstract void Consume(WorkloadEvent evt);
 
+        public abstract bool HasMoreEvents();
+
         public void Dispose()
         {
             Dispose(true);
@@ -16,5 +18,6 @@ namespace WorkloadTools.Consumer
         }
 
         protected virtual void Dispose(bool disposing) { }
+
     }
 }

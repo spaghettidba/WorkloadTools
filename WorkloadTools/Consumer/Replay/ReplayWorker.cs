@@ -30,9 +30,7 @@ namespace WorkloadTools.Consumer.Replay
         public bool StopOnError { get; set; } = false;
         public string Name { get; set; }
         public int SPID { get; set; }
-
-        private bool isRunning = false;
-        public bool IsRunning { get { return isRunning; } }
+        public bool IsRunning { get; private set; } = false;
 
         private Task runner = null;
         private CancellationTokenSource tokenSource;
@@ -42,6 +40,14 @@ namespace WorkloadTools.Consumer.Replay
             get
             {
                 return !Commands.IsEmpty;
+            }
+        }
+
+        public int QueueLength
+        {
+            get
+            {
+                return Commands.Count;
             }
         }
 
@@ -95,7 +101,7 @@ namespace WorkloadTools.Consumer.Replay
 
         public void Run()
         {
-            isRunning = true;
+            IsRunning = true;
             while (!stopped)
             {
                 try
@@ -125,7 +131,7 @@ namespace WorkloadTools.Consumer.Replay
                 logger.Trace($"Worker [{Name}] - Stopping");
 
             stopped = true;
-            isRunning = false;
+            IsRunning = false;
             if(tokenSource != null)
                 tokenSource.Cancel();
 

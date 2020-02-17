@@ -440,5 +440,10 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
             stopped = true;
         }
+
+        public override bool HasMoreEvents()
+        {
+            return cache.Count > 0;
+        }
     }
 }

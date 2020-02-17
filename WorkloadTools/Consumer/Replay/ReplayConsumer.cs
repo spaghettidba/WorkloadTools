@@ -14,6 +14,7 @@ namespace WorkloadTools.Consumer.Replay
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
+        private SpinWait spin = new SpinWait();
         public int ThreadLimit = 32;
         public int InactiveWorkerTerminationTimeoutSeconds = 15;
         private Semaphore WorkLimiter;
@@ -48,6 +49,7 @@ namespace WorkloadTools.Consumer.Replay
 
         public override void ConsumeBuffered(WorkloadEvent evnt)
         {
+
             if (!(evnt is ExecutionWorkloadEvent))
                 return;
 
@@ -76,6 +78,11 @@ namespace WorkloadTools.Consumer.Replay
             ReplayWorker rw = null;
             if (ReplayWorkers.TryGetValue(session_id, out rw))
             {
+                // Ensure that the buffer does not get too big
+                while (rw.QueueLength >= (BufferSize * .9))
+                {
+                    spin.SpinOnce();
+                }
                 rw.AppendCommand(command);
             }
             else
@@ -315,5 +322,9 @@ namespace WorkloadTools.Consumer.Replay
             logger.Trace("Worker thread stopped.");
         }
 
+        public override bool HasMoreEvents()
+        {
+            return ReplayWorkers.Count(t => t.Value.HasCommands) > 0;
+        }
     }
 }
