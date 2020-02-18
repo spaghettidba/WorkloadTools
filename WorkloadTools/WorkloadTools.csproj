@@ -227,6 +227,7 @@
     <Compile Include="BufferedEventQueue.cs" />
     <Compile Include="ErrorWorkloadEvent.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Listener\ReadIteration.cs" />
     <Compile Include="Listener\Trace\FileTraceEventDataReader.cs" />
     <Compile Include="Listener\Trace\TraceEventDataReader.cs" />
     <Compile Include="Listener\Trace\TraceUtils.cs" />

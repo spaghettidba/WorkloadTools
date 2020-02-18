@@ -14,138 +14,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 {
     public class FileTargetXEventDataReader : XEventDataReader 
     {
-        // This class is used internally to keep track
-        // of the files, offsets and event_sequences
-        private class ReadIteration
-        {
-            private static int _lastFileHash;
-            private static long _lastOffset;
-
-            private static Dictionary<string, SortedSet<long>> recordedOffsets = new Dictionary<string, SortedSet<long>>();
-
-            private static void AddOffset(string filename, long offset)
-            {
-                // perf optimization: most of the time the last 
-                // file/offset pair is passed over and over again
-                if (filename.GetHashCode() == _lastFileHash && offset == _lastOffset)
-                {
-                    return;
-                }
-
-                // new values? ok, let's add them
-                // one more check doesn't hurt though
-                SortedSet<long> offsets = null;
-                if(recordedOffsets.TryGetValue(filename, out offsets))
-                {
-                    if (!offsets.Contains(offset))
-                    {
-                        offsets.Add(offset);
-                    }
-                }
-                else
-                {
-                    offsets = new SortedSet<long>();
-                    offsets.Add(offset);
-                    recordedOffsets.Add(filename, offsets);
-                }
-
-                // let's keep track of the last inserted values
-                _lastFileHash = filename.GetHashCode();
-                _lastOffset = offset;
-            }
-
-            public static long GetLastOffset(string filename)
-            {
-                long result = -1;
-                SortedSet<long> offsets = null;
-                if (recordedOffsets.TryGetValue(filename, out offsets))
-                {
-                    result = offsets.Max();
-                }
-                return result;
-            }
-
-            public static long GetSecondLastOffset(string filename)
-            {
-                long result = -1;
-                SortedSet<long> offsets = null;
-                if (recordedOffsets.TryGetValue(filename, out offsets))
-                {
-                    if(offsets.Count >= 2)
-                    {
-                        result = offsets.ElementAt(offsets.Count - 2);
-                    }
-                }
-                return result;
-            }
-
-            public string StartFileName { get; set; }
-            public string EndFileName { get; set; }
-            public long MinOffset { get; set; }
-            public long StartOffset { get; set; }
-            private long _endOffset = -1;
-            public long EndOffset {
-                get
-                {
-                    return _endOffset;
-                }
-                set
-                {
-                    // add current offset
-                    AddOffset(EndFileName, value);
-
-                    // set new value
-                    _endOffset = value;
-                }
-            }
-            public long StartSequence { get; set; }
-            public long EndSequence { get; set; }
-            public long RowsRead { get; set; }
-            
-
-
-            // try to identify the root part of the rollover file name
-            // the root is the part of the name before the numeric suffix
-            // EG: mySessionName1234.xel => root = mySessionName
-            public string GetFilePattern() {
-                string filePattern = "";
-                for (int j = StartFileName.Length - 4; j > 1 && StartFileName.Substring(j - 1, 1).All(char.IsDigit); j--)
-                {
-                    filePattern = StartFileName.Substring(0, j - 1);
-                }
-                filePattern += "*.xel";
-                return filePattern;
-            }
-
-
-            // Initial offset to be used as a parameter to the fn_xe_file_target_read_file function
-            public long GetInitialOffset()
-            {
-                long result = -1;
-                if (MinOffset > result)
-                    result = MinOffset;
-                if (StartOffset > result)
-                    result = StartOffset;
-                if (EndOffset > result)
-                    result = EndOffset;
-                return result;
-            }
-
-            public long GetInitialSequence()
-            {
-                long result = -1;
-                if (StartSequence > result)
-                    result = StartSequence;
-                if (EndSequence > result)
-                    result = EndSequence;
-                return result;
-            }
-        }
-
         private RingBuffer<ReadIteration> ReadIterations = new RingBuffer<ReadIteration>(10);
-
-        private static int DEFAULT_TRACE_INTERVAL_SECONDS = 10;
-        private static int DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD = 5000;
 
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -218,7 +87,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 cmd.CommandText = sqlXE;
 
                 var paramPath = cmd.Parameters.Add("@filename", System.Data.SqlDbType.NVarChar, 260);
-                paramPath.Value = currentIteration.GetFilePattern();
+                paramPath.Value = currentIteration.GetXEFilePattern();
 
                 var paramInitialFile = cmd.Parameters.Add("@initial_file_name", System.Data.SqlDbType.NVarChar, 260);
                 paramInitialFile.Value = currentIteration.StartFileName;
@@ -333,8 +202,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 }
 
                 // Wait before querying the events file again
-                if (currentIteration.RowsRead < DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD)
-                    Thread.Sleep(DEFAULT_TRACE_INTERVAL_SECONDS * 1000);
+                if (currentIteration.RowsRead < ReadIteration.DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD)
+                    Thread.Sleep(ReadIteration.DEFAULT_TRACE_INTERVAL_SECONDS * 1000);
 
             }
 

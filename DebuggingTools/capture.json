@@ -3,7 +3,7 @@
 
         "Listener":
         {
-            "__type": "ExtendedEventsWorkloadListener",
+            "__type": "SqlTraceWorkloadListener",
             "ConnectionInfo":
             {
                 "ServerName": "localhost"

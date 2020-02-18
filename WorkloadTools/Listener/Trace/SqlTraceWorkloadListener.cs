@@ -18,24 +18,6 @@ namespace WorkloadTools.Listener.Trace
     {
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static string DEFAULT_LOG_SQL = @"
-            DECLARE @defaultLog nvarchar(4000);
-
-            EXEC master.dbo.xp_instance_regread
-	            N'HKEY_LOCAL_MACHINE',
-	            N'Software\Microsoft\MSSQLServer\MSSQLServer',
-	            N'DefaultLog',
-	            @defaultLog OUTPUT;
-
-            IF @defaultLog IS NULL
-            BEGIN
-	            SELECT @defaultLog = REPLACE(physical_name,'mastlog.ldf','') 
-	            FROM sys.master_files
-	            WHERE name = 'mastlog';
-            END
-
-            SELECT @defaultLog AS DefaultLog;
-        ";
 
         public enum StreamSourceEnum
         {
@@ -85,7 +67,7 @@ namespace WorkloadTools.Listener.Trace
                     filters += Environment.NewLine + Filter.HostFilter.PushDown();
                     filters += Environment.NewLine + Filter.LoginFilter.PushDown();
 
-                    tracePath = GetSqlDefaultLogPath(conn);
+                    tracePath = utils.GetSqlDefaultLogPath(conn);
                     traceSql = String.Format(traceSql, TraceSizeMB, TraceRolloverCount, Path.Combine(tracePath  ,"sqlworkload"), filters);
                 }
                 catch (Exception e)
@@ -115,17 +97,6 @@ namespace WorkloadTools.Listener.Trace
 
                 // Initialize the source of wait stats events
                 Task.Factory.StartNew(() => ReadWaitStatsEvents());
-            }
-        }
-
-        
-
-        private string GetSqlDefaultLogPath(SqlConnection conn)
-        {
-            using (SqlCommand cmd = conn.CreateCommand())
-            {
-                cmd.CommandText = DEFAULT_LOG_SQL;
-                return (string)cmd.ExecuteScalar();
             }
         }
 
