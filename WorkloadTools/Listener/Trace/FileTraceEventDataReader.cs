@@ -121,7 +121,8 @@ namespace WorkloadTools.Listener.Trace
                         {
                             currentIteration = new ReadIteration()
                             {
-                                StartFileName = reader.GetString(0)
+                                StartFileName = reader.GetString(0),
+                                Files = 1
                             };
                             currentIteration.EndFileName = currentIteration.StartFileName;
                             if (previous != null)
@@ -307,7 +308,8 @@ namespace WorkloadTools.Listener.Trace
                 }
 
                 // Wait before querying the events file again
-                if (currentIteration.RowsRead < ReadIteration.DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD)
+                if (currentIteration.RowsRead < ReadIteration.DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD 
+                    && currentIteration.StartFileName == currentIteration.EndFileName)
                     Thread.Sleep(ReadIteration.DEFAULT_TRACE_INTERVAL_SECONDS * 1000);
 
             }
@@ -365,6 +367,7 @@ namespace WorkloadTools.Listener.Trace
                 evt.Writes = (long?)reader["Writes"];
                 evt.CPU = (long?)Convert.ToInt64(reader["CPU"]) * 1000; // SqlTrace captures CPU as milliseconds => convert to microseconds
                 evt.Duration = (long?)reader["Duration"];
+                evt.EventSequence = (long?)reader["EventSequence"];
             }
 
             return evt;

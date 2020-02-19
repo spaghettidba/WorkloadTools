@@ -11,8 +11,8 @@ namespace WorkloadTools.Listener
     // when reading events from extended events or trace files
     internal class ReadIteration
     {
-        public const int DEFAULT_TRACE_INTERVAL_SECONDS = 10;
-        public const int DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD = 5000;
+        public const int DEFAULT_TRACE_INTERVAL_SECONDS = 5;
+        public const int DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD = 500;
         public const long TRACE_DEFAULT_OFFSET = 500;
 
         #region staticStuff

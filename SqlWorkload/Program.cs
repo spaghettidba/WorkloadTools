@@ -72,6 +72,19 @@ namespace SqlWorkload
                         pathToLog = Path.Combine(Environment.CurrentDirectory, pathToLog);
                     }
                     target.FileName = pathToLog;
+
+                    if(options.LogLevel != null)
+                    {
+                        foreach(var rule in LogManager.Configuration.LoggingRules)
+                        {
+                            foreach (var level in LogLevel.AllLoggingLevels)
+                            {
+                                rule.DisableLoggingForLevel(level);
+                            }
+                            rule.EnableLoggingForLevels(LogLevel.FromString(options.LogLevel),LogLevel.Fatal);
+                        }
+                    }
+
                     LogManager.ReconfigExistingLoggers();
                 }
             }
@@ -140,6 +153,9 @@ namespace SqlWorkload
 
         [Option('L', "Log", HelpText = "Log file")]
         public string LogFile { get; set; }
+
+        [Option('E', "LogLevel", HelpText = "Log level")]
+        public string LogLevel { get; set; }
 
         [ParserState]
         public IParserState LastParserState { get; set; }
