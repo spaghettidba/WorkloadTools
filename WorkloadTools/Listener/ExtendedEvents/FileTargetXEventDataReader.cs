@@ -87,7 +87,17 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 cmd.CommandText = sqlXE;
 
                 var paramPath = cmd.Parameters.Add("@filename", System.Data.SqlDbType.NVarChar, 260);
-                paramPath.Value = currentIteration.GetXEFilePattern();
+                if (ServerType == ExtendedEventsWorkloadListener.ServerType.FullInstance)
+                {
+                    paramPath.Value = currentIteration.GetXEFilePattern();
+                }
+                else
+                {
+                    // Azure SqlDatabase does not support wildcards in file names
+                    // Specify an exact file name
+                    paramPath.Value = currentIteration.StartFileName;
+                } 
+
 
                 var paramInitialFile = cmd.Parameters.Add("@initial_file_name", System.Data.SqlDbType.NVarChar, 260);
                 paramInitialFile.Value = currentIteration.StartFileName;
@@ -109,6 +119,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     paramInitialOffset.Value = DBNull.Value;
                 }
 
+                retryWithNULLS:
+
                 logger.Debug($"paramPath         : {paramPath.Value}");
                 logger.Debug($"paramInitialFile  : {paramInitialFile.Value}");
                 logger.Debug($"paramInitialOffset: {paramInitialOffset.Value}");
@@ -121,9 +133,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                     SqlTransformer transformer = new SqlTransformer();
 
-                    try
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        try
                         {
                             int skippedRows = 0;
                             while (reader.Read())
@@ -161,7 +173,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                                 // this is only to print out a message, so consider
                                 // getting rid of it
-                                if(skippedRows > 0)
+                                if (skippedRows > 0)
                                 {
                                     logger.Debug($"Skipped rows: {skippedRows}");
                                     skippedRows = 0;
@@ -192,12 +204,24 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                             }
                             logger.Debug($"currentIteration.EndSequence : {currentIteration.EndSequence}");
+
+
+                        }
+                        catch (Exception xx)
+                        {
+                            if (xx.Message.Contains("Specify an offset that exists in the log file"))
+                            {
+                                // retry the query without specifying the offset / file pair
+                                paramInitialFile.Value = DBNull.Value;
+                                paramInitialOffset.Value = DBNull.Value;
+                                goto retryWithNULLS;
+                            }
+                            else
+                            {
+                                throw;
+                            }
                         }
 
-                    }
-                    catch (Exception)
-                    {
-                        throw;
                     }
                 }
 
@@ -216,8 +240,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 SELECT file_name, ISNULL(file_offset,-1) AS file_offset
                 FROM (
                     SELECT CAST(target_data AS xml).value('(/EventFileTarget/File/@name)[1]','nvarchar(1000)') AS file_name
-                    FROM sys.dm_xe_session_targets AS t
-                    INNER JOIN sys.dm_xe_sessions AS s
+                    FROM sys.dm_xe_{0}session_targets AS t
+                    INNER JOIN sys.dm_xe_{0}sessions AS s
                         ON t.event_session_address = s.address
                     WHERE s.name = @sessionName
                         AND target_name = 'event_file'

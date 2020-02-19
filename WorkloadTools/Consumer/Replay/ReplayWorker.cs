@@ -206,10 +206,7 @@ namespace WorkloadTools.Consumer.Replay
 
             if (conn == null || (conn.State == System.Data.ConnectionState.Closed) || (conn.State == System.Data.ConnectionState.Broken))
             {
-                if(conn == null)
-                {
-                    InitializeConnection();
-                }
+                InitializeConnection();
             }
 
 
