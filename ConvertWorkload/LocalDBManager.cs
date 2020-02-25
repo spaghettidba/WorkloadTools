@@ -47,7 +47,7 @@ namespace ConvertWorkload
             Process p = new Process();
             p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
             p.StartInfo.FileName = "c:\\windows\\system32\\msiexec.exe";
-            p.StartInfo.Arguments = " /i "+ localFileName +" /qn IACCEPTSQLLOCALDBLICENSETERMS = YES";
+            p.StartInfo.Arguments = " /i "+ localFileName +" /qn IACCEPTSQLLOCALDBLICENSETERMS=YES";
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
@@ -73,7 +73,7 @@ namespace ConvertWorkload
                 }
                 return true;
             }
-            catch(Exception e)
+            catch(Exception)
             {
                 return false;
             }

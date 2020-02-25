@@ -72,6 +72,23 @@ namespace ConvertWorkload
                 }
             }
 
+            // check whether localdb is installed
+            logger.Info("Checking LocalDB...");
+            LocalDBManager manager = new LocalDBManager();
+            if (!manager.CanConnectToLocalDB())
+            {
+                logger.Info("Installing LocalDB...");
+                try
+                {
+                    manager.InstallLocalDB();
+                }
+                catch (InvalidOperationException)
+                {
+                    logger.Error("This operation requires elevation. Restart the application as an administrator.");
+                    return;
+                }
+            }
+
             EventReader reader = null;
             if (options.InputFile.EndsWith(".trc"))
             {
@@ -83,10 +100,14 @@ namespace ConvertWorkload
             }
             EventWriter writer = new WorkloadFileEventWriter(options.OutputFile);
             WorkloadConverter converter = new WorkloadConverter(reader, writer);
-            converter.ApplicationFilter = new string[1] { options.ApplicationFilter };
-            converter.DatabaseFilter = new string[1] { options.DatabaseFilter };
-            converter.HostFilter = new string[1] { options.HostFilter };
-            converter.LoginFilter = new string[1] { options.LoginFilter };
+            if(options.ApplicationFilter != null)
+                converter.ApplicationFilter = new string[1] { options.ApplicationFilter };
+            if(options.DatabaseFilter != null)
+                converter.DatabaseFilter = new string[1] { options.DatabaseFilter };
+            if(options.HostFilter != null)
+                converter.HostFilter = new string[1] { options.HostFilter };
+            if(options.LoginFilter != null)
+                converter.LoginFilter = new string[1] { options.LoginFilter };
 
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
                 e.Cancel = true;

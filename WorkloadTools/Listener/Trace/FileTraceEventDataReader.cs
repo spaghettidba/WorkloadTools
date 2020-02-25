@@ -16,13 +16,6 @@ namespace WorkloadTools.Listener.Trace
 
         private RingBuffer<ReadIteration> ReadIterations = new RingBuffer<ReadIteration>(10);
 
-        public enum EventClassEnum : int
-        {
-            RPC_Completed = 10,
-            SQL_BatchCompleted = 12,
-            Timeout = 82
-        }
-
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private int TraceRowsSleepThreshold { get; set; } = 5000;
@@ -32,6 +25,7 @@ namespace WorkloadTools.Listener.Trace
         private int traceId = -1;
 
         private TraceUtils utils;
+
 
         public FileTraceEventDataReader(string connectionString, WorkloadEventFilter filter, IEventQueue events) : base(connectionString, filter, events)
         {
@@ -89,26 +83,47 @@ namespace WorkloadTools.Listener.Trace
             string sqlPath = @"
                 SELECT path
                 FROM sys.traces
-                WHERE id = @traceId;
+                WHERE id = @traceId
             ";
 
+            string sqlPathLocaldb = @"
+                IF OBJECT_ID('tempdb.dbo.trace_reader_queue') IS NOT NULL
+                BEGIN
+                    SELECT TOP(1) path
+                    FROM tempdb.dbo.trace_reader_queue
+                    ORDER BY ts DESC
+                END
+                ELSE
+                BEGIN
+                    SELECT '' AS path
+                END
+            ";
+            
             ReadIteration currentIteration = null;
             using (SqlCommand cmdPath = conn.CreateCommand())
             {
-                cmdPath.CommandText = sqlPath;
-
-                // Get trace id
-                if (traceId == -1)
+                if (conn.DataSource.StartsWith("(localdb)", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    string tracePath = utils.GetSqlDefaultLogPath(conn);
-                    traceId = utils.GetTraceId(conn, Path.Combine(tracePath, "sqlworkload"));
+                    cmdPath.CommandText = sqlPathLocaldb;
+                }
+                else
+                {
+                    cmdPath.CommandText = sqlPath;
+
+                    // Get trace id
                     if (traceId == -1)
                     {
-                        throw new InvalidOperationException("The SqlWorkload capture trace is not running.");
+                        string tracePath = utils.GetSqlDefaultLogPath(conn);
+                        traceId = utils.GetTraceId(conn, Path.Combine(tracePath, "sqlworkload"));
+                        if (traceId == -1)
+                        {
+                            throw new InvalidOperationException("The SqlWorkload capture trace is not running.");
+                        }
                     }
-                }
-                var paramTraceId = cmdPath.Parameters.Add("@traceId", System.Data.SqlDbType.Int);
-                paramTraceId.Value = traceId;
+                    var paramTraceId = cmdPath.Parameters.Add("@traceId", System.Data.SqlDbType.Int);
+                    paramTraceId.Value = traceId;
+                }   
+
 
                 try
                 {
@@ -194,6 +209,8 @@ namespace WorkloadTools.Listener.Trace
 
             logger.Debug("Reading Trace data...");
 
+            TraceEventParser parser = new TraceEventParser();
+
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandText = sqlReadTrace;
@@ -239,7 +256,7 @@ namespace WorkloadTools.Listener.Trace
                                 currentIteration.EndSequence = (long)reader["EventSequence"];
 
                             // read the event from the sqldatareader
-                            var evt = parseEvent(reader);
+                            var evt = parser.ParseEvent(reader);
 
                             // skip invalid events
                             if (evt.Type == WorkloadEvent.EventType.Unknown)
@@ -316,78 +333,10 @@ namespace WorkloadTools.Listener.Trace
 
         }
 
-        private ExecutionWorkloadEvent parseEvent(SqlDataReader reader)
-        {
-            ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
-
-            int eventClass = (int)reader["EventClass"];
-
-
-            if (eventClass == (int)EventClassEnum.RPC_Completed)
-                evt.Type = WorkloadEvent.EventType.RPCCompleted;
-            else if (eventClass == (int)EventClassEnum.SQL_BatchCompleted)
-                evt.Type = WorkloadEvent.EventType.BatchCompleted;
-            else if (eventClass == (int)EventClassEnum.Timeout)
-            {
-                if (reader["TextData"].ToString().StartsWith("WorkloadTools.Timeout["))
-                    evt.Type = WorkloadEvent.EventType.Timeout;
-            }
-            else
-            {
-                evt.Type = WorkloadEvent.EventType.Unknown;
-                return evt;
-            }
-            if (reader["ApplicationName"] != DBNull.Value)
-                evt.ApplicationName = (string)reader["ApplicationName"];
-            if (reader["DatabaseName"] != DBNull.Value)
-                evt.DatabaseName = (string)reader["DatabaseName"];
-            if (reader["HostName"] != DBNull.Value)
-                evt.HostName = (string)reader["HostName"];
-            if (reader["LoginName"] != DBNull.Value)
-                evt.LoginName = (string)reader["LoginName"];
-            evt.SPID = (int?)reader["SPID"];
-            if (reader["TextData"] != DBNull.Value)
-                evt.Text = (string)reader["TextData"];
-
-            evt.StartTime = (DateTime)reader["StartTime"];
-
-            if (evt.Type == WorkloadEvent.EventType.Timeout)
-            {
-                if (reader["BinaryData"] != DBNull.Value)
-                {
-                    byte[] bytes = (byte[])reader["BinaryData"];
-                    evt.Text = Encoding.Unicode.GetString(bytes);
-                }
-                evt.Duration = ExtractTimeoutDuration(reader["TextData"]);
-                evt.CPU = Convert.ToInt64(evt.Duration);
-            }
-            else
-            {
-                evt.Reads = (long?)reader["Reads"];
-                evt.Writes = (long?)reader["Writes"];
-                evt.CPU = (long?)Convert.ToInt64(reader["CPU"]) * 1000; // SqlTrace captures CPU as milliseconds => convert to microseconds
-                evt.Duration = (long?)reader["Duration"];
-                evt.EventSequence = (long?)reader["EventSequence"];
-            }
-
-            return evt;
-        }
-
         public override void Stop()
         {
             stopped = true;
         }
 
-        private long? ExtractTimeoutDuration(object textData)
-        {
-            long result = 30;
-            if (textData != DBNull.Value)
-            {
-                string description = (string)textData;
-                string durationAsString = new String(description.Where(Char.IsDigit).ToArray());
-                result = Convert.ToInt64(durationAsString);
-            }
-            return result * 1000 * 1000;
-        }
     }
 }

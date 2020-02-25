@@ -32,10 +32,6 @@ namespace ConvertWorkload
         {
             try
             {
-                reader.ApplicationFilter = new string[1] { "" };
-                reader.DatabaseFilter = new string[1] { "" };
-                reader.HostFilter = new string[1] { "" };
-                reader.LoginFilter = new string[1] { "" };
                 if (ApplicationFilter != null) reader.ApplicationFilter = ApplicationFilter;
                 if (DatabaseFilter != null) reader.DatabaseFilter = DatabaseFilter;
                 if (HostFilter != null) reader.HostFilter = HostFilter;

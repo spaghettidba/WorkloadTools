@@ -1,6 +1,7 @@
 ﻿using NLog;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,8 @@ namespace ConvertWorkload
         private bool started = false;
         private bool finished = false;
 
+        private FileTraceEventDataReader reader;
+
         public SqlTraceEventReader(string path)
         {
             Events = new BinarySerializedBufferedEventQueue();
@@ -33,117 +36,42 @@ namespace ConvertWorkload
         {
             try
             {
-                // get first trace rollover file
-                var parentDir = Directory.GetParent(tracePath);
-                var fileName = Path.GetFileNameWithoutExtension(tracePath) + "*" + Path.GetExtension(tracePath);
+                SqlConnectionInfo info = new SqlConnectionInfo();
+                info.ServerName = "(localdb)\\MSSQLLocalDB";
 
-                List<string> files = Directory.GetFiles(parentDir.FullName, fileName).ToList();
-                files.Sort();
-
-                SqlTransformer transformer = new SqlTransformer();
-                int rowsRead = 0;
-
-                foreach (string traceFile in files)
+                string sqlCreateTable = @"
+                    IF OBJECT_ID('tempdb.dbo.trace_reader_queue') IS NULL
+                    BEGIN
+                        CREATE TABLE tempdb.dbo.trace_reader_queue (
+                            ts datetime DEFAULT GETDATE(),
+                            path nvarchar(4000)
+                        )
+                    END
+                    TRUNCATE TABLE tempdb.dbo.trace_reader_queue;
+                    INSERT INTO tempdb.dbo.trace_reader_queue (path) VALUES(@path);
+                ";
+                
+                using(SqlConnection conn = new SqlConnection())
                 {
-
-                    using (TraceFileWrapper reader = new TraceFileWrapper())
+                    conn.ConnectionString = info.ConnectionString;
+                    conn.Open();
+                    using(SqlCommand cmd = conn.CreateCommand())
                     {
-                        reader.InitializeAsReader(traceFile);
-
-                        Dictionary<string, string> ColumnNames = null;
-
-                        while (reader.Read() && !stopped)
+                        cmd.CommandText = sqlCreateTable;
+                        SqlParameter prm = new SqlParameter()
                         {
-                            try
-                            {
-                                if(ColumnNames == null)
-                                {
-                                    ColumnNames = new Dictionary<string, string>();
+                            ParameterName = "@path",
+                            DbType = System.Data.DbType.String,
+                            Size = 4000,
+                            Value = tracePath
+                        };
+                        cmd.Parameters.Add(prm);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
 
-                                    string[] colNames = {
-                                        "EventClass",
-                                        "ApplicationName",
-                                        "HostName",
-                                        "LoginName",
-                                        "SPID",
-                                        "TextData",
-                                        "StartTime",
-                                        "Reads",
-                                        "Writes",
-                                        "CPU",
-                                        "Duration"
-                                    };
-
-                                    foreach(var s in colNames)
-                                    {
-                                        if (reader.HasAttribute(s)) ColumnNames.Add(s, s);
-                                    }
-                                    
-                                }
-
-
-                                ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
-
-                                if (reader.GetValue("EventClass").ToString() == "RPC:Completed")
-                                    evt.Type = WorkloadEvent.EventType.RPCCompleted;
-                                else if (reader.GetValue("EventClass").ToString() == "SQL:BatchCompleted")
-                                    evt.Type = WorkloadEvent.EventType.BatchCompleted;
-                                else
-                                {
-                                    evt.Type = WorkloadEvent.EventType.Unknown;
-                                    continue;
-                                }
-
-                                if(ColumnNames.ContainsKey("ApplicationName"))
-                                    evt.ApplicationName = (string)reader.GetValue("ApplicationName");
-                                if (ColumnNames.ContainsKey("DatabaseName"))
-                                    evt.DatabaseName = (string)reader.GetValue("DatabaseName");
-                                if (ColumnNames.ContainsKey("HostName"))
-                                    evt.HostName = (string)reader.GetValue("HostName");
-                                if (ColumnNames.ContainsKey("LoginName"))
-                                    evt.LoginName = (string)reader.GetValue("LoginName");
-                                if (ColumnNames.ContainsKey("SPID"))
-                                    evt.SPID = (int?)reader.GetValue("SPID");
-                                if (ColumnNames.ContainsKey("TextData"))
-                                    evt.Text = (string)reader.GetValue("TextData");
-                                if (ColumnNames.ContainsKey("StartTime"))
-                                    evt.StartTime = (DateTime)reader.GetValue("StartTime");
-
-                                if (ColumnNames.ContainsKey("Reads"))
-                                    evt.Reads = (long?)reader.GetValue("Reads");
-                                if (ColumnNames.ContainsKey("Writes"))
-                                    evt.Writes = (long?)reader.GetValue("Writes");
-                                if (ColumnNames.ContainsKey("CPU"))
-                                    evt.CPU = (long?)Convert.ToInt64(reader.GetValue("CPU")) * 1000; // SqlTrace captures CPU as milliseconds => convert to microseconds
-                                if (ColumnNames.ContainsKey("Duration"))
-                                    evt.Duration = (long?)reader.GetValue("Duration");
-
-                                if (transformer.Skip(evt.Text))
-                                    continue;
-
-                                if (!Filter.Evaluate(evt))
-                                    continue;
-
-                                evt.Text = transformer.Transform(evt.Text);
-
-                                Events.Enqueue(evt);
-
-                                rowsRead++;
-                            }
-                            catch (Exception ex)
-                            {
-                                logger.Error(ex.Message);
-
-                                if (ex.InnerException != null)
-                                    logger.Error(ex.InnerException.Message);
-                            }
-
-
-                        } // while (Read)
-
-                    } // using reader
-                     
-                } // foreach file
+                reader = new FileTraceEventDataReader(info.ConnectionString, Filter, Events);
+                reader.ReadEvents();
                 finished = true;
             }
             catch (Exception ex)
@@ -182,6 +110,8 @@ namespace ConvertWorkload
             if (!stopped)
             {
                 stopped = true;
+                reader.Stop();
+                reader.Dispose();
             }
         }
 
