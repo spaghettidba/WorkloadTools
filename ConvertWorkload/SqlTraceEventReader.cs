@@ -97,7 +97,7 @@ namespace ConvertWorkload
             WorkloadEvent result = null;
             while (!Events.TryDequeue(out result))
             {
-                if (stopped)
+                if (stopped || finished)
                     return null;
 
                 Thread.Sleep(5);

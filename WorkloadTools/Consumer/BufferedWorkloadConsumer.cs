@@ -20,6 +20,9 @@ namespace WorkloadTools.Consumer
 
         public override sealed void Consume(WorkloadEvent evt)
         {
+            if (evt == null)
+                return;
+
             // Ensure that the buffer does not get too big
             while (Buffer.Count >= BufferSize)
             {

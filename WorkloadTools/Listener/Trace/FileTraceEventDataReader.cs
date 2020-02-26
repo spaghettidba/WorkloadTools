@@ -57,7 +57,8 @@ namespace WorkloadTools.Listener.Trace
                         }
                         else
                         {
-                            throw new InvalidOperationException("The current iteration is null, which is not allowed.");
+                            Stop();
+                            break;
                         }
 
                         ReadTraceData(conn, currentIteration);
@@ -160,6 +161,19 @@ namespace WorkloadTools.Listener.Trace
                                 // the offset can be used to go back and read events
                                 // from the previous sequence minus a safety offset
                                 currentIteration.StartOffset = previous.EndSequence - ReadIteration.TRACE_DEFAULT_OFFSET;
+
+                                // if reading from localdb we don't need to wait for more data
+                                if (conn.DataSource.StartsWith("(localdb)", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    if (
+                                        (currentIteration.StartFileName == previous.StartFileName) && 
+                                        (currentIteration.StartSequence == previous.StartSequence)
+                                    )
+                                    {
+                                        return null;
+                                    }
+                                }
+
                             }
 
                             logger.Debug($"currentIteration.StartFileName: {currentIteration.StartFileName}");
@@ -336,6 +350,12 @@ namespace WorkloadTools.Listener.Trace
         public override void Stop()
         {
             stopped = true;
+        }
+
+
+        public bool IsStopped
+        {
+            get { return stopped; }
         }
 
     }
