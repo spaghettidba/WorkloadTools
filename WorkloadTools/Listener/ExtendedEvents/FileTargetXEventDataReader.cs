@@ -53,8 +53,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                         ReadXEData(conn, currentIteration);
 
+                        // if reading from localdb one iteration is enough
+                        if (ServerType == ExtendedEventsWorkloadListener.ServerType.LocalDB)
+                        {
+                            break;
+                        }
+
                     }
                 }
+                logger.Info($"{EventCount} events captured.");
             }
             catch (Exception ex)
             {
@@ -88,7 +95,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 cmd.CommandText = sqlXE;
 
                 var paramPath = cmd.Parameters.Add("@filename", System.Data.SqlDbType.NVarChar, 260);
-                if (ServerType == ExtendedEventsWorkloadListener.ServerType.FullInstance)
+                if (ServerType != ExtendedEventsWorkloadListener.ServerType.AzureSqlDatabase)
                 {
                     paramPath.Value = currentIteration.GetXEFilePattern();
                 }
@@ -115,7 +122,10 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     || currentIteration.StartOffset == currentIteration.MinOffset
                 )
                 {
-                    paramPath.Value = currentIteration.StartFileName;
+                    if (ServerType != ExtendedEventsWorkloadListener.ServerType.LocalDB)
+                    {
+                        paramPath.Value = currentIteration.StartFileName;
+                    }
                     paramInitialFile.Value = DBNull.Value;
                     paramInitialOffset.Value = DBNull.Value;
                 }
@@ -256,13 +266,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
             string sqlPathLocaldb = @"
                 IF OBJECT_ID('tempdb.dbo.trace_reader_queue') IS NOT NULL
                 BEGIN
-                    SELECT TOP(1) path, -1 AS file_offset
+                    SELECT TOP(1) path, CAST(1 AS bigint) AS file_offset
                     FROM tempdb.dbo.trace_reader_queue
                     ORDER BY ts DESC
                 END
                 ELSE
                 BEGIN
-                    SELECT '' AS path, -1 AS file_offset
+                    SELECT '' AS path, CAST(-1 AS bigint) AS file_offset
                 END
             ";
 

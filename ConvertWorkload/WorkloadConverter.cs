@@ -37,7 +37,7 @@ namespace ConvertWorkload
                 if (HostFilter != null) reader.HostFilter = HostFilter;
                 if (LoginFilter != null) reader.LoginFilter = LoginFilter;
 
-                while (!reader.HasFinished() && !stopped)
+                while ((!reader.HasFinished() || reader.HasMoreElements()) && !stopped)
                 {
                     writer.Write(reader.Read());
                 }
@@ -46,6 +46,10 @@ namespace ConvertWorkload
             {
                 stopped = true;
                 logger.Error(ex);
+            }
+            finally
+            {
+                Stop();
             }
         }
 

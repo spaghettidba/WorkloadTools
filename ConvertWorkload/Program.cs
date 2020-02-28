@@ -94,9 +94,9 @@ namespace ConvertWorkload
             {
                 reader = new SqlTraceEventReader(options.InputFile);
             }
-            else if (options.InputFile.EndsWith(".evt"))
+            else 
             {
-                // TODO: implement extended events reader
+                reader = new ExtendedEventsEventReader(options.InputFile);
             }
             EventWriter writer = new WorkloadFileEventWriter(options.OutputFile);
             WorkloadConverter converter = new WorkloadConverter(reader, writer);
