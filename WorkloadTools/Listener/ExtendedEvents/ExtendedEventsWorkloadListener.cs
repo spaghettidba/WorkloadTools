@@ -24,7 +24,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
         public enum ServerType
         {
             FullInstance,
-            AzureSqlDatabase
+            AzureSqlDatabase,
+            LocalDB
         }
 
         private ServerType serverType { get; set; }

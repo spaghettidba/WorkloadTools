@@ -12,7 +12,7 @@ using WorkloadTools.Util;
 
 namespace WorkloadTools.Listener.ExtendedEvents
 {
-    public class FileTargetXEventDataReader : XEventDataReader 
+    public class FileTargetXEventDataReader : XEventDataReader, IDisposable
     {
         private RingBuffer<ReadIteration> ReadIterations = new RingBuffer<ReadIteration>(10);
 
@@ -47,7 +47,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         }
                         else
                         {
-                            throw new InvalidOperationException("The current iteration is null, which is not allowed.");
+                            Stop();
+                            break;
                         }
 
                         ReadXEData(conn, currentIteration);
@@ -252,13 +253,33 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 ) AS fileOffset;
             ";
 
+            string sqlPathLocaldb = @"
+                IF OBJECT_ID('tempdb.dbo.trace_reader_queue') IS NOT NULL
+                BEGIN
+                    SELECT TOP(1) path, -1 AS file_offset
+                    FROM tempdb.dbo.trace_reader_queue
+                    ORDER BY ts DESC
+                END
+                ELSE
+                BEGIN
+                    SELECT '' AS path, -1 AS file_offset
+                END
+            ";
+
             string databaseSuffix = ServerType == ExtendedEventsWorkloadListener.ServerType.AzureSqlDatabase ? "database_" : "";
             ReadIteration currentIteration = null;
             using (SqlCommand cmdPath = conn.CreateCommand())
             {
-                cmdPath.CommandText = String.Format(sqlPath, databaseSuffix);
-                var paramSessionName = cmdPath.Parameters.Add("@sessionName", System.Data.SqlDbType.NVarChar, 260);
-                paramSessionName.Value = SessionName;
+                if (ServerType == ExtendedEventsWorkloadListener.ServerType.LocalDB)
+                {
+                    cmdPath.CommandText = sqlPathLocaldb;
+                }
+                else
+                {
+                    cmdPath.CommandText = String.Format(sqlPath, databaseSuffix);
+                    var paramSessionName = cmdPath.Parameters.Add("@sessionName", System.Data.SqlDbType.NVarChar, 260);
+                    paramSessionName.Value = SessionName;
+                }
 
                 try
                 {
@@ -290,6 +311,18 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                 // we need to start reading events again
                                 currentIteration.StartSequence = previous.EndSequence;
                                 currentIteration.EndSequence = previous.EndSequence;
+
+                                // if reading from localdb we don't need to wait for more data
+                                if (ServerType == ExtendedEventsWorkloadListener.ServerType.LocalDB)
+                                {
+                                    if (
+                                        (currentIteration.StartFileName == previous.StartFileName) &&
+                                        (currentIteration.StartSequence == previous.StartSequence)
+                                    )
+                                    {
+                                        return null;
+                                    }
+                                }
                             }
 
                             logger.Debug($"currentIteration.StartFileName: {currentIteration.StartFileName}");
@@ -416,6 +449,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
         public override void Stop()
         {
             stopped = true;
+        }
+
+        public void Dispose()
+        {
+            Events.Dispose();
         }
     }
 

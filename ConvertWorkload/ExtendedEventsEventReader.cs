@@ -1,6 +1,7 @@
 ﻿using NLog;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,15 +20,17 @@ namespace ConvertWorkload
         {
             private static Logger logger = LogManager.GetCurrentClassLogger();
 
-            private string tracePath;
+            private string filePath;
             private bool started = false;
             private bool finished = false;
+
+            private FileTargetXEventDataReader reader;
 
             public ExtendedEventsEventReader(string path)
             {
                 Events = new BinarySerializedBufferedEventQueue();
                 Events.BufferSize = 10000;
-                tracePath = path;
+                filePath = path;
                 Filter = new ExtendedEventsEventFilter();
             }
 
@@ -36,24 +39,44 @@ namespace ConvertWorkload
             {
                 try
                 {
-                    // get first trace rollover file
-                    var parentDir = Directory.GetParent(tracePath);
-                    var fileName = Path.GetFileNameWithoutExtension(tracePath) + "*" + Path.GetExtension(tracePath);
+                    SqlConnectionInfo info = new SqlConnectionInfo();
+                    info.ServerName = "(localdb)\\MSSQLLocalDB";
 
-                    List<string> files = Directory.GetFiles(parentDir.FullName, fileName).ToList();
-                    files.Sort();
+                    string sqlCreateTable = @"
+                        IF OBJECT_ID('tempdb.dbo.trace_reader_queue') IS NULL
+                        BEGIN
+                            CREATE TABLE tempdb.dbo.trace_reader_queue (
+                                ts datetime DEFAULT GETDATE(),
+                                path nvarchar(4000)
+                            )
+                        END
+                        TRUNCATE TABLE tempdb.dbo.trace_reader_queue;
+                        INSERT INTO tempdb.dbo.trace_reader_queue (path) VALUES(@path);
+                    ";
 
-                    SqlTransformer transformer = new SqlTransformer();
-
-                    foreach (string xeFile in files)
+                    using (SqlConnection conn = new SqlConnection())
                     {
-                        ExtendedEventsFileReader reader = new ExtendedEventsFileReader(xeFile, Events);
-                        reader.ReadEvents();
-                        while (!reader.HasFinished)
+                        conn.ConnectionString = info.ConnectionString;
+                        conn.Open();
+                        using (SqlCommand cmd = conn.CreateCommand())
                         {
-                            Thread.Sleep(50);
+                            cmd.CommandText = sqlCreateTable;
+                            SqlParameter prm = new SqlParameter()
+                            {
+                                ParameterName = "@path",
+                                DbType = System.Data.DbType.String,
+                                Size = 4000,
+                                Value = filePath
+                            };
+                            cmd.Parameters.Add(prm);
+                            cmd.ExecuteNonQuery();
                         }
                     }
+
+                    reader = new FileTargetXEventDataReader(info.ConnectionString, null, Events, ExtendedEventsWorkloadListener.ServerType.LocalDB);
+                    reader.ReadEvents();
+                    finished = true;
+                    
                 }
                 catch (Exception ex)
                 {
@@ -88,7 +111,7 @@ namespace ConvertWorkload
                 WorkloadEvent result = null;
                 while (!Events.TryDequeue(out result))
                 {
-                    if (stopped)
+                    if (stopped || finished)
                         return null;
 
                     Thread.Sleep(5);
@@ -101,8 +124,11 @@ namespace ConvertWorkload
                 if (!stopped)
                 {
                     stopped = true;
+                    reader.Stop();
+                    reader.Dispose();
                 }
             }
+
         }
     }
 }

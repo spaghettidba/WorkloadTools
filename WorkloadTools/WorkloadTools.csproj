@@ -266,7 +266,6 @@
     <Compile Include="SqlConnectionInfo.cs" />
     <Compile Include="SqliteEventQueue.cs" />
     <Compile Include="Util\DataUtils.cs" />
-    <Compile Include="Util\ExtendedEventsFileReader.cs" />
     <Compile Include="Util\ModelConverter.cs" />
     <Compile Include="Util\RingBuffer.cs" />
     <Compile Include="Util\StringExtensions.cs" />
