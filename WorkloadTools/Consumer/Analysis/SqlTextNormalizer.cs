@@ -1,12 +1,14 @@
 ﻿using NLog;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using WorkloadTools.Properties;
 
 namespace WorkloadTools.Consumer.Analysis
@@ -16,6 +18,8 @@ namespace WorkloadTools.Consumer.Analysis
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private static Hashtable prepSql = new Hashtable();
+
+        private static ConcurrentDictionary<long, NormalizedSqlText> cachedQueries = new ConcurrentDictionary<long, NormalizedSqlText>();
 
         private static Regex _doubleApostrophe = new Regex("('')(?<string>.*?)('')", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
         private static Regex _delimiterStart = new Regex("(--)|(/\\*)|'", RegexOptions.Compiled);
@@ -47,14 +51,58 @@ namespace WorkloadTools.Consumer.Analysis
         public bool TruncateTo4000 { get; set; }
         public bool TruncateTo1024 { get; set; }
 
+        static Thread Sweeper;
+
+        static SqlTextNormalizer()
+        {
+            Sweeper = new Thread(() =>
+            {
+                try
+                {
+                    while (true)
+                    {
+                        var toDelete = cachedQueries.Where(t => t.Value.ReferenceCount < 10).ToList();
+                        foreach(var el in toDelete)
+                        {
+                            NormalizedSqlText nst = null;
+                            cachedQueries.TryRemove(el.Key, out nst);
+                        }
+                        Thread.Sleep(30000);
+                    }
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e.Message);
+                    logger.Error(e.StackTrace);
+                }
+            });
+            Sweeper.IsBackground = true;
+            Sweeper.Name = "SqlTextNormalizer.CacheSweeper";
+            Sweeper.Start();
+        }
+
         public NormalizedSqlText NormalizeSqlText(string sql, int spid)
         {
             try
             {
-                var result = NormalizeSqlText(sql, spid, true);
+                NormalizedSqlText result = null;
+                int hashCode = sql.GetHashCode();
+                if (cachedQueries.TryGetValue(hashCode, out result))
+                {
+                    if (result != null && result.OriginalText == sql)
+                    {
+                        result.ReferenceCount++;
+                        return result;
+                    }
+                }
+                result = NormalizeSqlText(sql, spid, true);
                 logger.Trace("NormalizeSqlText:[{0}]: {1}", spid, sql);
                 if (result != null)
+                { 
                     logger.Trace("NormalizeSqlText:[{0}]: {1}", spid, result.NormalizedText);
+                    result.ReferenceCount = 1;
+                    cachedQueries.TryAdd(hashCode, result);
+                }
                 return result;
             }
             catch (Exception)
@@ -199,16 +247,18 @@ namespace WorkloadTools.Consumer.Analysis
                 }
                 if (sql == "SP_CURSOR" || sql == "SP_CURSORFETCH" || (sql == "SP_CURSORCLOSE" || sql == "SP_RESET_CONNECTION"))
                 {
-
                     return null;
                 }
             }
 
-            Match matchTVPExecute = _TVPExecute.Match(sql);
-            if (matchTVPExecute.Success)
+            if (sql.Contains("EXEC") && sql.Contains("READONLY"))
             {
-                result.Statement = sql;
-                result.NormalizedText = "EXECUTE " + matchTVPExecute.Groups["object"].ToString();
+                Match matchTVPExecute = _TVPExecute.Match(sql);
+                if (matchTVPExecute.Success)
+                {
+                    result.Statement = sql;
+                    result.NormalizedText = "EXECUTE " + matchTVPExecute.Groups["object"].ToString();
+                }
             }
 
 

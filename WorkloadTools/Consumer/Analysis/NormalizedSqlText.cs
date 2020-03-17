@@ -36,6 +36,7 @@ namespace WorkloadTools.Consumer.Analysis
         public string NormalizedText { get; set; }
         public int Handle { get; set; }
         public CommandTypeEnum CommandType { get; set; }
+        internal int ReferenceCount { get; set; }
 
     }
 }

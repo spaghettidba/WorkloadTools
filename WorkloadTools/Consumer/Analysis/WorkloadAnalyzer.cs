@@ -53,8 +53,11 @@ namespace WorkloadTools.Consumer.Analysis
             public string ExampleText { get; set; }
         }
 
+        private DateTime lastDump = DateTime.MinValue;
+        private DateTime lastEventTime = DateTime.MinValue;
 
-		public WorkloadAnalyzer()
+
+        public WorkloadAnalyzer()
 		{
 			normalizer = new SqlTextNormalizer()
 			{
@@ -73,62 +76,69 @@ namespace WorkloadTools.Consumer.Analysis
         }
         
 
-
-        private void ProcessQueue()
+        private void CloseInterval()
         {
-            DateTime lastDump = DateTime.Now;
-            while (!stopped)
+            // Write collected data to the destination database
+            TimeSpan duration = lastEventTime - lastDump;
+            if (duration.TotalMinutes >= Interval)
             {
-                // Write collected data to the destination database
-                TimeSpan duration = DateTime.Now - lastDump;
-                if (duration.TotalMinutes >= Interval)
+                try
                 {
-                    try
-                    {
-                        int numRetries = 0;
-                        while (numRetries <= MaximumWriteRetries)
-                        {
-                            try
-                            {
-                                WriteToServer();
-                                numRetries = MaximumWriteRetries + 1;
-                            }
-                            catch (Exception ex)
-                            {
-                                logger.Warn("Unable to write workload analysis.");
-                                logger.Warn(ex.Message);
-
-                                if (numRetries == MaximumWriteRetries)
-                                    throw;
-                            }
-                            numRetries++;
-                        }
-                    }
-                    catch (Exception e)
+                    int numRetries = 0;
+                    while (numRetries <= MaximumWriteRetries)
                     {
                         try
                         {
-                            logger.Error(e, "Unable to write workload analysis info to the destination database.");
-                            logger.Error(e.StackTrace);
+                            WriteToServer(lastEventTime);
+                            numRetries = MaximumWriteRetries + 1;
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            Console.WriteLine(String.Format("Unable to write to the database: {0}.", e.Message));
-                        }
-                    }
-                    finally
-                    {
-                        lastDump = DateTime.Now;
-                    }
-                }
+                            logger.Warn("Unable to write workload analysis.");
+                            logger.Warn(ex.Message);
 
-                if (_internalQueue.Count == 0)
-                {
-                    Thread.Sleep(10);
-                    continue;
+                            if (numRetries == MaximumWriteRetries)
+                                throw;
+                        }
+                        numRetries++;
+                    }
                 }
+                catch (Exception e)
+                {
+                    try
+                    {
+                        logger.Error(e, "Unable to write workload analysis info to the destination database.");
+                        logger.Error(e.StackTrace);
+                    }
+                    catch
+                    {
+                        Console.WriteLine(String.Format("Unable to write to the database: {0}.", e.Message));
+                    }
+                }
+                finally
+                {
+                    lastDump = lastEventTime;
+                }
+            }
+
+
+        }
+
+
+        private void ProcessQueue()
+        {
+            while (!stopped)
+            {
                 lock (_internalQueue)
                 {
+                    CloseInterval();
+
+                    if (_internalQueue.Count == 0)
+                    {
+                        Thread.Sleep(10);
+                        continue;
+                    }
+                
                     WorkloadEvent data = _internalQueue.Dequeue();
                     _internalAdd(data);
                 }
@@ -141,11 +151,31 @@ namespace WorkloadTools.Consumer.Analysis
             if (evt is ExecutionWorkloadEvent && String.IsNullOrEmpty(((ExecutionWorkloadEvent)evt).Text))
                 return;
 
+            try
+            {
+                ProvisionWorker();
+            }
+            catch (Exception e)
+            {
+                logger.Error("Unable to start the worker thread for WorkloadAnalyzer", e.Message);
+            }
+            
+
             lock (_internalQueue)
             {
+                lastEventTime = evt.StartTime;
+                if(lastDump == DateTime.MinValue)
+                {
+                    lastDump = lastEventTime;
+                }
                 _internalQueue.Enqueue(evt);
             }
 
+        }
+
+
+        private void ProvisionWorker()
+        {
             bool startNewWorker = false;
             if (Worker == null)
             {
@@ -182,7 +212,6 @@ namespace WorkloadTools.Consumer.Analysis
                 Thread.Sleep(100);
             }
         }
-
 
 
         private void _internalAdd(WorkloadEvent evt)
@@ -332,12 +361,12 @@ namespace WorkloadTools.Consumer.Analysis
 
         public void Stop()
         {
-            WriteToServer();
+            WriteToServer(lastEventTime);
             stopped = true;
         }
 
         [MethodImpl(MethodImplOptions.Synchronized)]
-        private void WriteToServer()
+        private void WriteToServer(DateTime intervalTime)
         {
             logger.Trace("Writing Workload Analysis data");
 
@@ -357,7 +386,7 @@ namespace WorkloadTools.Consumer.Analysis
 
                 try
                 {
-                    int current_interval_id = CreateInterval(conn, tran);
+                    int current_interval_id = CreateInterval(conn, tran, intervalTime);
 
                     WriteDictionary(applications, conn, tran, "applications");
                     WriteDictionary(databases, conn, tran, "databases");
@@ -741,20 +770,20 @@ namespace WorkloadTools.Consumer.Analysis
         }
 
 
-        private int CreateInterval(SqlConnection conn, SqlTransaction tran)
+        private int CreateInterval(SqlConnection conn, SqlTransaction tran, DateTime intervalTime)
         {
             string sql = @"INSERT INTO [{0}].[Intervals] (interval_id, end_time, duration_minutes) VALUES (@interval_id, @end_time, @duration_minutes); ";
             sql = String.Format(sql, ConnectionInfo.SchemaName);
 
             // interval id is the number of seconds since 01/01/2000
-            int interval_id = (int)DateTime.Now.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
+            int interval_id = (int)intervalTime.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
 
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
                 cmd.Parameters.AddWithValue("@interval_id", interval_id);
-                cmd.Parameters.AddWithValue("@end_time", DateTime.Now);
+                cmd.Parameters.AddWithValue("@end_time", intervalTime);
                 cmd.Parameters.AddWithValue("@duration_minutes", Interval);
                 cmd.ExecuteNonQuery();
             }
@@ -768,7 +797,7 @@ namespace WorkloadTools.Consumer.Analysis
                     cmd.Transaction = tran;
                     cmd.CommandText = sql;
                     cmd.Parameters.AddWithValue("@interval_id", interval_id - 1);
-                    cmd.Parameters.AddWithValue("@end_time", DateTime.Now.AddSeconds(-1));
+                    cmd.Parameters.AddWithValue("@end_time", intervalTime.AddSeconds(-1));
                     cmd.Parameters.AddWithValue("@duration_minutes", 0);
                     cmd.ExecuteNonQuery();
                     FirstIntervalWritten = true;
