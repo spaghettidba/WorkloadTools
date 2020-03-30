@@ -948,7 +948,7 @@ namespace WorkloadTools.Consumer.Analysis
 					using (SqlCommand cmd = conn.CreateCommand())
 					{
 						string createDb = @"
-						IF DB_ID(@name) IS NULL 
+						IF NOT EXISTS(SELECT * FROM sys.databases WHERE name = @name)
 						BEGIN
 						    DECLARE @sql nvarchar(max); 
 							SET @sql = N'CREATE DATABASE ' + QUOTENAME(@name);

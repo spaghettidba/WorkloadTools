@@ -32,6 +32,8 @@ namespace WorkloadTools.Consumer.Replay
         public int SPID { get; set; }
         public bool IsRunning { get; private set; } = false;
 
+        public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();
+
         private Task runner = null;
         private CancellationTokenSource tokenSource;
 
@@ -77,6 +79,7 @@ namespace WorkloadTools.Consumer.Replay
         private void InitializeConnection()
         {
             logger.Trace($"Worker [{Name}] - Connecting to server {ConnectionInfo.ServerName} for replay...");
+            ConnectionInfo.DatabaseMap = this.DatabaseMap;
             string connString = BuildConnectionString();
             conn = new SqlConnection(connString);
             conn.Open();
@@ -239,6 +242,12 @@ namespace WorkloadTools.Consumer.Replay
 
             try
             {
+                // Try to remap the database according to the database map
+                if (DatabaseMap.ContainsKey(command.Database))
+                {
+                    command.Database = DatabaseMap[command.Database];
+                }
+
                 if (conn.Database != command.Database)
                 {
                     logger.Trace($"Worker [{Name}] - Changing database to {command.Database} ");

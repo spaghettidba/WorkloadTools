@@ -25,6 +25,8 @@ namespace WorkloadTools.Consumer.Replay
 		public int WorkerStatsCommandCount { get; set; } = 1000;
 		public bool MimicApplicationName { get; set; } = false;
 
+        public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();
+
 		public SqlConnectionInfo ConnectionInfo { get; set; }
         public SynchronizationModeEnum SynchronizationMode { get; set; } = SynchronizationModeEnum.WorkerTask;
 
@@ -97,7 +99,8 @@ namespace WorkloadTools.Consumer.Replay
 					ConsumeResults = this.ConsumeResults,
 					QueryTimeoutSeconds = this.QueryTimeoutSeconds,
 					WorkerStatsCommandCount = this.WorkerStatsCommandCount,
-					MimicApplicationName = this.MimicApplicationName
+					MimicApplicationName = this.MimicApplicationName,
+                    DatabaseMap = this.DatabaseMap
 				};
                 ReplayWorkers.TryAdd(session_id, rw);
                 rw.AppendCommand(command);

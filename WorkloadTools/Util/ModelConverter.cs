@@ -69,14 +69,30 @@ namespace WorkloadTools.Util
                     }
                     else
                     {
-                        if((dictionary[key] is Dictionary<string, object>))
-                            prop.SetValue(p, Deserialize((Dictionary<string, object>)dictionary[key], prop.PropertyType, serializer), null);
+                        if ((dictionary[key] is Dictionary<string, object>))
+                        {
+                            if(prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                            {
+                                Dictionary<string, object> rawDic = (Dictionary<string, object>)dictionary[key];
+
+                                object obj = Activator.CreateInstance(prop.PropertyType);
+                                foreach (var itm in rawDic.Keys)
+                                {
+                                    ((Dictionary<string,string>)obj).Add(itm, rawDic[itm].ToString());
+                                }
+                                prop.SetValue(p, obj, null);
+                            }
+                            else
+                            {
+                                prop.SetValue(p, Deserialize((Dictionary<string, object>)dictionary[key], prop.PropertyType, serializer), null);
+                            }
+                        }
                         else
                         {
                             if (dictionary[key] is IList && prop.PropertyType.IsGenericType)
                             {
                                 object obj = Activator.CreateInstance(prop.PropertyType);
-                                foreach(var itm in (IEnumerable)dictionary[key])
+                                foreach (var itm in (IEnumerable)dictionary[key])
                                 {
                                     ((IList)obj).Add(itm);
                                 }

@@ -14,7 +14,8 @@ namespace WorkloadTools
         public string UserName { get; set; }
         public string Password { get; set; }
         public string ApplicationName { get; set; } = "WorkloadTools";
-
+        public Dictionary<string, string> DatabaseMap { get; set;} = new Dictionary<string, string>();
+            
         public string ConnectionString
         {
             get
@@ -26,7 +27,14 @@ namespace WorkloadTools
                 }
                 else
                 {
-                    connectionString += "Initial Catalog = " + DatabaseName + "; ";
+                    // try to replace database name with the name
+                    // in the database map, if any
+                    string effectiveDatabaseName = DatabaseName;
+                    if (DatabaseMap.ContainsKey(DatabaseName))
+                    {
+                        effectiveDatabaseName = DatabaseMap[DatabaseName];
+                    }
+                    connectionString += "Initial Catalog = " + effectiveDatabaseName + "; ";
                 }
                 if (String.IsNullOrEmpty(UserName))
                 {

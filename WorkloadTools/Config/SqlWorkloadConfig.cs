@@ -89,7 +89,7 @@ namespace WorkloadTools.Config
                 }
             });
 
-            x.Controller.Consumers.Add(new AnalysisConsumer()
+            x.Controller.Consumers.Add(new ReplayConsumer()
             {
                 ConnectionInfo = new SqlConnectionInfo()
                 {
@@ -99,7 +99,11 @@ namespace WorkloadTools.Config
                     DatabaseName = "RTR",
                     SchemaName = "baseline"
                 },
-                UploadIntervalSeconds = 60
+                DatabaseMap = new Dictionary<string, string>()
+                {
+                    { "DatabaseA", "DatabaseB" },
+                    { "DatabaseC", "DatabaseD" }
+                }
             });
 
             string s = ser.Serialize(x);
