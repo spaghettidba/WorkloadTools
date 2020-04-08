@@ -25,6 +25,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
         {
             FullInstance,
             AzureSqlDatabase,
+            AzureSqlManagedInstance,
             LocalDB
         }
 
@@ -296,14 +297,19 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         private void LoadServerType(SqlConnection conn)
         {
-            string sql = "SELECT SERVERPROPERTY('Edition')";
             using (SqlCommand cmd = conn.CreateCommand())
             {
-                cmd.CommandText = sql;
+                cmd.CommandText = "SELECT SERVERPROPERTY('Edition')";
                 string edition = (string)cmd.ExecuteScalar();
-                if(edition == "SQL Azure")
+                cmd.CommandText = "SELECT SERVERPROPERTY('EngineEdition')";
+                int engineEdition = (int)cmd.ExecuteScalar();
+                if (edition == "SQL Azure")
                 {
                     serverType = ServerType.AzureSqlDatabase;
+                    if(engineEdition == 8)
+                    {
+                        serverType = ServerType.AzureSqlManagedInstance ;
+                    }
                 }
                 else
                 {
