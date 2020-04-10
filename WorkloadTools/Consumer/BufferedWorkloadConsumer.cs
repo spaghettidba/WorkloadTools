@@ -16,7 +16,7 @@ namespace WorkloadTools.Consumer
 
         private SpinWait spin = new SpinWait();
 
-        public int BufferSize { get; set; } = 10000;
+        public int BufferSize { get; set; } = 1000;
 
         public override sealed void Consume(WorkloadEvent evt)
         {

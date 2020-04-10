@@ -21,14 +21,11 @@ namespace WorkloadTools.Listener.File
         // after another without waiting
         public bool SynchronizationMode { get; set; } = true;
 
-        private DateTime startDate = DateTime.MinValue;
+        private DateTime startTime = DateTime.MinValue;
         private long totalEvents;
         private SQLiteConnection conn;
         private SQLiteDataReader reader;
         private string connectionString;
-
-        private Dictionary<int, DateTime> lastEventEndTime = new Dictionary<int, DateTime>();
-
 
         public FileWorkloadListener() : base()
         {
@@ -137,36 +134,10 @@ namespace WorkloadTools.Listener.File
         }
 
 
-        private DateTime GetLastEventEndTime(int spid)
-        {
-            DateTime result = DateTime.MinValue;
-            if (lastEventEndTime.TryGetValue(spid, out result))
-            {
-                return result;
-            }
-            else
-            {
-                return DateTime.MinValue;
-            }
-        }
-
-        private void SetLastEventEndTime(int spid, DateTime endTime)
-        {
-            if (lastEventEndTime.ContainsKey(spid))
-            {
-                lastEventEndTime[spid] = endTime;
-            }
-            else
-            {
-                lastEventEndTime.Add(spid, endTime);
-            }
-            
-        }
-
         public override WorkloadEvent Read()
         {
             WorkloadEvent result = null;
-            double msSleep = 0;
+            long commandOffset = 0;
 
             try
             {
@@ -197,25 +168,25 @@ namespace WorkloadTools.Listener.File
                         ExecutionWorkloadEvent execEvent = result as ExecutionWorkloadEvent;
                         if (SynchronizationMode)
                         {
-                            DateTime lastEndTime = GetLastEventEndTime((int)execEvent.SPID);
-                            if (lastEndTime != DateTime.MinValue)
+                            if (startTime != DateTime.MinValue)
                             {
-                                msSleep = (result.StartTime - lastEndTime).TotalMilliseconds;
-                                if (msSleep > 0)
+                                commandOffset = (long)((result.StartTime - startTime).TotalMilliseconds);
+                                if (commandOffset > 0)
                                 {
-                                    if (msSleep > Int32.MaxValue)
-                                    {
-                                        msSleep = Int32.MaxValue;
-                                    }
-                                    Thread.Sleep(Convert.ToInt32(msSleep));
+                                    execEvent.ReplayOffset = commandOffset;
                                 }
                             }
-
-                            SetLastEventEndTime((int)execEvent.SPID, execEvent.StartTime.AddMilliseconds((double)execEvent.Duration / 1000));
+                            else
+                            {
+                                startTime = execEvent.StartTime;
+                            }
                         }
                         else
                         {
-                            execEvent.ReplaySleepMilliseconds = 0;
+                            // Leave it at 0. The replay consumer will interpret this
+                            // as "do not wait for the requested offset" and will replay
+                            // the event without waiting
+                            execEvent.ReplayOffset = 0;
                         }
                     }
                     // Filter events

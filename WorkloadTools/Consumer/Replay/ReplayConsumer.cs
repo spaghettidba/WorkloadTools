@@ -16,7 +16,7 @@ namespace WorkloadTools.Consumer.Replay
 
         private SpinWait spin = new SpinWait();
         public int ThreadLimit = 32;
-        public int InactiveWorkerTerminationTimeoutSeconds = 15;
+        public int InactiveWorkerTerminationTimeoutSeconds = 300;
         private Semaphore WorkLimiter;
 
 		public bool DisplayWorkerStats { get; set; } = true;
@@ -35,6 +35,7 @@ namespace WorkloadTools.Consumer.Replay
         private Thread sweeper;
 
         private long eventCount;
+        private DateTime startTime = DateTime.MinValue;
 
         public enum SynchronizationModeEnum
         {
@@ -64,6 +65,11 @@ namespace WorkloadTools.Consumer.Replay
                 logger.Info($"{eventCount} events queued for replay");
             }
 
+            if (startTime == DateTime.MinValue)
+            {
+                startTime = DateTime.Now;
+            }
+
             ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
 
             ReplayCommand command = new ReplayCommand()
@@ -71,7 +77,7 @@ namespace WorkloadTools.Consumer.Replay
                 CommandText = evt.Text,
                 Database = evt.DatabaseName,
                 ApplicationName = evt.ApplicationName,
-                BeforeSleepMilliseconds = evt.ReplaySleepMilliseconds
+                ReplayOffset = evt.ReplayOffset
             };
 
             int session_id = -1;
@@ -100,7 +106,8 @@ namespace WorkloadTools.Consumer.Replay
 					QueryTimeoutSeconds = this.QueryTimeoutSeconds,
 					WorkerStatsCommandCount = this.WorkerStatsCommandCount,
 					MimicApplicationName = this.MimicApplicationName,
-                    DatabaseMap = this.DatabaseMap
+                    DatabaseMap = this.DatabaseMap,
+                    StartTime = startTime
 				};
                 ReplayWorkers.TryAdd(session_id, rw);
                 rw.AppendCommand(command);
@@ -120,7 +127,7 @@ namespace WorkloadTools.Consumer.Replay
                                     }
                                     catch (Exception e)
                                     {
-                                        try { logger.Error(e, "Unhandled exception in TraceManager.RunWorkers"); }
+                                        try { logger.Error(e, "Unhandled exception in ReplayConsumer.RunWorkers"); }
                                         catch { Console.WriteLine(e.Message); }
                                     }
                                 }

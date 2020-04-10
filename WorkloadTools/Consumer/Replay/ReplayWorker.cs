@@ -32,6 +32,8 @@ namespace WorkloadTools.Consumer.Replay
         public int SPID { get; set; }
         public bool IsRunning { get; private set; } = false;
 
+        public DateTime StartTime { get; set; }
+
         public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();
 
         private Task runner = null;
@@ -254,19 +256,33 @@ namespace WorkloadTools.Consumer.Replay
                     conn.ChangeDatabase(command.Database);
                 }
 
-                // if the command comes with a replay sleep, do it now
-                // the amount of milliseconds to sleep is set in
+                // if the command comes with a replay offset, do it now
+                // the offset in milliseconds is set in
                 // FileWorkloadListener
                 // The other listeners do not set this value, as they
                 // already come with the original timing
-                // 
-                // Don't remove the IF test: even Sleep(0) can end up
-                // sleeping for 10ms or more. Sleep guarantees that
-                // the current thread sleeps for AT LEAST the amount
-                // of milliseconds set.
-                if (command.BeforeSleepMilliseconds > 2)
+                if (command.ReplayOffset > 0)
                 {
-                    Thread.Sleep(command.BeforeSleepMilliseconds);
+                    // I am using 7 here as an average compensation for sleep
+                    // fluctuations due to Windows preemptive scheduling
+                    while((DateTime.Now - StartTime).TotalMilliseconds < command.ReplayOffset - 7)
+                    {
+                        // Thread.Sleep will not sleep exactly 1 millisecond.
+                        // It will yield the current thread and put it back 
+                        // in the runnable queue once the sleep delay has expired.
+                        // This means that the actual sleep time before the 
+                        // current thread gains back control can be much higher 
+                        // (15 milliseconds or more)
+                        // However we do not need to be super precise here: 
+                        // each command has a requested offset from the beginning
+                        // of the workload and this class does its best to respect it.
+                        // If the previous commands take longer in the target environment
+                        // the offset cannot be respected and the command will execute
+                        // without further waits, but there is no way to recover 
+                        // the delay that has built up to that point.
+                        Thread.Sleep(1);
+                    }
+                    
                 }
 
                 using (SqlCommand cmd = new SqlCommand(command.CommandText))
