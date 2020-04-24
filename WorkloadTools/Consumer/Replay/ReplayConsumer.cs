@@ -40,7 +40,7 @@ namespace WorkloadTools.Consumer.Replay
         // holds the total number of events to replay
         // only available when reading from a file
         // for realtime replays this is not available
-        private long totalEventCount;
+        private long totalEventCount = 0;
 
         public enum SynchronizationModeEnum
         {
@@ -82,7 +82,7 @@ namespace WorkloadTools.Consumer.Replay
             eventCount++;
             if ((eventCount > 0) && (eventCount % WorkerStatsCommandCount == 0))
             {
-                string percentInfo = "( " + ((totalEventCount > 0) ? ((eventCount * 100) / totalEventCount).ToString() : "") + "% )";
+                string percentInfo = (totalEventCount > 0) ? "( " + ((eventCount * 100) / totalEventCount).ToString() + "% )" : "";
                 logger.Info($"{eventCount} events queued for replay {percentInfo}");
             }
 
