@@ -37,6 +37,11 @@ namespace WorkloadTools.Consumer.Replay
         private long eventCount;
         private DateTime startTime = DateTime.MinValue;
 
+        // holds the total number of events to replay
+        // only available when reading from a file
+        // for realtime replays this is not available
+        private long totalEventCount;
+
         public enum SynchronizationModeEnum
         {
             ThreadPools,
@@ -52,6 +57,21 @@ namespace WorkloadTools.Consumer.Replay
 
         public override void ConsumeBuffered(WorkloadEvent evnt)
         {
+            if(evnt is MessageWorkloadEvent)
+            {
+                MessageWorkloadEvent msgEvent = evnt as MessageWorkloadEvent;
+                if (msgEvent.MsgType == MessageWorkloadEvent.MessageType.TotalEvents)
+                {
+                    try
+                    {
+                        totalEventCount = (long)msgEvent.Value;
+                    }
+                    catch (Exception e)
+                    {
+                        logger.Error($"Unable to set the total number of events: {e.Message}");
+                    }
+                }
+            }
 
             if (!(evnt is ExecutionWorkloadEvent))
                 return;
@@ -62,7 +82,8 @@ namespace WorkloadTools.Consumer.Replay
             eventCount++;
             if ((eventCount > 0) && (eventCount % WorkerStatsCommandCount == 0))
             {
-                logger.Info($"{eventCount} events queued for replay");
+                string percentInfo = "( " + ((totalEventCount > 0) ? ((eventCount * 100) / totalEventCount).ToString() : "") + "% )";
+                logger.Info($"{eventCount} events queued for replay {percentInfo}");
             }
 
             if (startTime == DateTime.MinValue)

@@ -232,6 +232,7 @@
     <Compile Include="Listener\Trace\TraceEventDataReader.cs" />
     <Compile Include="Listener\Trace\TraceEventParser.cs" />
     <Compile Include="Listener\Trace\TraceUtils.cs" />
+    <Compile Include="MessagWorkloadEvent.cs" />
     <Compile Include="MMFEventQueue.cs" />
     <Compile Include="ExecutionWorkloadEvent.cs" />
     <Compile Include="FilterPredicate.cs" />
