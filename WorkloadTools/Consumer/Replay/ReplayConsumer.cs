@@ -77,7 +77,8 @@ namespace WorkloadTools.Consumer.Replay
                 CommandText = evt.Text,
                 Database = evt.DatabaseName,
                 ApplicationName = evt.ApplicationName,
-                ReplayOffset = evt.ReplayOffset
+                ReplayOffset = evt.ReplayOffset,
+                EventSequence = evt.EventSequence
             };
 
             int session_id = -1;

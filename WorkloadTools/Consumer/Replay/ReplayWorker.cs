@@ -359,13 +359,13 @@ namespace WorkloadTools.Consumer.Replay
 
                 if (StopOnError)
                 {
-                    logger.Error($"Worker[{Name}] - Error: \n{command.CommandText}");
+                    logger.Error($"Worker[{Name}] - Sequence[{command.EventSequence}] - Error: \n{command.CommandText}");
                     throw;
                 }
                 else
                 {
-                    logger.Trace($"Worker [{Name}] - Error: {command.CommandText}");
-                    logger.Warn($"Worker [{Name}] - Error: {e.Message}");
+                    logger.Trace($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {command.CommandText}");
+                    logger.Warn($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
                     logger.Trace(e.StackTrace);
                 }
             }
@@ -373,12 +373,12 @@ namespace WorkloadTools.Consumer.Replay
             {
                 if (StopOnError)
                 {
-                    logger.Error($"Worker[{Name}] - Error: \n{command.CommandText}");
+                    logger.Error($"Worker[{Name}] - Sequence[{command.EventSequence}] - Error: \n{command.CommandText}");
                     throw;
                 }
                 else
                 {
-                    logger.Error($"Worker [{Name}] - Error: {e.Message}");
+                    logger.Error($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
                     logger.Error(e.StackTrace);
                 }
             }
@@ -395,6 +395,8 @@ namespace WorkloadTools.Consumer.Replay
             string msg = "";
             msg += "DATABASE:" + Environment.NewLine;
             msg += Command.Database + Environment.NewLine;
+            msg += "SEQUENCE:" + Environment.NewLine;
+            msg += Command.EventSequence + Environment.NewLine;
             msg += "MESSAGE:" + Environment.NewLine;
             msg += ErrorMessage + Environment.NewLine;
             msg += "--------------------" + Environment.NewLine;
