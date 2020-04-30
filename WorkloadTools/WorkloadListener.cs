@@ -164,6 +164,7 @@ namespace WorkloadTools
                 // Calculate CPU usage during the last minute interval
                 string sql = @"
                     IF SERVERPROPERTY('Edition') = 'SQL Azure'
+                        AND SERVERPROPERTY('EngineEdition') = 5
                     BEGIN
                         WITH CPU_Usage AS (
                             SELECT avg_cpu_percent, end_time AS Event_Time
