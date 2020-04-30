@@ -47,7 +47,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     ExecutionWorkloadEvent workloadEvent = new ExecutionWorkloadEvent();
                     try
                     {
-
+                        workloadEvent.EventSequence = Convert.ToInt64(TryGetValue(evt, FieldType.Action, "event_sequence"));
                         string commandText = String.Empty;
                         if (evt.Name == "rpc_completed")
                         {
