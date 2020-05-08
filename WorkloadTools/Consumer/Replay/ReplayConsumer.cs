@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -313,7 +313,7 @@ namespace WorkloadTools.Consumer.Replay
                                 }
                                 catch (Exception e)
                                 {
-                                    logger.Error(e, "Unhandled exception in ReplayWorker.ExecuteCommand");
+                                    logger.Error(e, "Exception in ReplayWorker.RunWorkers - WorkerTask");
                                 }
                             }
                         }
@@ -338,6 +338,10 @@ namespace WorkloadTools.Consumer.Replay
                 catch (InvalidOperationException)
                 {
                     //ignore ...
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Exception in ReplayWorker.RunWorkers");
                 }
 
             }

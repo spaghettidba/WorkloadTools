@@ -341,6 +341,7 @@ namespace WorkloadTools.Consumer.Replay
 
                         logger.Info($"Worker [{Name}] - {commandCount} commands executed.");
                         logger.Info($"Worker [{Name}] - {Commands.Count} commands pending.");
+                        logger.Info($"Worker [{Name}] - Last Event Sequence: {command.EventSequence}");
                         logger.Info($"Worker [{Name}] - {(int)cps} commands per second.");
                     }
                 }
@@ -411,13 +412,20 @@ namespace WorkloadTools.Consumer.Replay
             // Raise a custom event. Both SqlTrace and Extended Events can capture this event.
             string sql = "EXEC sp_trace_generateevent @eventid = @eventid, @userinfo = @userinfo, @userdata = @userdata;";
 
-            using (SqlCommand cmd = new SqlCommand(sql))
+            try
             {
-                cmd.Connection = conn;
-                cmd.Parameters.AddWithValue("@eventid", type);
-                cmd.Parameters.AddWithValue("@userinfo", info);
-                cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(message.Substring(0, message.Length > 8000 ? 8000 : message.Length)));
-                cmd.ExecuteNonQuery();
+                using (SqlCommand cmd = new SqlCommand(sql))
+                {
+                    cmd.Connection = conn;
+                    cmd.Parameters.Add(new SqlParameter("@eventid", System.Data.SqlDbType.Int) { Value = type });
+                    cmd.Parameters.Add(new SqlParameter("@userinfo", System.Data.SqlDbType.NVarChar, 128) { Value = info });
+                    cmd.Parameters.Add(new SqlParameter("@userdata", System.Data.SqlDbType.VarBinary, 8000) { Value = Encoding.Unicode.GetBytes(message.Substring(0, message.Length > 8000 ? 8000 : message.Length)) });
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Warn($"Worker[{Name}] - Unable to raise error event. Message: " + ex.Message);
             }
         }
 
