@@ -100,12 +100,13 @@ namespace SqlWorkload
                 logger.Info("Received shutdown signal...");
                 source.CancelAfter(TimeSpan.FromSeconds(100)); // give a 100 seconds cancellation grace period 
                 config.Controller.Stop();
-                config.Controller.Dispose();
             };
 
             Task t = processController(config.Controller);
             t.Wait();
             logger.Info("Controller stopped.");
+            config.Controller.Dispose();
+            logger.Info("Controller disposed.");
         }
 
 
@@ -119,7 +120,6 @@ namespace SqlWorkload
             finally
             {
                 Console.WriteLine("Caught unhandled exception...");
-
             }
         }
 
