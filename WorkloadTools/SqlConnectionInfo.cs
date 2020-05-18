@@ -13,6 +13,8 @@ namespace WorkloadTools
         public bool UseIntegratedSecurity { get; set; }
         public string UserName { get; set; }
         public string Password { get; set; }
+        public bool Encrypt { get; set; } = false;
+        public bool TrustServerCertificate { get; set; } = false;
         public string ApplicationName { get; set; } = "WorkloadTools";
         public Dictionary<string, string> DatabaseMap { get; set;} = new Dictionary<string, string>();
             
@@ -48,6 +50,14 @@ namespace WorkloadTools
                 if (!String.IsNullOrEmpty(ApplicationName))
                 {
                     connectionString += "Application Name = "+ ApplicationName +"; ";
+                }
+                if (Encrypt)
+                {
+                    connectionString += "Encrypt = true; ";
+                }
+                if (TrustServerCertificate)
+                {
+                    connectionString += "TrustServerCertificate = true; ";
                 }
                 return connectionString;
             }
