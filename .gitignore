@@ -262,3 +262,5 @@ __pycache__/
 Setup/harvest\.wxs
 /Setup/harvest2.wxs
 /Setup/harvest3.wxs
+Setup/SignParams.ps1
+SetupBootstrapper/SignParams.ps1
