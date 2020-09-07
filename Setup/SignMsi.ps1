@@ -11,6 +11,10 @@ if(-not (Test-Path $PSScriptRoot\SignParams.ps1))
 {
     Write-Warning "No code signing is applied to the .msi file."
     Write-Warning "You need to create a file called SignParams.ps1 and provide signing info."
+
+    Write-Output "Moving $InputFile --> $OutputFile"
+    Move-Item $InputFile $OutputFile -Force
+
     exit
 }
 
