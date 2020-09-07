@@ -67,6 +67,7 @@ namespace WorkloadViewer.Model
                     string sqlText = WorkloadViewer.Properties.Resources.WorkloadAnalysis;
                     cmd.CommandText = sqlText.Replace("capture", ConnectionInfo.SchemaName);
                     cmd.CommandText = cmd.CommandText.Replace("preaggregation", preaggregation.ToString());
+                    cmd.CommandTimeout = 0;
                     using (var rdr = cmd.ExecuteReader())
                     {
                         Points = new ObservableCollection<WorkloadAnalysisPoint>();
