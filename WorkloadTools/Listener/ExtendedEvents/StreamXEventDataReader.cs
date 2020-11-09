@@ -154,6 +154,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             throw;
                         }
 
+                        // preprocess and filter events
                         if (workloadEvent.Type <= WorkloadEvent.EventType.BatchCompleted)
                         {
                             if (transformer.Skip(workloadEvent.Text))

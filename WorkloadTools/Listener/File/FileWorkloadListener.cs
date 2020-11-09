@@ -167,7 +167,7 @@ namespace WorkloadTools.Listener.File
                 }
 
                 bool validEventFound = false;
-               
+                SqlTransformer transformer = new SqlTransformer();
 
                 do
                 {
@@ -208,6 +208,16 @@ namespace WorkloadTools.Listener.File
                             // the event without waiting
                             execEvent.ReplayOffset = 0;
                         }
+
+                        // preprocess and filter events
+                        if (execEvent.Type <= WorkloadEvent.EventType.BatchCompleted)
+                        {
+                            if (transformer.Skip(execEvent.Text))
+                                continue;
+
+                            execEvent.Text = transformer.Transform(execEvent.Text);
+                        }
+
                     }
                     // Filter events
                     if (result is ExecutionWorkloadEvent)

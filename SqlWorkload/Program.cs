@@ -92,6 +92,13 @@ namespace SqlWorkload
             options.ConfigurationFile = System.IO.Path.GetFullPath(options.ConfigurationFile);
             logger.Info(String.Format("Reading configuration from '{0}'", options.ConfigurationFile));
 
+            if (!File.Exists(options.ConfigurationFile))
+            {
+                logger.Error("File not found!");
+                Console.WriteLine(options.GetUsage());
+                return;
+            }
+
             SqlWorkloadConfig config = SqlWorkloadConfig.LoadFromFile(options.ConfigurationFile);
             config.Controller.Listener.Source = System.IO.Path.GetFullPath(config.Controller.Listener.Source);
 

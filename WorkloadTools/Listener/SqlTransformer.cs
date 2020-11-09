@@ -35,6 +35,14 @@ namespace WorkloadTools.Listener
                 if (!command.EndsWith("EXEC sp_cursorclose @p1;"))
                     command += " ; EXEC sp_cursorclose @p1;";
             }
+
+            //  remove the handle from the sp_cursorprepexec call
+            else if (command.Contains("sp_cursorprepexec "))
+            {
+                command = RemoveFirstP1(command);
+                if (!command.EndsWith("EXEC sp_cursorunprepare @p1;"))
+                    command += " ; EXEC sp_cursorunprepare @p1;";
+            }
             return command;
         }
 
@@ -56,6 +64,10 @@ namespace WorkloadTools.Listener
 
             // skip cursor close
             if (command.Contains("sp_cursorclose "))
+                return true;
+
+            // skip cursor unprepare
+            if (command.Contains("sp_cursorunprepare "))
                 return true;
 
             // skip sp_execute
