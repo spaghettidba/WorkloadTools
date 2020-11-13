@@ -20,7 +20,10 @@ namespace WorkloadTools.Listener
 
         private static string MakeFloat(Match match)
         {
-            return match.Value + "E0";
+            if (match.Value.EndsWith("E0"))
+                return match.Value;
+            else
+                return match.Value + "E0";
         }
 
 
@@ -60,7 +63,17 @@ namespace WorkloadTools.Listener
             // unless it ends with "E0", which designates a float literal. 
             // Any decimal numeric string longer than 38 characters needs to
             // be appended "E0" to be treated as float.
-            command = Regex.Replace(command, @"[0-9\.]{38,}", decimal38Evaluator);
+            //
+            // Unfortunately RegExs are evil and also match numbers
+            // that already have their "E0" appended, so I need to append
+            // only when not found
+            //
+            // RegEx: \b([0-9\.]{38,})+([E]+[0]+)?\b
+            // \b                 means "word boundary", including whitespace, punctuation or begin/end input
+            // ([0-9\.]{38,})+    means "numbers or . repeated at least 38 times"
+            // ([E]+[0]+)?        means "E0" zero or one time
+            // \b                 means word boundary again
+            command = Regex.Replace(command, @"\b([0-9\.]{38,})+([E]+[0]+)?\b", decimal38Evaluator);
 
             return command;
         }
