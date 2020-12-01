@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WorkloadTools.Consumer.Analysis;
 using WorkloadTools.Listener;
+using WorkloadTools.Util;
 
 namespace WorkloadTools.Consumer.Replay
 {
@@ -232,7 +233,9 @@ namespace WorkloadTools.Consumer.Replay
                 // look up the statement to unprepare in the dictionary
                 if (preparedStatements.ContainsKey(nst.Handle))
                 {
-                    command.CommandText = nst.NormalizedText + " " + preparedStatements[nst.Handle];
+                    // the sp_execute statement has already been "normalized"
+                    // by replacing the original statement number with the § placeholder
+                    command.CommandText = nst.NormalizedText.ReplaceFirst("§", preparedStatements[nst.Handle].ToString());
 
                     if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_UNPREPARE)
                         preparedStatements.Remove(nst.Handle);

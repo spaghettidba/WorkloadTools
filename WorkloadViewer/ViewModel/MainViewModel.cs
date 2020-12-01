@@ -8,15 +8,14 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Input;
 using System.Linq;
-using System.Diagnostics;
 using WorkloadViewer.Model;
-using System.Collections.ObjectModel;
 using System.Data;
 using System.Windows;
 using GalaSoft.MvvmLight.Messaging;
 using NLog;
 using System.Threading.Tasks;
 using System.Threading;
+using WorkloadTools.Util;
 
 namespace WorkloadViewer.ViewModel
 {
@@ -308,9 +307,40 @@ namespace WorkloadViewer.ViewModel
             logger.Info("Benchmark evaluation completed");
             logger.Info("Merging sets");
 
-            var merged =
+            var leftOuterJoin =
                 from b in baseline
                 join k in benchmark
+                    on b.query.Hash equals k.query.Hash
+                    into joinedData
+                from j in joinedData.DefaultIfEmpty()
+                select new
+                {
+                    query_hash = b.query.Hash,
+                    query_text = b.query.ExampleText,
+                    query_normalized = b.query.NormalizedText,
+                    b.sum_duration_us,
+                    b.avg_duration_us,
+                    b.sum_cpu_us,
+                    b.avg_cpu_us,
+                    b.sum_reads,
+                    b.avg_reads,
+                    b.execution_count,
+                    sum_duration_us2 = j == null ? 0 : j.sum_duration_us,
+                    diff_sum_duration_us = j == null ? 0 : j.sum_duration_us - b.sum_duration_us,
+                    avg_duration_us2 = j == null ? 0 : j.avg_duration_us,
+                    sum_cpu_us2 = j == null ? 0 : j.sum_cpu_us,
+                    diff_sum_cpu_us = j == null ? 0 : j.sum_cpu_us - b.sum_cpu_us,
+                    avg_cpu_us2 = j == null ? 0 : j.avg_cpu_us,
+                    sum_reads2 = j == null ? 0 : j.sum_reads,
+                    avg_reads2 = j == null ? 0 : j.avg_reads,
+                    execution_count2 = j == null ? 0 : j.execution_count,
+                    querydetails = new QueryDetails(b.query, _baselineWorkloadAnalysis, _benchmarkWorkloadAnalysis),
+                    document = new ICSharpCode.AvalonEdit.Document.TextDocument() { Text = b.query.ExampleText }
+                };
+
+            var rightOuterJoin =
+                from b in benchmark
+                join k in baseline
                     on b.query.Hash equals k.query.Hash
                     into joinedData
                 from j in joinedData.DefaultIfEmpty()
@@ -339,6 +369,7 @@ namespace WorkloadViewer.ViewModel
                     document = new ICSharpCode.AvalonEdit.Document.TextDocument() { Text = b.query.ExampleText }
                 };
 
+            var merged = leftOuterJoin.Union(rightOuterJoin);
 
             Queries = merged;
 
