@@ -134,6 +134,7 @@
     <Compile Include="ViewModel\ConnectionInfoEditorViewModel.cs" />
     <Compile Include="ViewModel\DictionaryExtensions.cs" />
     <Compile Include="ViewModel\FilterDefinition.cs" />
+    <Compile Include="ViewModel\LinqExtensions.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="Model\QueryDetails.cs" />
     <Compile Include="ViewModel\Message.cs" />
@@ -208,12 +209,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Icon.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\WorkloadTools\WorkloadTools.csproj">
-      <Project>{ae6e4548-8c33-4728-8504-88aa9666020b}</Project>
-      <Name>WorkloadTools</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
