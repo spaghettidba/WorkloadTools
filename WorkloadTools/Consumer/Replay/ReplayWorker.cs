@@ -83,16 +83,10 @@ namespace WorkloadTools.Consumer.Replay
         {
             logger.Trace($"Worker [{Name}] - Connecting to server {ConnectionInfo.ServerName} for replay...");
             ConnectionInfo.DatabaseMap = this.DatabaseMap;
-            string connString = BuildConnectionString();
+            string connString = ConnectionInfo.ConnectionString;
             conn = new SqlConnection(connString);
             conn.Open();
             logger.Trace($"Worker [{Name}] - Connected");
-        }
-
-        private string BuildConnectionString()
-        {
-            string connectionString = ConnectionInfo.ConnectionString + "; max pool size=500"; 
-            return connectionString;
         }
 
         public void Start()
