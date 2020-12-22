@@ -16,7 +16,7 @@ namespace WorkloadTools
         public bool Encrypt { get; set; } = false;
         public bool TrustServerCertificate { get; set; } = false;
         public string ApplicationName { get; set; } = "WorkloadTools";
-        public string MaxPoolSize { get; set; } = "500";
+        public int MaxPoolSize { get; set; } = 500;
         public Dictionary<string, string> DatabaseMap { get; set;} = new Dictionary<string, string>();
             
         public string ConnectionString
