@@ -16,13 +16,15 @@ namespace WorkloadTools
         public bool Encrypt { get; set; } = false;
         public bool TrustServerCertificate { get; set; } = false;
         public string ApplicationName { get; set; } = "WorkloadTools";
+        public int MaxPoolSize { get; set; } = 500;
         public Dictionary<string, string> DatabaseMap { get; set;} = new Dictionary<string, string>();
             
         public string ConnectionString
         {
             get
             {
-                string connectionString = "Data Source=" + ServerName + ";";
+                string connectionString = "Data Source=" + ServerName + "; ";
+                connectionString += "Max Pool Size = " + MaxPoolSize + "; ";
                 if (String.IsNullOrEmpty(DatabaseName))
                 {
                     connectionString += "Initial Catalog = master; ";
