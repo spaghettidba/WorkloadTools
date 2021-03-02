@@ -83,9 +83,10 @@ namespace WorkloadTools.Listener.Trace
         {
 
             string sqlPath = @"
-                SELECT path
-                FROM sys.traces
-                WHERE id = @traceId
+                SELECT value AS path
+                FROM ::fn_trace_getinfo(default)
+                WHERE traceid = @traceId
+                    AND property = 2;
             ";
 
             string sqlPathLocaldb = @"

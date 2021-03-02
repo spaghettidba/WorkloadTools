@@ -1,5 +1,5 @@
 ﻿IF SCHEMA_ID('{SchemaName}') IS NULL
-    EXEC('CREATE SCHEMA {SchemaName}');
+    EXEC('CREATE SCHEMA [{SchemaName}]');
 
 IF OBJECT_ID('{SchemaName}.WorkloadDetails') IS NULL
 
