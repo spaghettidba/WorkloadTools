@@ -19,6 +19,8 @@ namespace WorkloadViewer.Model
 
         public string Name { get; set; }
 
+        public DateTime StartDate { get; set; }
+
         public SqlConnectionInfo ConnectionInfo { get; set; }
 
         public void Load()
@@ -44,6 +46,13 @@ namespace WorkloadViewer.Model
                     preaggregation = 30;
                 if (numIntervals > 2000) // around 32 hours
                     preaggregation = 60;
+
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT TOP(1) end_time FROM " + ConnectionInfo.SchemaName + ".Intervals ORDER BY interval_id ASC ";
+                    cmd.CommandTimeout = 0;
+                    StartDate = (DateTime)cmd.ExecuteScalar();
+                }
 
                 using (SqlCommand cmd = conn.CreateCommand())
                 {

@@ -427,43 +427,46 @@ namespace WorkloadViewer.ViewModel
 
         private void InitializeCharts()
         {
-            CpuPlotModel = InitializePlotModel();
+            bool useDateAxis = _options.BenchmarkSchema == null;
+            double baseOffset = useDateAxis ? DateTimeAxis.ToDouble(_baselineWorkloadAnalysis.StartDate) : 0;
+
+            CpuPlotModel = InitializePlotModel(useDateAxis);
             CpuPlotModel.Axes[1].Title = "Cpu (us)";
             CpuPlotModel.Title = "Cpu";
-            CpuPlotModel.Series.Add(LoadCpuSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA")));
+            CpuPlotModel.Series.Add(LoadCpuSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA"),baseOffset));
             if(_options.BenchmarkSchema != null)
             {
-                CpuPlotModel.Series.Add(LoadCpuSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000")));
+                CpuPlotModel.Series.Add(LoadCpuSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000"), baseOffset));
             }
             CpuPlotModel.PlotAreaBorderThickness = new OxyThickness(1,0,0,1);
             PlotModels[0] = CpuPlotModel;
-            
 
-            DurationPlotModel = InitializePlotModel();
+
+            DurationPlotModel = InitializePlotModel(useDateAxis);
             DurationPlotModel.Axes[1].Title = "Duration (us)";
             DurationPlotModel.Title = "Duration";
-            DurationPlotModel.Series.Add(LoadDurationSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA")));
+            DurationPlotModel.Series.Add(LoadDurationSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA"), baseOffset));
             if (_options.BenchmarkSchema != null)
             {
-                DurationPlotModel.Series.Add(LoadDurationSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000")));
+                DurationPlotModel.Series.Add(LoadDurationSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000"), baseOffset));
             }
             DurationPlotModel.PlotAreaBorderThickness = new OxyThickness(1, 0, 0, 1);
             PlotModels[1] = DurationPlotModel;
 
-            BatchesPlotModel = InitializePlotModel();
+            BatchesPlotModel = InitializePlotModel(useDateAxis);
             BatchesPlotModel.Axes[1].Title = "Batches/second";
             BatchesPlotModel.Title = "Batches/second";
-            BatchesPlotModel.Series.Add(LoadBatchesSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA")));
+            BatchesPlotModel.Series.Add(LoadBatchesSeries(_baselineWorkloadAnalysis, OxyColor.Parse("#01B8AA"), baseOffset));
             if (_options.BenchmarkSchema != null)
             {
-                BatchesPlotModel.Series.Add(LoadBatchesSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000")));
+                BatchesPlotModel.Series.Add(LoadBatchesSeries(_benchmarkWorkloadAnalysis, OxyColor.Parse("#000000"), baseOffset));
             }
             BatchesPlotModel.PlotAreaBorderThickness = new OxyThickness(1, 0, 0, 1);
             PlotModels[2] = BatchesPlotModel;
         }
 
 
-        private PlotModel InitializePlotModel()
+        private PlotModel InitializePlotModel(bool dateXAxis)
         {
             PlotModel plotModel = new PlotModel();
             plotModel.LegendOrientation = LegendOrientation.Horizontal;
@@ -471,15 +474,33 @@ namespace WorkloadViewer.ViewModel
             plotModel.LegendPosition = LegendPosition.TopLeft;
             plotModel.LegendBackground = OxyColor.FromAColor(200, OxyColors.White);
 
-            LinearAxis offsetAxis = new LinearAxis() {
-                MajorGridlineStyle = LineStyle.Dot,
-                MinorGridlineStyle = LineStyle.None,
-                Position = AxisPosition.Bottom,
-                Title = "Offset minutes",
-                AbsoluteMinimum = 0,
-                MinorTickSize = 0
-            };
-            plotModel.Axes.Add(offsetAxis);
+            if (!dateXAxis)
+            {
+                LinearAxis offsetAxis = new LinearAxis()
+                {
+                    MajorGridlineStyle = LineStyle.Dot,
+                    MinorGridlineStyle = LineStyle.None,
+                    Position = AxisPosition.Bottom,
+                    Title = "Offset minutes",
+                    AbsoluteMinimum = 0,
+                    MinorTickSize = 0
+                };
+                plotModel.Axes.Add(offsetAxis);
+            }
+            else
+            {
+                LinearAxis offsetAxis = new DateTimeAxis()
+                {
+                    MajorGridlineStyle = LineStyle.Dot,
+                    MinorGridlineStyle = LineStyle.None,
+                    Position = AxisPosition.Bottom,
+                    Title = "Time",
+                    StringFormat = "HH:mm",
+                    MinorIntervalType = DateTimeIntervalType.Minutes,
+                    IntervalType = DateTimeIntervalType.Minutes,
+                };
+                plotModel.Axes.Add(offsetAxis);
+            }
             LinearAxis valueAxis1 = new LinearAxis() {
                 MajorGridlineStyle = LineStyle.Dot,
                 MinorGridlineStyle = LineStyle.None,
@@ -539,7 +560,7 @@ namespace WorkloadViewer.ViewModel
             }
         }
 
-        private Series LoadCpuSeries(WorkloadAnalysis analysis, OxyColor color)
+        private Series LoadCpuSeries(WorkloadAnalysis analysis, OxyColor color, double baseOffset)
         {
             if (analysis == null)
                 return null;
@@ -551,11 +572,14 @@ namespace WorkloadViewer.ViewModel
                 MarkerStroke = OxyColor.Parse("#FF0000"), //Red
                 MarkerType = MarkerType.None,
                 CanTrackerInterpolatePoints = false,
-                TrackerFormatString = "Offset: {2:0}\n{0}: {4:0}",
                 Title = analysis.Name,
                 Color = color,
                 Smooth = false
             };
+            if(baseOffset == 0)
+            {
+                cpuSeries.TrackerFormatString = "Offset: {2:0}\n{0}: {4:0}";
+            }
 
             var Table = from t in analysis.Points
                         where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
@@ -574,15 +598,26 @@ namespace WorkloadViewer.ViewModel
                             cpu = grp.Sum(t => t.SumCpuUs)
                         };
 
+            
+
             foreach (var p in Table)
             {
-                cpuSeries.Points.Add(new DataPoint(p.offset_minutes , p.cpu));
+                double xValue = 0;
+                if (baseOffset > 0)
+                {
+                    xValue = DateTimeAxis.ToDouble(DateTimeAxis.ToDateTime(baseOffset).AddMinutes(p.offset_minutes));
+                }
+                else
+                {
+                    xValue = p.offset_minutes;
+                }
+                cpuSeries.Points.Add(new DataPoint(xValue , p.cpu));
             }
 
             return cpuSeries;
         }
 
-        private Series LoadDurationSeries(WorkloadAnalysis analysis, OxyColor color)
+        private Series LoadDurationSeries(WorkloadAnalysis analysis, OxyColor color, double baseOffset)
         {
             if (analysis == null)
                 return null;
@@ -594,11 +629,14 @@ namespace WorkloadViewer.ViewModel
                 MarkerStroke = OxyColor.Parse("#FF0000"), //Red
                 MarkerType = MarkerType.None,
                 CanTrackerInterpolatePoints = false,
-                TrackerFormatString = "Offset: {2:0}\n{0}: {4:0}",
                 Title = analysis.Name,
                 Color = color, 
                 Smooth = false
             };
+            if (baseOffset == 0)
+            {
+                durationSeries.TrackerFormatString = "Offset: {2:0}\n{0}: {4:0}";
+            }
 
             var Table = from t in analysis.Points
                         where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
@@ -619,14 +657,23 @@ namespace WorkloadViewer.ViewModel
 
             foreach (var p in Table)
             {
-                durationSeries.Points.Add(new DataPoint(p.offset_minutes, p.duration));
+                double xValue = 0;
+                if (baseOffset > 0)
+                {
+                    xValue = DateTimeAxis.ToDouble(DateTimeAxis.ToDateTime(baseOffset).AddMinutes(p.offset_minutes));
+                }
+                else
+                {
+                    xValue = p.offset_minutes;
+                }
+                durationSeries.Points.Add(new DataPoint(xValue, p.duration));
             }
 
             return durationSeries;
         }
 
 
-        private Series LoadBatchesSeries(WorkloadAnalysis analysis, OxyColor color)
+        private Series LoadBatchesSeries(WorkloadAnalysis analysis, OxyColor color, double baseOffset)
         {
             if (analysis == null)
                 return null;
@@ -638,12 +685,14 @@ namespace WorkloadViewer.ViewModel
                 MarkerStroke = OxyColor.Parse("#FF0000"), //Red
                 MarkerType = MarkerType.None,
                 CanTrackerInterpolatePoints = false,
-                TrackerFormatString = "Offset: {2:0}\n{0}: {4:0}",
                 Title = analysis.Name,
                 Color = color,
                 Smooth = false
             };
-
+            if (baseOffset == 0)
+            {
+                batchesSeries.TrackerFormatString = "Offset: {2:0}\n{0}: {4:0}";
+            }
 
             var Table = from t in analysis.Points
                         where ApplicationList.Where(f => f.IsChecked).Select(f => f.Name).Contains(t.ApplicationName)
@@ -664,7 +713,16 @@ namespace WorkloadViewer.ViewModel
 
             foreach (var p in Table)
             {
-                batchesSeries.Points.Add(new DataPoint(p.offset_minutes, p.execution_count));
+                double xValue = 0;
+                if (baseOffset > 0)
+                {
+                    xValue = DateTimeAxis.ToDouble(DateTimeAxis.ToDateTime(baseOffset).AddMinutes(p.offset_minutes));
+                }
+                else
+                {
+                    xValue = p.offset_minutes;
+                }
+                batchesSeries.Points.Add(new DataPoint(xValue, p.execution_count));
             }
 
             return batchesSeries;
