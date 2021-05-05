@@ -176,7 +176,50 @@ namespace WorkloadTools
                         WHERE [Event_Time] >= DATEADD(minute, -{0}, GETDATE())
                         OPTION (RECOMPILE);
                     END
-                    ELSE
+
+                    IF SERVERPROPERTY('Edition') = 'SQL Azure'
+                        AND SERVERPROPERTY('EngineEdition') = 8 -- Managed Instance
+                    BEGIN
+                        WITH PerfCounters AS (
+	                        SELECT DISTINCT
+	                             RTrim(spi.[object_name]) AS [object_name]
+	                            ,RTrim(spi.[counter_name]) AS [counter_name]
+	                            ,RTRIM(spi.instance_name) AS [instance_name]
+	                            ,CAST(spi.[cntr_value] AS BIGINT) AS [cntr_value]
+	                            ,spi.[cntr_type]
+	                        FROM sys.dm_os_performance_counters AS spi 
+	                        LEFT JOIN sys.databases AS d
+		                        ON LEFT(spi.[instance_name], 36) -- some instance_name values have an additional identifier appended after the GUID
+		                        = d.[name]
+	                        WHERE
+		                        counter_name IN (
+			                         'CPU usage %'
+			                        ,'CPU usage % base'
+		                        ) 
+                        )
+                        SELECT CAST(SUM(value) AS int) AS avg_CPU_percent
+                        FROM (
+                            SELECT 
+	                            CAST(CASE WHEN pc.[cntr_type] = 537003264 AND pc1.[cntr_value] > 0 THEN (pc.[cntr_value] * 1.0) / (pc1.[cntr_value] * 1.0) * 100 ELSE pc.[cntr_value] END AS float(10)) AS [value]
+                            from PerfCounters pc
+                            LEFT OUTER JOIN PerfCounters AS pc1
+	                            ON (
+		                            pc.[counter_name] = REPLACE(pc1.[counter_name],' base','')
+		                            OR pc.[counter_name] = REPLACE(pc1.[counter_name],' base',' (ms)')
+	                            )
+	                            AND pc.[object_name] = pc1.[object_name]
+	                            AND pc.[instance_name] = pc1.[instance_name]
+	                            AND pc1.[counter_name] LIKE '%base'
+                            WHERE
+	                            pc.[counter_name] NOT LIKE '% base'
+                                AND pc.object_name LIKE '%:Resource Pool Stats'
+                        ) AS p
+                        OPTION (RECOMPILE);
+                    END
+
+
+                    ELSE -- On Premises
+
                     BEGIN
                         WITH ts_now(ts_now) AS (
                             SELECT cpu_ticks/(cpu_ticks/ms_ticks) FROM sys.dm_os_sys_info WITH (NOLOCK)
