@@ -25,6 +25,7 @@ namespace WorkloadTools.Listener.Trace
         private int traceId = -1;
 
         private TraceUtils utils;
+        private bool _checkedFormat;
 
 
         public FileTraceEventDataReader(string connectionString, WorkloadEventFilter filter, IEventQueue events) : base(connectionString, filter, events)
@@ -82,9 +83,10 @@ namespace WorkloadTools.Listener.Trace
         {
 
             string sqlPath = @"
-                SELECT path
-                FROM sys.traces
-                WHERE id = @traceId
+                SELECT value AS path
+                FROM ::fn_trace_getinfo(default)
+                WHERE traceid = @traceId
+                    AND property = 2;
             ";
 
             string sqlPathLocaldb = @"
@@ -105,10 +107,12 @@ namespace WorkloadTools.Listener.Trace
             {
                 if (conn.DataSource.StartsWith("(localdb)", StringComparison.InvariantCultureIgnoreCase))
                 {
+                    _checkedFormat = false;
                     cmdPath.CommandText = sqlPathLocaldb;
                 }
                 else
                 {
+                    _checkedFormat = true;
                     cmdPath.CommandText = sqlPath;
 
                     // Get trace id
@@ -190,6 +194,17 @@ namespace WorkloadTools.Listener.Trace
                     throw;
                 }
             }
+
+            // check columns in the source file (if localdb)
+            // before returning the read iteration
+            if (!_checkedFormat)
+            {
+                if (!utils.CheckTraceFormat(conn, currentIteration.StartFileName))
+                {
+                    throw new InvalidDataException($"The trace file {currentIteration.StartFileName} lacks critical column information. See the documentation for required trace columns.");
+                }
+            }
+            
             return currentIteration;
         }
 

@@ -171,7 +171,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
          */
         private void InitializeConnection()
         {
-            if (conn == null)
+            if (conn == null && connectionString != null)
             {
                 conn = new SQLiteConnection(connectionString);
                 conn.Open();
@@ -417,7 +417,10 @@ namespace WorkloadTools.Consumer.WorkloadFile
             logger.Info("Closing the connection to the output file");
 
             forceFlush = true;
-            Flush();
+            if (conn != null)
+            {
+                Flush();
+            }
 
             try
             {

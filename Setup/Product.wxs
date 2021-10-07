@@ -24,7 +24,28 @@
     <Property Id="REINSTALLMODE" Value="amus" />
 
 
-
+    <!--
+      These components are built using harvesting with Heat.
+      The configuration is inside the .wixproj file, 
+      that contains a section named <Target Name="BeforeBuild">
+      Inside that section there's a list of tags that control what Heat does.
+      
+      Example:
+      
+      <HeatDirectory OutputFile="$(ProjectDir)\harvest.wxs" Directory="..\SqlWorkload\bin\$(Platform)\$(Configuration)" ComponentGroupName="ProductComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.SqlWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" Transforms="transform.xsl" />
+      
+      Heat harvests all the files in the target folder of each project
+      and builds a .wxs file that contains all the references to those file.
+      If the same library is used by multiple projects, it will be present
+      in multiple harvested .wxs files, which causes a "duplicate id" error
+      during the build. 
+      For this reason, it is possible to exclude the libraries known to be
+      duplicated, using the Transform attribute of the <HeatDirectory> tag.
+      The transform is the path to a .xsl file that contains the transformations
+      that you can apply to a .wxs file before using it.
+      XSL is a complete sorcery to me, but the ones included in this projects
+      contain the directives to remove known duplicate libraries.
+    -->
     <Feature Id="ProductFeature" Title="WorkloadTools" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
       <ComponentGroupRef Id="WorkloadViewerComponents" />

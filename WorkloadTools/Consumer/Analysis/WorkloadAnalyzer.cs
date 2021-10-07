@@ -361,7 +361,19 @@ namespace WorkloadTools.Consumer.Analysis
 
         public void Stop()
         {
-            WriteToServer(lastEventTime);
+            try
+            {
+                WriteToServer(lastEventTime);
+            }
+            catch (Exception e)
+            {
+                // duplicate key errors might be thrown at this time
+                // that's expected if trying to upload to the same
+                // interval already uploaded and new queries with the 
+                // same hash have been captured
+                if(!e.Message.Contains("Violation of PRIMARY KEY"))
+                    throw;
+            }
             stopped = true;
         }
 

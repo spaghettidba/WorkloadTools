@@ -19,6 +19,8 @@ namespace WorkloadViewer.Model
 
         public string Name { get; set; }
 
+        public DateTime StartDate { get; set; }
+
         public SqlConnectionInfo ConnectionInfo { get; set; }
 
         public void Load()
@@ -35,6 +37,7 @@ namespace WorkloadViewer.Model
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM " + ConnectionInfo.SchemaName + ".Intervals WHERE duration_minutes > 0;";
+                    cmd.CommandTimeout = 0;
                     numIntervals = (int)cmd.ExecuteScalar();
                 }
                 if (numIntervals > 500) // around 8 hours
@@ -46,7 +49,15 @@ namespace WorkloadViewer.Model
 
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
+                    cmd.CommandText = "SELECT TOP(1) end_time FROM " + ConnectionInfo.SchemaName + ".Intervals ORDER BY interval_id ASC ";
+                    cmd.CommandTimeout = 0;
+                    StartDate = (DateTime)cmd.ExecuteScalar();
+                }
+
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
                     cmd.CommandText = "SELECT * FROM " + ConnectionInfo.SchemaName + ".NormalizedQueries";
+                    cmd.CommandTimeout = 0;
                     using (var rdr = cmd.ExecuteReader())
                     {
                         while (rdr.Read())
@@ -63,10 +74,11 @@ namespace WorkloadViewer.Model
 
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-
+                    cmd.CommandTimeout = 0;
                     string sqlText = WorkloadViewer.Properties.Resources.WorkloadAnalysis;
                     cmd.CommandText = sqlText.Replace("capture", ConnectionInfo.SchemaName);
                     cmd.CommandText = cmd.CommandText.Replace("preaggregation", preaggregation.ToString());
+                    cmd.CommandTimeout = 0;
                     using (var rdr = cmd.ExecuteReader())
                     {
                         Points = new ObservableCollection<WorkloadAnalysisPoint>();

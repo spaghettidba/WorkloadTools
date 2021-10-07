@@ -92,6 +92,13 @@ namespace SqlWorkload
             options.ConfigurationFile = System.IO.Path.GetFullPath(options.ConfigurationFile);
             logger.Info(String.Format("Reading configuration from '{0}'", options.ConfigurationFile));
 
+            if (!File.Exists(options.ConfigurationFile))
+            {
+                logger.Error("File not found!");
+                Console.WriteLine(options.GetUsage());
+                return;
+            }
+
             SqlWorkloadConfig config = SqlWorkloadConfig.LoadFromFile(options.ConfigurationFile);
             config.Controller.Listener.Source = System.IO.Path.GetFullPath(config.Controller.Listener.Source);
 
@@ -100,12 +107,13 @@ namespace SqlWorkload
                 logger.Info("Received shutdown signal...");
                 source.CancelAfter(TimeSpan.FromSeconds(100)); // give a 100 seconds cancellation grace period 
                 config.Controller.Stop();
-                config.Controller.Dispose();
             };
 
             Task t = processController(config.Controller);
             t.Wait();
             logger.Info("Controller stopped.");
+            config.Controller.Dispose();
+            logger.Info("Controller disposed.");
         }
 
 
@@ -119,7 +127,6 @@ namespace SqlWorkload
             finally
             {
                 Console.WriteLine("Caught unhandled exception...");
-
             }
         }
 

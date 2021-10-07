@@ -53,5 +53,30 @@ namespace WorkloadTools.Listener.Trace
                 return (string)cmd.ExecuteScalar();
             }
         }
+
+        
+        public bool CheckTraceFormat(SqlConnection conn, string path)
+        {
+            string sql = @"
+                SELECT COUNT(*) AS cnt
+                FROM(
+                    SELECT TOP(100) *
+                    FROM fn_trace_gettable(@path, default)
+                ) AS data
+                WHERE EventSequence IS NOT NULL
+                    AND SPID IS NOT NULL
+            ";
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = sql;
+                var p = cmd.CreateParameter();
+                p.ParameterName = "@path";
+                p.DbType = System.Data.DbType.AnsiString;
+                p.Value = path;
+                cmd.Parameters.Add(p);
+                return ((int)cmd.ExecuteScalar()) > 0;
+            }
+
+        }
     }
 }

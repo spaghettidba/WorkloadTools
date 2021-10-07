@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WorkloadTools.Consumer.Analysis;
 using WorkloadTools.Listener;
+using WorkloadTools.Util;
 
 namespace WorkloadTools.Consumer.Replay
 {
@@ -82,16 +83,10 @@ namespace WorkloadTools.Consumer.Replay
         {
             logger.Trace($"Worker [{Name}] - Connecting to server {ConnectionInfo.ServerName} for replay...");
             ConnectionInfo.DatabaseMap = this.DatabaseMap;
-            string connString = BuildConnectionString();
+            string connString = ConnectionInfo.ConnectionString;
             conn = new SqlConnection(connString);
             conn.Open();
             logger.Trace($"Worker [{Name}] - Connected");
-        }
-
-        private string BuildConnectionString()
-        {
-            string connectionString = ConnectionInfo.ConnectionString + "; max pool size=500"; 
-            return connectionString;
         }
 
         public void Start()
@@ -232,7 +227,9 @@ namespace WorkloadTools.Consumer.Replay
                 // look up the statement to unprepare in the dictionary
                 if (preparedStatements.ContainsKey(nst.Handle))
                 {
-                    command.CommandText = nst.NormalizedText + " " + preparedStatements[nst.Handle];
+                    // the sp_execute statement has already been "normalized"
+                    // by replacing the original statement number with the § placeholder
+                    command.CommandText = nst.NormalizedText.ReplaceFirst("§", preparedStatements[nst.Handle].ToString());
 
                     if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_UNPREPARE)
                         preparedStatements.Remove(nst.Handle);
@@ -341,6 +338,7 @@ namespace WorkloadTools.Consumer.Replay
 
                         logger.Info($"Worker [{Name}] - {commandCount} commands executed.");
                         logger.Info($"Worker [{Name}] - {Commands.Count} commands pending.");
+                        logger.Info($"Worker [{Name}] - Last Event Sequence: {command.EventSequence}");
                         logger.Info($"Worker [{Name}] - {(int)cps} commands per second.");
                     }
                 }
@@ -359,13 +357,13 @@ namespace WorkloadTools.Consumer.Replay
 
                 if (StopOnError)
                 {
-                    logger.Error($"Worker[{Name}] - Error: \n{command.CommandText}");
+                    logger.Error($"Worker[{Name}] - Sequence[{command.EventSequence}] - Error: \n{command.CommandText}");
                     throw;
                 }
                 else
                 {
-                    logger.Trace($"Worker [{Name}] - Error: {command.CommandText}");
-                    logger.Warn($"Worker [{Name}] - Error: {e.Message}");
+                    logger.Trace($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {command.CommandText}");
+                    logger.Warn($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
                     logger.Trace(e.StackTrace);
                 }
             }
@@ -373,12 +371,12 @@ namespace WorkloadTools.Consumer.Replay
             {
                 if (StopOnError)
                 {
-                    logger.Error($"Worker[{Name}] - Error: \n{command.CommandText}");
+                    logger.Error($"Worker[{Name}] - Sequence[{command.EventSequence}] - Error: \n{command.CommandText}");
                     throw;
                 }
                 else
                 {
-                    logger.Error($"Worker [{Name}] - Error: {e.Message}");
+                    logger.Error($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
                     logger.Error(e.StackTrace);
                 }
             }
@@ -395,6 +393,8 @@ namespace WorkloadTools.Consumer.Replay
             string msg = "";
             msg += "DATABASE:" + Environment.NewLine;
             msg += Command.Database + Environment.NewLine;
+            msg += "SEQUENCE:" + Environment.NewLine;
+            msg += Command.EventSequence + Environment.NewLine;
             msg += "MESSAGE:" + Environment.NewLine;
             msg += ErrorMessage + Environment.NewLine;
             msg += "--------------------" + Environment.NewLine;
@@ -409,13 +409,20 @@ namespace WorkloadTools.Consumer.Replay
             // Raise a custom event. Both SqlTrace and Extended Events can capture this event.
             string sql = "EXEC sp_trace_generateevent @eventid = @eventid, @userinfo = @userinfo, @userdata = @userdata;";
 
-            using (SqlCommand cmd = new SqlCommand(sql))
+            try
             {
-                cmd.Connection = conn;
-                cmd.Parameters.AddWithValue("@eventid", type);
-                cmd.Parameters.AddWithValue("@userinfo", info);
-                cmd.Parameters.AddWithValue("@userdata", Encoding.Unicode.GetBytes(message.Substring(0, message.Length > 8000 ? 8000 : message.Length)));
-                cmd.ExecuteNonQuery();
+                using (SqlCommand cmd = new SqlCommand(sql))
+                {
+                    cmd.Connection = conn;
+                    cmd.Parameters.Add(new SqlParameter("@eventid", System.Data.SqlDbType.Int) { Value = type });
+                    cmd.Parameters.Add(new SqlParameter("@userinfo", System.Data.SqlDbType.NVarChar, 128) { Value = info });
+                    cmd.Parameters.Add(new SqlParameter("@userdata", System.Data.SqlDbType.VarBinary, 8000) { Value = Encoding.Unicode.GetBytes(message.Substring(0, message.Length > 8000 ? 8000 : message.Length)) });
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Warn($"Worker[{Name}] - Unable to raise error event. Message: " + ex.Message);
             }
         }
 

@@ -41,7 +41,7 @@ SqlWorkload accepts two command line switches:
 
 In fact, SqlWorkload supports a multitude of parameters and specifying them all in the command line can become really tedious. For this reason, SqlWorkload supports `.JSON` configuration files.
 
-This is a sample configuration file. Please refer to [the documentation](./Wiki/SqlWorkload) to see the full list of available configuration options.
+This is a sample configuration file. Please refer to [the documentation](https://github.com/spaghettidba/WorkloadTools/wiki) to see the full list of available configuration options.
 
 ```javascript
 {

@@ -27,6 +27,9 @@ namespace WorkloadTools.Listener.File
         private SQLiteDataReader reader;
         private string connectionString;
 
+        private MessageWorkloadEvent totalEventsMessage = null;
+        private bool totalEventsMessageSent = false;
+
         public FileWorkloadListener() : base()
         {
             Filter = new FileEventFilter();
@@ -42,6 +45,12 @@ namespace WorkloadTools.Listener.File
             {
                 throw new FormatException($"The input file \"{Source}\" is not a valid workload file");
             }
+
+            totalEventsMessage = new MessageWorkloadEvent()
+            {
+                MsgType = MessageWorkloadEvent.MessageType.TotalEvents,
+                Value = totalEvents
+            };
 
             // Push Down EventFilters
             string filters = String.Empty;
@@ -139,6 +148,17 @@ namespace WorkloadTools.Listener.File
             WorkloadEvent result = null;
             long commandOffset = 0;
 
+            // first I need to return the event that
+            // contains the total number of events in the file
+            // once this is done I can start sending the actual events
+            if(!totalEventsMessageSent)
+            {
+                totalEventsMessageSent = true;
+                return totalEventsMessage;
+            }
+
+
+            // process actual events from the file
             try
             {
                 if (reader == null)
@@ -147,7 +167,7 @@ namespace WorkloadTools.Listener.File
                 }
 
                 bool validEventFound = false;
-               
+                SqlTransformer transformer = new SqlTransformer();
 
                 do
                 {
@@ -188,6 +208,16 @@ namespace WorkloadTools.Listener.File
                             // the event without waiting
                             execEvent.ReplayOffset = 0;
                         }
+
+                        // preprocess and filter events
+                        if (execEvent.Type <= WorkloadEvent.EventType.BatchCompleted)
+                        {
+                            if (transformer.Skip(execEvent.Text))
+                                continue;
+
+                            execEvent.Text = transformer.Transform(execEvent.Text);
+                        }
+
                     }
                     // Filter events
                     if (result is ExecutionWorkloadEvent)

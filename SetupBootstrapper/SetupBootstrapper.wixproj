@@ -43,8 +43,10 @@
   <ItemGroup>
     <Content Include="License\Icon.png" />
     <Content Include="License\License.rtf" />
+    <Content Include="postbuild.bat" />
     <Content Include="Redist\vcredist_x64.exe" />
     <Content Include="Redist\vcredist_x86.exe" />
+    <Content Include="SignMsi.ps1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Setup\Setup.wixproj">
@@ -62,7 +64,7 @@
     <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
   </Target>
   <PropertyGroup>
-    <PostBuildEvent>move /Y "!(TargetPath)" "$(TargetDir)$(SolutionName)_$(Platform)$(TargetExt)"</PostBuildEvent>
+    <PostBuildEvent>call $(ProjectDir)postbuild.bat "!(TargetPath)" "$(TargetDir)$(SolutionName)_$(Platform)$(TargetExt)"</PostBuildEvent>
   </PropertyGroup>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.

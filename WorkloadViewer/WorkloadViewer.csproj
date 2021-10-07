@@ -134,6 +134,7 @@
     <Compile Include="ViewModel\ConnectionInfoEditorViewModel.cs" />
     <Compile Include="ViewModel\DictionaryExtensions.cs" />
     <Compile Include="ViewModel\FilterDefinition.cs" />
+    <Compile Include="ViewModel\LinqExtensions.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="Model\QueryDetails.cs" />
     <Compile Include="ViewModel\Message.cs" />

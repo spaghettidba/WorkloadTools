@@ -8,6 +8,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>Setup</OutputName>
     <OutputType>Package</OutputType>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
@@ -60,6 +61,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="postbuild.bat" />
+    <Content Include="SignMsi.ps1" />
     <Content Include="transform.xsl" />
     <Content Include="transform2.xsl" />
   </ItemGroup>
@@ -88,9 +91,9 @@
     <HeatDirectory OutputFile="$(ProjectDir)\harvest3.wxs" Directory="..\ConvertWorkload\bin\$(Configuration)" ComponentGroupName="ConvertWorkloadComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.ConvertWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" Transforms="transform.xsl;transform2.xsl" />
   </Target>
   <PropertyGroup>
-    <PostBuildEvent>move /Y "!(TargetPath)" "$(TargetDir)$(SolutionName)_$(Platform)$(TargetExt)"</PostBuildEvent>
+    <PreBuildEvent />
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent />
+    <PostBuildEvent>call $(ProjectDir)postbuild.bat "!(TargetPath)" "$(TargetDir)$(SolutionName)_$(Platform)$(TargetExt)"</PostBuildEvent>
   </PropertyGroup>
 </Project>
