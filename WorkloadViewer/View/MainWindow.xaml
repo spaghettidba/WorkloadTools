@@ -303,21 +303,26 @@
                                 <DataGridTextColumn Header="query_normalized"     Binding="{Binding query_normalized}" Visibility="Collapsed" />
                                 <DataGridTextColumn Header="sum_duration_us"      Binding="{Binding sum_duration_us, StringFormat=N0}" />
                                 <DataGridTextColumn Header="sum_duration_us2"     Binding="{Binding sum_duration_us2, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
-                                <DataGridTextColumn Header="diff_sum_duration_us" Binding="{Binding diff_sum_duration_us, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
+                                <DataGridTextColumn Header="diff_sum_duration_us" Binding="{Binding diff_sum_duration_us, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
                                 <DataGridTextColumn Header="avg_duration_us"      Binding="{Binding avg_duration_us, StringFormat=N0}" />
                                 <DataGridTextColumn Header="avg_duration_us2"     Binding="{Binding avg_duration_us2, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
+                                <DataGridTextColumn Header="diff_avg_duration_us" Binding="{Binding diff_avg_duration_us, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
                                 <DataGridTextColumn Header="sum_cpu_us"           Binding="{Binding sum_cpu_us, StringFormat=N0}" />
                                 <DataGridTextColumn Header="sum_cpu_us2"          Binding="{Binding sum_cpu_us2, StringFormat=N0}"  Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
                                 <DataGridTextColumn Header="diff_sum_cpu_us"      Binding="{Binding diff_sum_cpu_us, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
                                 <DataGridTextColumn Header="avg_cpu_us"           Binding="{Binding avg_cpu_us, StringFormat=N0}" />
                                 <DataGridTextColumn Header="avg_cpu_us2"          Binding="{Binding avg_cpu_us2, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
+                                <DataGridTextColumn Header="diff_avg_cpu_us"      Binding="{Binding diff_avg_cpu_us, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
                                 <DataGridTextColumn Header="sum_reads"            Binding="{Binding sum_reads, StringFormat=N0}" />
                                 <DataGridTextColumn Header="sum_reads2"           Binding="{Binding sum_reads2, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
+                                <DataGridTextColumn Header="diff_sum_reads"       Binding="{Binding diff_sum_reads, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
                                 <DataGridTextColumn Header="avg_reads"            Binding="{Binding avg_reads, StringFormat=N0}" />
                                 <DataGridTextColumn Header="avg_reads2"           Binding="{Binding avg_reads2, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
+                                <DataGridTextColumn Header="diff_avg_reads"       Binding="{Binding diff_avg_reads, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
                                 <DataGridTextColumn Header="execution_count"      Binding="{Binding execution_count, StringFormat=N0}" />
                                 <DataGridTextColumn Header="execution_count2"     Binding="{Binding execution_count2, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}" />
-                            </DataGrid.Columns>
+                                <DataGridTextColumn Header="diff_execution_count" Binding="{Binding diff_execution_count, StringFormat=N0}" Visibility="{Binding CompareModeVisibility, Source={StaticResource MainViewModel}}"/>
+                        </DataGrid.Columns>
                         </DataGrid>
                     <avalonedit:TextEditor 
                         SyntaxHighlighting="SQL" 
