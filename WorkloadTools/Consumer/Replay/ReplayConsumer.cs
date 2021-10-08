@@ -28,7 +28,7 @@ namespace WorkloadTools.Consumer.Replay
         public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();
 
 		public SqlConnectionInfo ConnectionInfo { get; set; }
-        public SynchronizationModeEnum SynchronizationMode { get; set; } = SynchronizationModeEnum.WorkerTask;
+        public ThreadingModeEnum ThreadingMode { get; set; } = ThreadingModeEnum.WorkerTask;
 
         private ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
         private Thread runner;
@@ -42,7 +42,7 @@ namespace WorkloadTools.Consumer.Replay
         // for realtime replays this is not available
         private long totalEventCount = 0;
 
-        public enum SynchronizationModeEnum : int
+        public enum ThreadingModeEnum : int
         {
             ThreadPools = 1,
             Tasks = 2,
@@ -270,7 +270,7 @@ namespace WorkloadTools.Consumer.Replay
                         if (wrk.HasCommands)
                         {
 
-                            if (SynchronizationMode == SynchronizationModeEnum.ThreadPools)
+                            if (ThreadingMode == ThreadingModeEnum.ThreadPools)
                             {
                                 try
                                 {
@@ -288,7 +288,7 @@ namespace WorkloadTools.Consumer.Replay
                                     WorkLimiter.Release();
                                 }
                             }
-                            else if (SynchronizationMode == SynchronizationModeEnum.Tasks)
+                            else if (ThreadingMode == ThreadingModeEnum.Tasks)
                             {
                                 try
                                 {
@@ -305,7 +305,7 @@ namespace WorkloadTools.Consumer.Replay
                                     WorkLimiter.Release();
                                 }
                             }
-                            else if (SynchronizationMode == SynchronizationModeEnum.WorkerTask)
+                            else if (ThreadingMode == ThreadingModeEnum.WorkerTask)
                             {
                                 try
                                 {
@@ -319,7 +319,7 @@ namespace WorkloadTools.Consumer.Replay
                                     logger.Error(e, "Exception in ReplayWorker.RunWorkers - WorkerTask");
                                 }
                             }
-                            else if (SynchronizationMode == SynchronizationModeEnum.Serial)
+                            else if (ThreadingMode == ThreadingModeEnum.Serial)
                             {
                                 try
                                 {
@@ -334,7 +334,7 @@ namespace WorkloadTools.Consumer.Replay
                     };
 
 
-                    if (SynchronizationMode == SynchronizationModeEnum.WorkerTask)
+                    if (ThreadingMode == ThreadingModeEnum.WorkerTask)
                     {
                         // Sleep 1 second before checking whether more workers
                         // are available and not started
@@ -361,7 +361,7 @@ namespace WorkloadTools.Consumer.Replay
             }
 
 
-            if (SynchronizationMode == SynchronizationModeEnum.WorkerTask)
+            if (ThreadingMode == ThreadingModeEnum.WorkerTask)
             {
                 foreach (ReplayWorker wrk in ReplayWorkers.Values)
                 {
