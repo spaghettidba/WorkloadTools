@@ -42,12 +42,12 @@ namespace WorkloadTools.Consumer.Replay
         // for realtime replays this is not available
         private long totalEventCount = 0;
 
-        public enum SynchronizationModeEnum
+        public enum SynchronizationModeEnum : int
         {
-            ThreadPools,
-            Tasks,
-            WorkerTask,
-            Serial
+            ThreadPools = 1,
+            Tasks = 2,
+            WorkerTask = 3,
+            Serial = 4
         }
 
         public ReplayConsumer()
@@ -237,8 +237,11 @@ namespace WorkloadTools.Consumer.Replay
             ReplayWorker outWrk;
             ReplayWorkers.TryRemove(Int32.Parse(name), out outWrk);
             logger.Trace($"Worker [{name}] - Disposing");
-            outWrk.Stop();
-            outWrk.Dispose();
+            if (outWrk != null)
+            {
+                outWrk.Stop();
+                outWrk.Dispose();
+            }
         }
 
 
@@ -310,6 +313,17 @@ namespace WorkloadTools.Consumer.Replay
                                     {
                                         wrk.Start();
                                     }
+                                }
+                                catch (Exception e)
+                                {
+                                    logger.Error(e, "Exception in ReplayWorker.RunWorkers - WorkerTask");
+                                }
+                            }
+                            else if (SynchronizationMode == SynchronizationModeEnum.Serial)
+                            {
+                                try
+                                {
+                                    wrk.ExecuteNextCommand();
                                 }
                                 catch (Exception e)
                                 {
