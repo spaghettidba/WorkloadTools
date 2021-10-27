@@ -24,8 +24,8 @@ namespace WorkloadTools.Consumer.Replay
 		public int QueryTimeoutSeconds { get; set; } = 30;
 		public int WorkerStatsCommandCount { get; set; } = 1000;
 		public bool MimicApplicationName { get; set; } = false;
-        public int FailRetryCount { get; set; }
-        public int TimeoutRetryCount { get; set; }
+        public int FailRetryCount { get; set; } = 0;
+        public int TimeoutRetryCount { get; set; } = 0;
 
         public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();
 
