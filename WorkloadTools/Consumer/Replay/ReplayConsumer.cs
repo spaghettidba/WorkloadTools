@@ -24,6 +24,8 @@ namespace WorkloadTools.Consumer.Replay
 		public int QueryTimeoutSeconds { get; set; } = 30;
 		public int WorkerStatsCommandCount { get; set; } = 1000;
 		public bool MimicApplicationName { get; set; } = false;
+        public int FailRetryCount { get; set; }
+        public int TimeoutRetryCount { get; set; }
 
         public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();
 
@@ -129,8 +131,10 @@ namespace WorkloadTools.Consumer.Replay
 					WorkerStatsCommandCount = this.WorkerStatsCommandCount,
 					MimicApplicationName = this.MimicApplicationName,
                     DatabaseMap = this.DatabaseMap,
-                    StartTime = startTime
-				};
+                    StartTime = startTime,
+                    FailRetryCount = this.FailRetryCount,
+                    TimeoutRetryCount = this.TimeoutRetryCount
+                };
                 ReplayWorkers.TryAdd(session_id, rw);
                 rw.AppendCommand(command);
 

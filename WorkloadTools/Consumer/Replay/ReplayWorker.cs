@@ -23,6 +23,9 @@ namespace WorkloadTools.Consumer.Replay
         public int WorkerStatsCommandCount { get; set; }
         public bool MimicApplicationName { get; set; }
 
+        public int FailRetryCount { get; set; }
+        public int TimeoutRetryCount { get; set; }
+
         private SqlConnection conn { get; set; }
 
         public SqlConnectionInfo ConnectionInfo { get; set; }
@@ -166,7 +169,7 @@ namespace WorkloadTools.Consumer.Replay
 
 
         [MethodImpl(MethodImplOptions.Synchronized)]
-        public void ExecuteCommand(ReplayCommand command)
+        public void ExecuteCommand(ReplayCommand command, int failRetryCount = 0, int timeoutRetryCount = 0)
         {
             LastCommandTime = DateTime.Now;
 
@@ -365,6 +368,17 @@ namespace WorkloadTools.Consumer.Replay
                     logger.Trace($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {command.CommandText}");
                     logger.Warn($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
                     logger.Trace(e.StackTrace);
+
+                    if (e.Number != -2 && failRetryCount < FailRetryCount)
+                    {
+                        logger.Warn($"Worker [{Name}] - Sequence[{command.EventSequence}] - Retrying command (current fail retry: {failRetryCount})");
+                        ExecuteCommand(command, ++failRetryCount, timeoutRetryCount);
+                    }
+                    if (e.Number == -2 && timeoutRetryCount < TimeoutRetryCount)
+                    {
+                        logger.Warn($"Worker [{Name}] - Sequence[{command.EventSequence}] - Retrying command (current timeout retry: {timeoutRetryCount})");
+                        ExecuteCommand(command, failRetryCount, ++timeoutRetryCount);
+                    }
                 }
             }
             catch (Exception e)
