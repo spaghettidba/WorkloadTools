@@ -24,6 +24,8 @@ Invoke-Expression $signParams
 
 $params = $(
      'sign'
+    ,'/fd'
+    ,'SHA1'
     ,'/f'
     ,('"' + $certPath + '"')
     ,'/p'
