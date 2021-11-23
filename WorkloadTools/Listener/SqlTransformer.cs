@@ -82,6 +82,8 @@ namespace WorkloadTools.Listener
 
         public bool Skip(string command)
         {
+            if (String.IsNullOrEmpty(command))
+                return true;
             // skip reset connection commands
             //if (command.Contains("sp_reset_connection"))
             //    return true;
