@@ -15,7 +15,7 @@ namespace WorkloadTools.Consumer.Replay
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
         private SpinWait spin = new SpinWait();
-        public int ThreadLimit = 32;
+        public int ThreadLimit = 256;//32
         public int InactiveWorkerTerminationTimeoutSeconds = 300;
         private Semaphore WorkLimiter;
 
