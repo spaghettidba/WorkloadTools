@@ -360,14 +360,19 @@ namespace WorkloadTools.Consumer.Replay
 
                 if (StopOnError)
                 {
+                    
                     logger.Error($"Worker[{Name}] - Sequence[{command.EventSequence}] - Error: \n{command.CommandText}");
+                    ClearPool(conn);
                     throw;
                 }
                 else
                 {
+                   
                     logger.Trace($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {command.CommandText}");
                     logger.Warn($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
                     logger.Trace(e.StackTrace);
+
+                    ClearPool(conn);
 
                     if (e.Number != -2 && failRetryCount < FailRetryCount)
                     {
@@ -386,13 +391,30 @@ namespace WorkloadTools.Consumer.Replay
                 if (StopOnError)
                 {
                     logger.Error($"Worker[{Name}] - Sequence[{command.EventSequence}] - Error: \n{command.CommandText}");
+                    ClearPool(conn); 
                     throw;
                 }
                 else
                 {
-                    logger.Error($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
+                	logger.Error($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
                     logger.Error(e.StackTrace);
+
+                    ClearPool(conn);
                 }
+            }
+        }
+
+        private void ClearPool(SqlConnection conn)
+        {
+            if (conn == null)
+                return;
+
+            try { SqlConnection.ClearPool(conn); } catch (Exception) { /*swallow */}
+
+            if (conn.State == System.Data.ConnectionState.Open)
+            {
+                try { conn.Close(); } catch (Exception) { /* swallow */ }
+                try { conn.Dispose(); } catch (Exception) { /* swallow */ }
             }
         }
 
@@ -433,6 +455,8 @@ namespace WorkloadTools.Consumer.Replay
                     cmd.Parameters.Add(new SqlParameter("@userdata", System.Data.SqlDbType.VarBinary, 8000) { Value = Encoding.Unicode.GetBytes(message.Substring(0, message.Length > 8000 ? 8000 : message.Length)) });
                     cmd.ExecuteNonQuery();
                 }
+
+                ClearPool(conn);
             }
             catch (Exception ex)
             {
