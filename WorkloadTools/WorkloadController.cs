@@ -41,7 +41,7 @@ namespace WorkloadTools
 
                 logger.Info($"Listener of type {Listener.GetType().Name} initialized correctly. Waiting for events.");
 
-                while (!stopped)
+                do
                 {
                     try
                     {
@@ -56,7 +56,7 @@ namespace WorkloadTools
                             continue;
                         Parallel.ForEach(Consumers, (cons) =>
                         {
-                          cons.Consume(evt);
+                            cons.Consume(evt);
                         });
                     }
                     catch (Exception e)
@@ -65,7 +65,7 @@ namespace WorkloadTools
                         logger.Error(e.Message);
                         logger.Error(e.StackTrace);
                     }
-                }
+                } while (!stopped);
 
                 // even when the listener has finished, wait until all buffered consumers are finished
                 // unless the controller has been explicitly stopped by invoking Stop()
