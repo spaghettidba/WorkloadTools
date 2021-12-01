@@ -60,7 +60,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         public override bool HasMoreEvents()
         {
-            return analyzer.HasEventsQueued;
+            return analyzer.HasEventsQueued || !Buffer.IsEmpty;
         }
 
         protected override void Dispose(bool disposing)
