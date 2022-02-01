@@ -1,3 +1,4 @@
+![](https://countrush-prod.azurewebsites.net/l/badge/?repository=spaghettidba.WorkloadTools)
 # WorkloadTools
 
 *WorkloadTools is a collection of tools to collect, analyze and replay SQL Server workloads, on premises and in the cloud .*
