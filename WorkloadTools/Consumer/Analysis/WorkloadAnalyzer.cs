@@ -911,7 +911,7 @@ namespace WorkloadTools.Consumer.Analysis
                     cmd.ExecuteNonQuery();
                 }
 
-                sql = "IF OBJECT_ID('dbo.createAnalysisView') IS NOT NULL EXEC('DROP PROCEDURE dbo.createAnalysisView')";
+                sql = "IF OBJECT_ID('dbo.createAnalysisView') IS NULL EXEC('CREATE PROCEDURE dbo.createAnalysisView AS RETURN 0')";
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = sql;

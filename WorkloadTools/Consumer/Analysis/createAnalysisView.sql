@@ -1,4 +1,4 @@
-﻿CREATE PROCEDURE [dbo].[createAnalysisView]
+﻿ALTER PROCEDURE [dbo].[createAnalysisView]
 	@baselineSchema AS nvarchar(max),
 	@replaySchema AS nvarchar(max)
 AS
