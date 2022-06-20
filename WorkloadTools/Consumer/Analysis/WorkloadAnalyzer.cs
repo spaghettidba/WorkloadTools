@@ -784,7 +784,16 @@ namespace WorkloadTools.Consumer.Analysis
 
         private int CreateInterval(SqlConnection conn, SqlTransaction tran, DateTime intervalTime)
         {
-            string sql = @"INSERT INTO [{0}].[Intervals] (interval_id, end_time, duration_minutes) VALUES (@interval_id, @end_time, @duration_minutes); ";
+            string sql = @"
+                UPDATE [{0}].[Intervals]
+                SET  end_time = @end_time
+                    ,duration_minutes = @duration_minutes
+                WHERE interval_id = @interval_id;
+                
+                IF @@ROWCOUNT = 0
+                    INSERT INTO [{0}].[Intervals] (interval_id, end_time, duration_minutes) 
+                    VALUES (@interval_id, @end_time, @duration_minutes); 
+            ";
             sql = String.Format(sql, ConnectionInfo.SchemaName);
 
             // interval id is the number of seconds since 01/01/2000
