@@ -93,11 +93,19 @@ namespace WorkloadTools.Listener
             //    return true;
 
             // skip cursor fetch
+            if (command.Contains("sp_cursor "))
+                return true;
+
+            // skip cursor fetch
             if (command.Contains("sp_cursorfetch "))
                 return true;
 
             // skip cursor close
             if (command.Contains("sp_cursorclose "))
+                return true;
+
+            // skip cursor option
+            if (command.Contains("sp_cursoroption "))
                 return true;
 
             // skip cursor unprepare
