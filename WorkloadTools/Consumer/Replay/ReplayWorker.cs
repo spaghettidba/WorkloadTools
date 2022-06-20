@@ -485,28 +485,49 @@ namespace WorkloadTools.Consumer.Replay
         protected void Dispose(bool disposing)
         {
             Stop();
-            if (conn != null)
+            try
             {
-                if (conn.State == System.Data.ConnectionState.Open)
+                if (conn != null)
                 {
-                    try { conn.Close(); } catch (Exception) { /* swallow */ }
-                    try { conn.Dispose(); } catch (Exception) { /* swallow */ }
+                    if (conn.State == System.Data.ConnectionState.Open)
+                    {
+                        try { conn.Close(); } catch (Exception) { /* swallow */ }
+                        try { conn.Dispose(); } catch (Exception) { /* swallow */ }
+                    }
+                    conn = null;
                 }
-                conn = null;
             }
-            if (runner != null)
+            catch (Exception ex)
             {
-                while(!(runner.IsCompleted || runner.IsFaulted || runner.IsCanceled))
+                logger.Warn(ex);
+            }
+            try
+            {
+                if (runner != null)
                 {
-                    _spinWait.SpinOnce();
+                    while (!(runner.IsCompleted || runner.IsFaulted || runner.IsCanceled))
+                    {
+                        _spinWait.SpinOnce();
+                    }
+                    runner.Dispose();
+                    runner = null;
                 }
-                runner.Dispose();
-                runner = null;
             }
-            if (tokenSource != null)
+            catch (Exception ex)
             {
-                tokenSource.Dispose();
-                tokenSource = null;
+                logger.Warn(ex);
+            }
+            try
+            {
+                if (tokenSource != null)
+                {
+                    tokenSource.Dispose();
+                    tokenSource = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Warn(ex);
             }
             logger.Trace($"Worker [{Name}] - Disposed");
         }
