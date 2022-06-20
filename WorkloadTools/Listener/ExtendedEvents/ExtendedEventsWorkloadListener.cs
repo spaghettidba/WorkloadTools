@@ -21,6 +21,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         public string SessionName { get; set; } = "sqlworkload";
 
+        public bool ReuseExistingSession { get; set; } = false;
+
         public enum ServerType
         {
             FullInstance,
@@ -123,29 +125,31 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     throw new ArgumentException("Cannot open the source script to start the extended events session", e);
                 }
 
-                StopSession(conn);
+                if (!ReuseExistingSession)
+                {
+                    StopSession(conn);
 
-                using (SqlCommand cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = sessionSql;
-                    cmd.ExecuteNonQuery();
-                }
-                if (FileTargetPath != null)
-                {
-                    string sql = @"
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = sessionSql;
+                        cmd.ExecuteNonQuery();
+                    }
+                    if (FileTargetPath != null)
+                    {
+                        string sql = @"
                         ALTER EVENT SESSION [{2}] ON {0}
                         ADD TARGET package0.event_file(SET filename=N'{1}',max_file_size=(100))
                     ";
 
-                    sql = String.Format(sql, serverType == ServerType.FullInstance ? "SERVER" : "DATABASE", FileTargetPath, SessionName);
+                        sql = String.Format(sql, serverType == ServerType.FullInstance ? "SERVER" : "DATABASE", FileTargetPath, SessionName);
 
-                    using (SqlCommand cmd = conn.CreateCommand())
-                    {
-                        cmd.CommandText = sql;
-                        cmd.ExecuteNonQuery();
+                        using (SqlCommand cmd = conn.CreateCommand())
+                        {
+                            cmd.CommandText = sql;
+                            cmd.ExecuteNonQuery();
+                        }
                     }
                 }
-
 
                 Task.Factory.StartNew(() => ReadEvents());
 
@@ -190,11 +194,14 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 logger.Debug($"[{eventCount}] events read.");
                 logger.Debug($"Events in the queue? [{Events.HasMoreElements()}]");
                 reader.Stop();
-                using (SqlConnection conn = new SqlConnection())
+                if (!ReuseExistingSession)
                 {
-                    conn.ConnectionString = ConnectionInfo.ConnectionString;
-                    conn.Open();
-                    StopSession(conn);
+                    using (SqlConnection conn = new SqlConnection())
+                    {
+                        conn.ConnectionString = ConnectionInfo.ConnectionString;
+                        conn.Open();
+                        StopSession(conn);
+                    }
                 }
             }
             catch (Exception x)
