@@ -93,6 +93,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
             using (SqlCommand cmd = conn.CreateCommand())
             {
                 cmd.CommandText = sqlXE;
+                cmd.CommandTimeout = 0;
 
                 var paramPath = cmd.Parameters.Add("@filename", System.Data.SqlDbType.NVarChar, 260);
                 if (ServerType != ExtendedEventsWorkloadListener.ServerType.AzureSqlDatabase)
