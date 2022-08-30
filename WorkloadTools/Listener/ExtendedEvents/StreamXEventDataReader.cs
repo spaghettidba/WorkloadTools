@@ -185,7 +185,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         }
 
                         // preprocess and filter events
-                        if (workloadEvent.Type <= WorkloadEvent.EventType.BatchCompleted)
+                        if (workloadEvent.Type == WorkloadEvent.EventType.BatchStarting
+                            ||
+                            workloadEvent.Type == WorkloadEvent.EventType.BatchCompleted
+                            ||
+                            workloadEvent.Type == WorkloadEvent.EventType.RPCStarting
+                            ||
+                            workloadEvent.Type == WorkloadEvent.EventType.RPCCompleted
+                            ||
+                            workloadEvent.Type == WorkloadEvent.EventType.Message)
                         {
                             if (transformer.Skip(workloadEvent.Text))
                                 continue;

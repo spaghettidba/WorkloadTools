@@ -174,7 +174,7 @@ namespace WorkloadTools.Listener.File
                 {
                     if (!reader.Read())
                     {
-						stopped = true;
+                        stopped = true;
                         return null;
                     }
                     result = ReadEvent(reader);
@@ -211,7 +211,15 @@ namespace WorkloadTools.Listener.File
                         }
 
                         // preprocess and filter events
-                        if (execEvent.Type <= WorkloadEvent.EventType.BatchCompleted)
+                        if (execEvent.Type == WorkloadEvent.EventType.BatchStarting
+                            ||
+                            execEvent.Type == WorkloadEvent.EventType.BatchCompleted
+                            ||
+                            execEvent.Type == WorkloadEvent.EventType.RPCStarting
+                            ||
+                            execEvent.Type == WorkloadEvent.EventType.RPCCompleted
+                            ||
+                            execEvent.Type == WorkloadEvent.EventType.Message)
                         {
                             if (transformer.Skip(execEvent.Text))
                                 continue;

@@ -201,7 +201,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                 if (evt.Type == WorkloadEvent.EventType.Unknown)
                                     continue;
 
-                                if (evt.Type <= WorkloadEvent.EventType.BatchCompleted)
+                                if (evt.Type == WorkloadEvent.EventType.BatchStarting
+                                    ||
+                                    evt.Type == WorkloadEvent.EventType.BatchCompleted
+                                    ||
+                                    evt.Type == WorkloadEvent.EventType.RPCStarting
+                                    ||
+                                    evt.Type == WorkloadEvent.EventType.RPCCompleted
+                                    ||
+                                    evt.Type == WorkloadEvent.EventType.Message)
                                 {
                                     if (transformer.Skip(evt.Text))
                                         continue;

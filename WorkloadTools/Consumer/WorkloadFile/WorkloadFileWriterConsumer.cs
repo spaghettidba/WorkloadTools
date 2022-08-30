@@ -81,6 +81,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                                 WHERE session_id = $session_id
                                 AND event_sequence < $event_sequence
                                 AND IFNULL(duration, 0) = 0
+                                AND event_type IN (2, -3) /* 2 = RPCStarting, -3 = BatchStarting */
                                 ORDER BY EVENT_SEQUENCE DESC
                                 LIMIT 1);";
 
