@@ -78,7 +78,7 @@ namespace WorkloadTools.Consumer.Replay
             if (!(evnt is ExecutionWorkloadEvent))
                 return;
 
-            if (evnt.Type != WorkloadEvent.EventType.RPCCompleted && evnt.Type != WorkloadEvent.EventType.BatchCompleted)
+            if (evnt.Type != WorkloadEvent.EventType.RPCStarting && evnt.Type != WorkloadEvent.EventType.BatchStarting)
                 return;
 
             eventCount++;

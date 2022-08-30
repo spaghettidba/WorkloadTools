@@ -228,6 +228,7 @@ namespace WorkloadTools.Listener.Trace
 	                ,CPU
 	                ,EventClass
 	                ,DatabaseName
+                    ,EventSubClass
                 FROM fn_trace_gettable(@path, @number_files)
             ";
 

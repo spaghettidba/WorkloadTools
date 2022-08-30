@@ -11,13 +11,14 @@ namespace WorkloadTools
         public enum EventType 
         {
             Message = 0,
-            RPCCompleted = 1,
-            RPCStarted = 2,
-            BatchCompleted = 3,
-            PerformanceCounter= 4,
-            Timeout = 5,
-            WAIT_stats = 6,
-			Error = 7,
+            RPCStarting = 1,
+            RPCCompleted = 2,
+            BatchStarting = 3,
+            BatchCompleted = 4,
+            PerformanceCounter = 5,
+            Timeout = 6,
+            WAIT_stats = 7,
+			Error = 8,
             Unknown = -1
         }
 

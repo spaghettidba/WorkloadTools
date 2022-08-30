@@ -140,7 +140,7 @@ namespace WorkloadTools.Consumer.Analysis
             bool flag2 = false;
             int num = 0;
 
-            if ((sql == "sp_reset_connection") || (sql == "exec sp_reset_connection"))
+            if ((sql == "sp_reset_connection") || (sql == "exec sp_reset_connection") || (sql == "exec sp_reset_connection /*Nonpooled*/"))
                 return null;
 
             sql = FixComments(sql);

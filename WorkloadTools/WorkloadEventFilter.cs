@@ -25,7 +25,13 @@ namespace WorkloadTools
 
             ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
 
-            if (evt.Type != WorkloadEvent.EventType.BatchCompleted && evt.Type != WorkloadEvent.EventType.RPCCompleted)
+            if (evt.Type != WorkloadEvent.EventType.BatchStarting 
+                && 
+                evt.Type != WorkloadEvent.EventType.RPCStarting
+                &&
+                evt.Type != WorkloadEvent.EventType.BatchCompleted
+                &&
+                evt.Type != WorkloadEvent.EventType.RPCCompleted)
                 return false;
 
             if (!(DatabaseFilter.IsPredicateSet || LoginFilter.IsPredicateSet || HostFilter.IsPredicateSet || ApplicationFilter.IsPredicateSet))

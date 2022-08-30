@@ -14,7 +14,8 @@ namespace WorkloadTools.Consumer.Analysis
             SP_UNPREPARE,
             SP_CURSOR,
             OTHER,
-            SP_RESET_CONNECTION
+            SP_RESET_CONNECTION,
+            SP_RESET_CONNECTION_NONPOOLED
         }
 
 

@@ -157,7 +157,11 @@ namespace WorkloadTools.Listener.Trace
                             {
                                 ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
 
-                                if (reader.GetValue("EventClass").ToString() == "RPC:Completed")
+                                if (reader.GetValue("EventClass").ToString() == "RPC:Starting")
+                                    evt.Type = WorkloadEvent.EventType.RPCStarting;
+                                else if (reader.GetValue("EventClass").ToString() == "SQL:BatchStarting")
+                                    evt.Type = WorkloadEvent.EventType.BatchStarting;
+                                else if (reader.GetValue("EventClass").ToString() == "RPC:Completed")
                                     evt.Type = WorkloadEvent.EventType.RPCCompleted;
                                 else if (reader.GetValue("EventClass").ToString() == "SQL:BatchCompleted")
                                     evt.Type = WorkloadEvent.EventType.BatchCompleted;
@@ -174,6 +178,10 @@ namespace WorkloadTools.Listener.Trace
                                 evt.CPU = (long?)Convert.ToInt64(reader.GetValue("CPU")) * 1000; // SqlTrace captures CPU as milliseconds => convert to microseconds
                                 evt.Duration = (long?)reader.GetValue("Duration");
                                 evt.StartTime = DateTime.Now;
+                                if (evt.Type == WorkloadEvent.EventType.RPCStarting || evt.Type == WorkloadEvent.EventType.BatchStarting)
+                                {
+                                    evt.StartTime = Convert.ToDateTime(reader.GetValue("StartTime"));
+                                }
 
                                 if (!Filter.Evaluate(evt))
                                     continue;

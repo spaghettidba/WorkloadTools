@@ -93,7 +93,8 @@ namespace WorkloadTools.Listener.File
 
             try
             {
-                string sql = "SELECT * FROM Events " + filters;
+                // Events are executed on event_sequence order
+                string sql = "SELECT * FROM Events " + filters + " ORDER BY event_sequence ASC";
                 conn = new SQLiteConnection(connectionString);
                 conn.Open();
                 SQLiteCommand command = new SQLiteCommand(sql, conn);
