@@ -12,12 +12,13 @@ namespace WorkloadTools
         {
             Message = 0,
             RPCCompleted = 1,
-            RPCStarted = 2,
+            RPCStarting = 2,
+            BatchStarting = -3,
             BatchCompleted = 3,
-            PerformanceCounter= 4,
+            PerformanceCounter = 4,
             Timeout = 5,
             WAIT_stats = 6,
-			Error = 7,
+            Error = 7,
             Unknown = -1
         }
 

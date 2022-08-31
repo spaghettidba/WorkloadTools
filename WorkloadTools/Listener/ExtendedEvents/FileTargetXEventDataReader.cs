@@ -201,7 +201,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                 if (evt.Type == WorkloadEvent.EventType.Unknown)
                                     continue;
 
-                                if (evt.Type <= WorkloadEvent.EventType.BatchCompleted)
+                                if (evt.Type == WorkloadEvent.EventType.BatchStarting
+                                    ||
+                                    evt.Type == WorkloadEvent.EventType.BatchCompleted
+                                    ||
+                                    evt.Type == WorkloadEvent.EventType.RPCStarting
+                                    ||
+                                    evt.Type == WorkloadEvent.EventType.RPCCompleted
+                                    ||
+                                    evt.Type == WorkloadEvent.EventType.Message)
                                 {
                                     if (transformer.Skip(evt.Text))
                                         continue;
@@ -370,6 +378,18 @@ namespace WorkloadTools.Listener.ExtendedEvents
             {
                 evt.Type = WorkloadEvent.EventType.RPCCompleted;
             }
+            else if (name == "sql_batch_starting")
+            {
+                evt.Type = WorkloadEvent.EventType.BatchStarting;
+            }
+            else if (name == "rpc_starting")
+            {
+                evt.Type = WorkloadEvent.EventType.RPCStarting;
+            }
+            else if (name == "login")
+            {
+                evt.Type = WorkloadEvent.EventType.RPCStarting;
+            }
             else if (name == "attention")
             {
                 evt.Type = WorkloadEvent.EventType.Timeout;
@@ -392,13 +412,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 switch ((string)node.Attributes["name"].Value)
                 {
                     case "statement":
-                        if (evt.Type == WorkloadEvent.EventType.RPCCompleted)
+                        if (evt.Type == WorkloadEvent.EventType.RPCCompleted || evt.Type == WorkloadEvent.EventType.RPCStarting)
                         {
                             evt.Text = (string)node.FirstChild.FirstChild.Value;
                         }
                         break;
                     case "batch_text":
-                        if (evt.Type == WorkloadEvent.EventType.BatchCompleted)
+                        if (evt.Type == WorkloadEvent.EventType.BatchCompleted || evt.Type == WorkloadEvent.EventType.BatchStarting)
                         {
                             evt.Text = (string)node.FirstChild.FirstChild.Value;
                         }
@@ -448,7 +468,22 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         break;
                     case "event_sequence":
                         evt.EventSequence = Convert.ToInt64(node.FirstChild.FirstChild.Value);
-
+                        break;
+                    case "is_cached":
+                        bool vIsCached = Convert.ToBoolean(node.FirstChild.FirstChild.Value);
+                        if (!vIsCached) /* If is not cached then consider it a new login */
+                        {
+                            // A nonpooled login will trigger Login event with EventSubClass = 1
+                            // Setting text to sp_reset_connection and including comment on to 
+                            // be able to understand this is a nonpooled login on replay
+                            evt.Text = "exec sp_reset_connection /*Nonpooled*/";
+                        }
+                        else
+                        {
+                            evt.Type = WorkloadEvent.EventType.Unknown;
+                            evt.Text = "";
+                            return evt;
+                        }
                         break;
                     default:
                         break;

@@ -13,6 +13,18 @@ ADD EVENT sqlserver.attention (
 	)
 	{0}
 ),
+ADD EVENT sqlserver.rpc_starting ( 
+	ACTION(
+		package0.event_sequence, 
+		sqlserver.client_app_name, 
+		sqlserver.client_hostname, 
+		sqlserver.database_id, 
+		sqlserver.database_name, 
+		sqlserver.{2}, 
+		sqlserver.session_id
+	) 
+	{0}
+),
 ADD EVENT sqlserver.rpc_completed (
 	SET collect_data_stream = (0),
 	collect_output_parameters = (1),
@@ -28,8 +40,32 @@ ADD EVENT sqlserver.rpc_completed (
 	) 
 	{0}
 ),
+ADD EVENT sqlserver.sql_batch_starting (
+	ACTION(
+		package0.event_sequence, 
+		sqlserver.client_app_name, 
+		sqlserver.client_hostname, 
+		sqlserver.database_id, 
+		sqlserver.database_name, 
+		sqlserver.{2}, 
+		sqlserver.session_id
+	) 
+	{0}
+),
 ADD EVENT sqlserver.sql_batch_completed (
 	SET collect_batch_text = (1) 
+	ACTION(
+		package0.event_sequence, 
+		sqlserver.client_app_name, 
+		sqlserver.client_hostname, 
+		sqlserver.database_id, 
+		sqlserver.database_name, 
+		sqlserver.{2}, 
+		sqlserver.session_id
+	) 
+	{0}
+),
+ADD EVENT sqlserver.login ( 
 	ACTION(
 		package0.event_sequence, 
 		sqlserver.client_app_name, 

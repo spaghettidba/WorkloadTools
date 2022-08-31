@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.SqlServer.Management.SqlParser.Metadata;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -112,6 +113,22 @@ namespace WorkloadTools.Listener
             if (command.Contains("sp_cursorunprepare "))
                 return true;
 
+            // skip internal commands
+            if (command.Contains("fn_xe_file_target_read_file")
+                ||
+                command.Contains("ALTER EVENT SESSION")
+                ||
+                command.Contains("fn_trace_getinfo"))
+                return true;
+
+            // skip KILL commands
+            if (command.StartsWith("KILL"))
+                return true;
+
+            // skip BULK INSERT commands
+            if (command.StartsWith("insert bulk"))
+                return true; 
+
             // skip sp_execute
             //if (command.Contains("sp_execute "))
             //    return true;
@@ -189,10 +206,16 @@ namespace WorkloadTools.Listener
 
             if (command.Contains("sp_reset_connection"))
             {
-                result.CommandType = NormalizedSqlText.CommandTypeEnum.SP_RESET_CONNECTION;
+                if (command.Contains("Nonpooled"))
+                {
+                    result.CommandType = NormalizedSqlText.CommandTypeEnum.SP_RESET_CONNECTION_NONPOOLED;
+                }
+                else
+                {
+                    result.CommandType = NormalizedSqlText.CommandTypeEnum.SP_RESET_CONNECTION;
+                }
                 return result;
-            }
-                
+            }                
 
             Match match3 = _prepareSql.Match(command);
             if (match3.Success)

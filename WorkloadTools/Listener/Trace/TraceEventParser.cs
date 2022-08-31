@@ -13,6 +13,9 @@ namespace WorkloadTools.Listener.Trace
         {
             RPC_Completed = 10,
             SQL_BatchCompleted = 12,
+            RPC_Starting = 11,
+            SQL_BatchStarting = 13,
+            Audit_Login = 14,
             Timeout = 82
         }
 
@@ -35,10 +38,34 @@ namespace WorkloadTools.Listener.Trace
             int eventClass = (int)reader["EventClass"];
 
 
-            if (eventClass == (int)EventClassEnum.RPC_Completed)
+            if (eventClass == (int)EventClassEnum.RPC_Starting)
+                evt.Type = WorkloadEvent.EventType.RPCStarting;
+            else if (eventClass == (int)EventClassEnum.SQL_BatchStarting)
+                evt.Type = WorkloadEvent.EventType.BatchStarting;
+            else if (eventClass == (int)EventClassEnum.RPC_Completed)
                 evt.Type = WorkloadEvent.EventType.RPCCompleted;
             else if (eventClass == (int)EventClassEnum.SQL_BatchCompleted)
                 evt.Type = WorkloadEvent.EventType.BatchCompleted;
+            else if (eventClass == (int)EventClassEnum.Audit_Login)
+            {
+                if (IsValidColumn("EventSubClass") && reader["EventSubClass"] != DBNull.Value)
+                {
+                    int vEventSubClass = (int)(reader["EventSubClass"]);
+                    if (vEventSubClass == 1) /* 1 - Nonpooled */
+                    { 
+                        evt.Type = WorkloadEvent.EventType.RPCStarting;
+                        // A nonpooled login will trigger Login event with EventSubClass = 1
+                        // Setting text to sp_reset_connection and including comment on to 
+                        // be able to understand this is a nonpooled login on replay
+                        evt.Text = "exec sp_reset_connection /*Nonpooled*/";
+                    }
+                    else
+                    {
+                        evt.Type = WorkloadEvent.EventType.Unknown;
+                        return evt;
+                    }
+                }
+            }
             else if (eventClass == (int)EventClassEnum.Timeout)
             {
                 if (reader["TextData"].ToString().StartsWith("WorkloadTools.Timeout["))
@@ -59,7 +86,7 @@ namespace WorkloadTools.Listener.Trace
                 evt.LoginName = (string)reader["LoginName"];
             if (IsValidColumn("SPID") && reader["SPID"] != DBNull.Value)
                 evt.SPID = (int?)reader["SPID"];
-            if (IsValidColumn("TextData") && reader["TextData"] != DBNull.Value)
+            if (IsValidColumn("TextData") && reader["TextData"] != DBNull.Value && eventClass != (int)EventClassEnum.Audit_Login)
                 evt.Text = (string)reader["TextData"];
 
             if (IsValidColumn("StartTime") && reader["StartTime"] != DBNull.Value)

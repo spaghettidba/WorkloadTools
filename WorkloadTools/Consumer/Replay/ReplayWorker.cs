@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -216,9 +217,22 @@ namespace WorkloadTools.Consumer.Replay
             // Extract the handle from the prepared statement
             NormalizedSqlText nst = transformer.Normalize(command.CommandText);
 
+            //If event is a sp_reset_connection, call a connection close and open to
+            //force connection to get back to connection pool and reset it so that
+            //it's clean for the next event
             if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_RESET_CONNECTION)
             {
                 //Stop(false);
+                conn.Close();
+                conn.Open();
+                return;
+            }
+            // If event is a nonpooled sp_reset_connection, call a ClearPool(conn)
+            // to force a new connection.
+            if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_RESET_CONNECTION_NONPOOLED)
+            {
+                //Stop(false);
+                ClearPool(conn);
                 return;
             }
             else if(nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_PREPARE)
@@ -367,12 +381,9 @@ namespace WorkloadTools.Consumer.Replay
                 }
                 else
                 {
-                   
                     logger.Trace($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {command.CommandText}");
                     logger.Warn($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
                     logger.Trace(e.StackTrace);
-
-                    ClearPool(conn);
 
                     if (e.Number != -2 && failRetryCount < FailRetryCount)
                     {
@@ -439,7 +450,6 @@ namespace WorkloadTools.Consumer.Replay
             RaiseErrorEvent("WorkloadTools.Replay",msg,UserErrorType.Error,conn);
         }
 
-
         private void RaiseErrorEvent(string info, string message, UserErrorType type, SqlConnection conn)
         {
             // Raise a custom event. Both SqlTrace and Extended Events can capture this event.
@@ -449,14 +459,22 @@ namespace WorkloadTools.Consumer.Replay
             {
                 using (SqlCommand cmd = new SqlCommand(sql))
                 {
-                    cmd.Connection = conn;
+                    // Creating a new connection to raise the custom event to don't mess up
+                    // with existing connection as a reset(close the connection) now would cause a 
+                    // next event call to fail in case it has dependencies of objects or 
+                    // user settings used in the connection
+                    string connString = ConnectionInfo.ConnectionString;
+                    SqlConnection connErrorEvent = new SqlConnection(connString);
+                    connErrorEvent.Open();
+
+                    cmd.Connection = connErrorEvent;
                     cmd.Parameters.Add(new SqlParameter("@eventid", System.Data.SqlDbType.Int) { Value = type });
                     cmd.Parameters.Add(new SqlParameter("@userinfo", System.Data.SqlDbType.NVarChar, 128) { Value = info });
                     cmd.Parameters.Add(new SqlParameter("@userdata", System.Data.SqlDbType.VarBinary, 8000) { Value = Encoding.Unicode.GetBytes(message.Substring(0, message.Length > 8000 ? 8000 : message.Length)) });
                     cmd.ExecuteNonQuery();
-                }
 
-                ClearPool(conn);
+                    ClearPool(connErrorEvent);
+                }
             }
             catch (Exception ex)
             {

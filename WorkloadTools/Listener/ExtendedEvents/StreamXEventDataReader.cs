@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using static WorkloadTools.Listener.Trace.TraceEventParser;
 
 namespace WorkloadTools.Listener.ExtendedEvents
 {
@@ -49,7 +50,17 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     {
                         workloadEvent.EventSequence = Convert.ToInt64(TryGetValue(evt, FieldType.Action, "event_sequence"));
                         string commandText = String.Empty;
-                        if (evt.Name == "rpc_completed")
+                        if (evt.Name == "rpc_starting")
+                        {
+                            commandText = (string)TryGetValue(evt, FieldType.Field, "statement");
+                            workloadEvent.Type = WorkloadEvent.EventType.RPCStarting;
+                        }
+                        else if (evt.Name == "sql_batch_starting")
+                        {
+                            commandText = (string)TryGetValue(evt, FieldType.Field, "batch_text");
+                            workloadEvent.Type = WorkloadEvent.EventType.BatchStarting;
+                        }
+                        else if (evt.Name == "rpc_completed")
                         {
                             commandText = (string)TryGetValue(evt, FieldType.Field, "statement");
                             workloadEvent.Type = WorkloadEvent.EventType.RPCCompleted;
@@ -58,6 +69,23 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         {
                             commandText = (string)TryGetValue(evt, FieldType.Field, "batch_text");
                             workloadEvent.Type = WorkloadEvent.EventType.BatchCompleted;
+                        }
+                        else if (evt.Name == "login")
+                        {
+                            bool vIsCached = Convert.ToBoolean(TryGetValue(evt, FieldType.Field, "is_cached"));
+                            if (!vIsCached) /* If is not cached then consider it a new login */
+                            {
+                                workloadEvent.Type = WorkloadEvent.EventType.RPCStarting;
+                                // A nonpooled login will trigger Login event with EventSubClass = 1
+                                // Setting text to sp_reset_connection and including comment on to 
+                                // be able to understand this is a nonpooled login on replay
+                                commandText = "exec sp_reset_connection /*Nonpooled*/";
+                            }
+                            else
+                            {
+                                workloadEvent.Type = WorkloadEvent.EventType.Unknown;
+                                continue;
+                            }
                         }
                         else if (evt.Name == "attention")
                         {
@@ -141,12 +169,14 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             }
                             else
                             {
-                                workloadEvent.Reads = TryGetInt64(evt, FieldType.Field, "logical_reads");
-                                workloadEvent.Writes = TryGetInt64(evt, FieldType.Field, "writes");
-                                workloadEvent.CPU = TryGetInt64(evt, FieldType.Field, "cpu_time");
-                                workloadEvent.Duration = TryGetInt64(evt, FieldType.Field, "duration");
+                                if (evt.Name == "rpc_completed" || evt.Name == "sql_batch_completed")
+                                {
+                                    workloadEvent.Reads = TryGetInt64(evt, FieldType.Field, "logical_reads");
+                                    workloadEvent.Writes = TryGetInt64(evt, FieldType.Field, "writes");
+                                    workloadEvent.CPU = TryGetInt64(evt, FieldType.Field, "cpu_time");
+                                    workloadEvent.Duration = TryGetInt64(evt, FieldType.Field, "duration");
+                                }
                             }
-
                         }
                         catch (Exception e)
                         {
@@ -155,7 +185,15 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         }
 
                         // preprocess and filter events
-                        if (workloadEvent.Type <= WorkloadEvent.EventType.BatchCompleted)
+                        if (workloadEvent.Type == WorkloadEvent.EventType.BatchStarting
+                            ||
+                            workloadEvent.Type == WorkloadEvent.EventType.BatchCompleted
+                            ||
+                            workloadEvent.Type == WorkloadEvent.EventType.RPCStarting
+                            ||
+                            workloadEvent.Type == WorkloadEvent.EventType.RPCCompleted
+                            ||
+                            workloadEvent.Type == WorkloadEvent.EventType.Message)
                         {
                             if (transformer.Skip(workloadEvent.Text))
                                 continue;

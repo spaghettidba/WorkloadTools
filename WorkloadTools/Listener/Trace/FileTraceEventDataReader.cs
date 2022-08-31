@@ -228,6 +228,7 @@ namespace WorkloadTools.Listener.Trace
 	                ,CPU
 	                ,EventClass
 	                ,DatabaseName
+	                ,EventSubClass
                 FROM fn_trace_gettable(@path, @number_files)
             ";
 
@@ -327,7 +328,15 @@ namespace WorkloadTools.Listener.Trace
                             }
 
 
-                            if (evt.Type <= WorkloadEvent.EventType.BatchCompleted)
+                            if (evt.Type == WorkloadEvent.EventType.BatchStarting
+                                ||
+                                evt.Type == WorkloadEvent.EventType.BatchCompleted
+                                ||
+                                evt.Type == WorkloadEvent.EventType.RPCStarting
+                                ||
+                                evt.Type == WorkloadEvent.EventType.RPCCompleted
+                                ||
+                                evt.Type == WorkloadEvent.EventType.Message)
                             {
                                 if (transformer.Skip(evt.Text))
                                     continue;

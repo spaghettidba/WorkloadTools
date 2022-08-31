@@ -31,6 +31,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         private SQLiteConnection conn;
         private SQLiteCommand events_cmd;
+        private SQLiteCommand events_update_cmd;
         private SQLiteCommand waits_cmd;
         private SQLiteCommand counters_cmd;
 
@@ -69,6 +70,20 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     $reads,
                     $writes
                 );";
+
+        private string update_events = @"
+                UPDATE Events SET cpu = $cpu,
+                                  duration = $duration,
+                                  reads = $reads,
+                                  writes = $writes
+                WHERE row_id = (SELECT row_id 
+                                FROM Events
+                                WHERE session_id = $session_id
+                                AND event_sequence < $event_sequence
+                                AND IFNULL(duration, 0) = 0
+                                AND event_type IN (2, -3) /* 2 = RPCStarting, -3 = BatchStarting */
+                                ORDER BY EVENT_SEQUENCE DESC
+                                LIMIT 1);";
 
         private string insert_waits = @"
                 INSERT INTO Waits (
@@ -180,11 +195,33 @@ namespace WorkloadTools.Consumer.WorkloadFile
             if (events_cmd == null)
                 events_cmd = new SQLiteCommand(insert_events, conn);
 
+            if (events_update_cmd == null)
+                events_update_cmd = new SQLiteCommand(update_events, conn);
+
             if (waits_cmd == null)
                 waits_cmd = new SQLiteCommand(insert_waits, conn);
 
             if (counters_cmd == null)
                 counters_cmd = new SQLiteCommand(insert_counters, conn);
+        }
+
+        private void UpdateExecutionEvent(WorkloadEvent evnt)
+        {
+            ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
+
+            events_update_cmd.Parameters.AddWithValue("$event_sequence", evt.EventSequence);
+            events_update_cmd.Parameters.AddWithValue("$session_id", evt.SPID);
+            events_update_cmd.Parameters.AddWithValue("$cpu", evt.CPU);
+            events_update_cmd.Parameters.AddWithValue("$duration", evt.Duration);
+            events_update_cmd.Parameters.AddWithValue("$reads", evt.Reads);
+            events_update_cmd.Parameters.AddWithValue("$writes", evt.Writes);
+
+            int rowcount;
+            rowcount = events_update_cmd.ExecuteNonQuery();
+            if (rowcount == 0) 
+            {
+                logger.Debug("Starting event not found - " + $"EventSequence: {evt.EventSequence}");
+            }
         }
 
         private void InsertExecutionEvent(WorkloadEvent evnt)
@@ -215,7 +252,17 @@ namespace WorkloadTools.Consumer.WorkloadFile
             try
             {
                 if ((evnt is ExecutionWorkloadEvent))
-                    InsertExecutionEvent(evnt);
+                {
+                    if ((evnt.Type == WorkloadEvent.EventType.BatchCompleted) || (evnt.Type == WorkloadEvent.EventType.RPCCompleted))
+                    {
+                        UpdateExecutionEvent(evnt);
+                    }
+                    else
+                    {
+                        InsertExecutionEvent(evnt);
+                    }
+                }
+                    
                 if ((evnt is CounterWorkloadEvent))
                     InsertCounterEvent(evnt);
                 if ((evnt is WaitStatsWorkloadEvent))
@@ -359,6 +406,11 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     duration INTEGER NULL,
                     reads INTEGER NULL,
                     writes INTEGER NULL
+                );
+
+                CREATE UNIQUE INDEX IF NOT EXISTS Index_Session_ID_Event_Sequence ON Events(
+	                session_id ASC,
+	                event_sequence DESC
                 );
 
                 CREATE TABLE IF NOT EXISTS Counters (

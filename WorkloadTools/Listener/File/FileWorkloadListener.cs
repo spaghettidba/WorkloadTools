@@ -93,7 +93,8 @@ namespace WorkloadTools.Listener.File
 
             try
             {
-                string sql = "SELECT * FROM Events " + filters;
+                // Events are executed on event_sequence order
+                string sql = "SELECT * FROM Events " + filters + " ORDER BY event_sequence ASC";
                 conn = new SQLiteConnection(connectionString);
                 conn.Open();
                 SQLiteCommand command = new SQLiteCommand(sql, conn);
@@ -173,7 +174,7 @@ namespace WorkloadTools.Listener.File
                 {
                     if (!reader.Read())
                     {
-						stopped = true;
+                        stopped = true;
                         return null;
                     }
                     result = ReadEvent(reader);
@@ -210,7 +211,15 @@ namespace WorkloadTools.Listener.File
                         }
 
                         // preprocess and filter events
-                        if (execEvent.Type <= WorkloadEvent.EventType.BatchCompleted)
+                        if (execEvent.Type == WorkloadEvent.EventType.BatchStarting
+                            ||
+                            execEvent.Type == WorkloadEvent.EventType.BatchCompleted
+                            ||
+                            execEvent.Type == WorkloadEvent.EventType.RPCStarting
+                            ||
+                            execEvent.Type == WorkloadEvent.EventType.RPCCompleted
+                            ||
+                            execEvent.Type == WorkloadEvent.EventType.Message)
                         {
                             if (transformer.Skip(execEvent.Text))
                                 continue;
