@@ -75,7 +75,8 @@ namespace WorkloadTools.Consumer.WorkloadFile
                 UPDATE Events SET cpu = $cpu,
                                   duration = $duration,
                                   reads = $reads,
-                                  writes = $writes
+                                  writes = $writes,
+                                  sql_text = $sql_text
                 WHERE row_id = (SELECT row_id 
                                 FROM Events
                                 WHERE session_id = $session_id
@@ -215,6 +216,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
             events_update_cmd.Parameters.AddWithValue("$duration", evt.Duration);
             events_update_cmd.Parameters.AddWithValue("$reads", evt.Reads);
             events_update_cmd.Parameters.AddWithValue("$writes", evt.Writes);
+            events_update_cmd.Parameters.AddWithValue("$sql_text", evt.Text);
 
             int rowcount;
             rowcount = events_update_cmd.ExecuteNonQuery();
