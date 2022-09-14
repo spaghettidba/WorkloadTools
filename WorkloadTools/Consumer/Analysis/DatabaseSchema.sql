@@ -45,6 +45,43 @@ CREATE TABLE [{SchemaName}].[WorkloadDetails](
 )
 
 
+
+IF OBJECT_ID('{SchemaName}.WorkloadSummary') IS NULL
+
+CREATE TABLE [{SchemaName}].[WorkloadSummary](
+	[application_id] [int] NOT NULL,
+	[database_id] [int] NOT NULL,
+	[host_id] [int] NOT NULL,
+	[login_id] [int] NOT NULL,
+
+    [min_cpu_us] [bigint] NULL,
+    [max_cpu_us] [bigint] NULL,
+    [sum_cpu_us] [bigint] NULL,
+
+    [min_reads] [bigint] NULL,
+    [max_reads] [bigint] NULL,
+    [sum_reads] [bigint] NULL,
+
+    [min_writes] [bigint] NULL,
+    [max_writes] [bigint] NULL,
+    [sum_writes] [bigint] NULL,
+
+    [min_duration_us] [bigint] NULL,
+    [max_duration_us] [bigint] NULL,
+    [sum_duration_us] [bigint] NULL,
+
+    [execution_count] [bigint] NULL,
+
+    CONSTRAINT PK_WorkloadSummary PRIMARY KEY CLUSTERED (
+        [application_id], 
+        [database_id], 
+        [host_id], 
+        [login_id]
+    )
+)
+
+
+
 IF OBJECT_ID('{SchemaName}.Applications') IS NULL
 
 CREATE TABLE [{SchemaName}].[Applications](

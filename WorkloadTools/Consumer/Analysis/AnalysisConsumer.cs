@@ -41,7 +41,10 @@ namespace WorkloadTools.Consumer.Analysis
 		public bool SqlNormalizerTruncateTo4000 { get; set; }
 		public bool SqlNormalizerTruncateTo1024 { get; set; }
 
-		public override void ConsumeBuffered(WorkloadEvent evt)
+        public bool WriteDetail { get; set; } = true;
+        public bool WriteSummary { get; set; } = true;
+
+        public override void ConsumeBuffered(WorkloadEvent evt)
         {
             if(analyzer == null)
             {
@@ -51,7 +54,8 @@ namespace WorkloadTools.Consumer.Analysis
                     ConnectionInfo = this.ConnectionInfo,
 					MaximumWriteRetries = this.MaximumWriteRetries,
 					TruncateTo1024 = this.SqlNormalizerTruncateTo1024,
-					TruncateTo4000 = this.SqlNormalizerTruncateTo4000
+					TruncateTo4000 = this.SqlNormalizerTruncateTo4000,
+                    WriteDetail = this.WriteDetail
 				};
             }
 
