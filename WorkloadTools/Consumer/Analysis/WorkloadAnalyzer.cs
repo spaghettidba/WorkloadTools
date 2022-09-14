@@ -45,8 +45,10 @@ namespace WorkloadTools.Consumer.Analysis
         public int MaximumWriteRetries { get; set; }
 		public bool TruncateTo4000 { get; set; }
 		public bool TruncateTo1024 { get; set; }
+        public bool WriteDetail { get; set; } = true;
+        public bool WriteSummary { get; set; } = true;
 
-		private class NormalizedQuery
+        private class NormalizedQuery
         {
             public long Hash { get; set; }
             public string NormalizedText { get; set; }
@@ -398,18 +400,40 @@ namespace WorkloadTools.Consumer.Analysis
 
                 try
                 {
-                    int current_interval_id = CreateInterval(conn, tran, intervalTime);
+                    int current_interval_id = 0;
+                    if(WriteSummary)
+                        current_interval_id = CreateInterval(conn, tran, intervalTime);
 
                     WriteDictionary(applications, conn, tran, "applications");
                     WriteDictionary(databases, conn, tran, "databases");
                     WriteDictionary(hosts, conn, tran, "hosts");
                     WriteDictionary(logins, conn, tran, "logins");
-                    WriteNormalizedQueries(normalizedQueries, conn, tran);
 
-                    WriteExecutionDetails(conn, tran, current_interval_id);
-					WriteExecutionErrors(conn, tran, current_interval_id);
-					WritePerformanceCounters(conn, tran, current_interval_id);
-                    WriteWaitsData(conn, tran, current_interval_id);
+
+                    if (rawData == null)
+                        PrepareDataTables();
+
+                    lock (rawData)
+                    {
+                        if (WriteSummary)
+                        {
+                            WriteExecutionSummary(conn, tran);
+                        }
+
+                        if (WriteDetail)
+                        {
+                            WriteExecutionDetails(conn, tran, current_interval_id);
+                        }
+                    }
+                    rawData.Clear();
+
+                    if (WriteDetail)
+                    {
+                        WriteNormalizedQueries(normalizedQueries, conn, tran);
+                        WriteExecutionErrors(conn, tran, current_interval_id);
+                        WritePerformanceCounters(conn, tran, current_interval_id);
+                        WriteWaitsData(conn, tran, current_interval_id);
+                    }
 
                     tran.Commit();
                 }
@@ -520,90 +544,219 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
+        private void WriteExecutionSummary(SqlConnection conn, SqlTransaction tran)
+        {
+            // create temporary table for uploading data
+            string sql = $@"
+                IF OBJECT_ID('tempdb..#WorkloadSummary') IS NOT NULL 
+                    DROP TABLE #WorkloadSummary;
+                    
+                SELECT TOP(0) * INTO #WorkloadSummary FROM [{ConnectionInfo.SchemaName}].WorkloadSummary;
+            ";
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tran;
+                cmd.CommandText = sql;
+                cmd.ExecuteNonQuery();
+            }
+
+
+            // bulk copy data to temp table
+            using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+                                            SqlBulkCopyOptions.KeepIdentity |
+                                            SqlBulkCopyOptions.FireTriggers |
+                                            SqlBulkCopyOptions.CheckConstraints |
+                                            SqlBulkCopyOptions.TableLock,
+                                            tran))
+            {
+
+                bulkCopy.DestinationTableName = "#WorkloadSummary";
+                bulkCopy.BatchSize = 1000;
+                bulkCopy.BulkCopyTimeout = 300;
+
+
+                var Table = from t in rawData.Keys
+                            from v in rawData[t]
+                            group new
+                            {
+                                v.cpu_us,
+                                v.duration_us,
+                                v.event_time,
+                                v.reads,
+                                v.writes
+                            }
+                            by new
+                            {
+                                application_id = t.application_id,
+                                database_id = t.database_id,
+                                host_id = t.host_id,
+                                login_id = t.login_id
+                            }
+                            into grp
+                            select new
+                            {
+                                grp.Key.application_id,
+                                grp.Key.database_id,
+                                grp.Key.host_id,
+                                grp.Key.login_id,
+
+                                min_cpu_us = grp.Min(v => v.cpu_us),
+                                max_cpu_us = grp.Max(v => v.cpu_us),
+                                sum_cpu_us = grp.Sum(v => v.cpu_us),
+
+                                min_reads = grp.Min(v => v.reads),
+                                max_reads = grp.Max(v => v.reads),
+                                sum_reads = grp.Sum(v => v.reads),
+
+                                min_writes = grp.Min(v => v.writes),
+                                max_writes = grp.Max(v => v.writes),
+                                sum_writes = grp.Sum(v => v.writes),
+
+                                min_duration_us = grp.Min(v => v.duration_us),
+                                max_duration_us = grp.Max(v => v.duration_us),
+                                sum_duration_us = grp.Sum(v => v.duration_us),
+
+                                execution_count = grp.Count()
+                            };
+
+                using (var reader = ObjectReader.Create(Table, "application_id", "database_id", "host_id", "login_id", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "min_reads", "max_reads", "sum_reads", "min_writes", "max_writes", "sum_writes", "min_duration_us", "max_duration_us", "sum_duration_us", "execution_count"))
+                {
+                    bulkCopy.WriteToServer(reader);
+                }
+
+            }
+                
+
+            // merge with existing data
+
+            sql = $@"
+                UPDATE WS
+                SET min_cpu_us = CASE WHEN T.min_cpu_us < WS.min_cpu_us THEN T.min_cpu_us ELSE WS.min_cpu_us END,
+                    max_cpu_us = CASE WHEN T.max_cpu_us > WS.max_cpu_us THEN T.max_cpu_us ELSE WS.max_cpu_us END,
+                    sum_cpu_us += T.sum_cpu_us,
+                    min_reads  = CASE WHEN T.min_reads < WS.min_reads THEN T.min_reads ELSE WS.min_reads END,
+                    max_reads  = CASE WHEN T.max_reads > WS.max_reads THEN T.max_reads ELSE WS.max_reads END,
+                    sum_reads  += T.sum_reads,
+                    min_writes = CASE WHEN T.min_writes < WS.min_writes THEN T.min_writes ELSE WS.min_writes END,
+                    max_writes = CASE WHEN T.max_writes > WS.max_writes THEN T.max_writes ELSE WS.max_writes END,
+                    sum_writes += T.sum_writes,
+                    min_duration_us = CASE WHEN T.min_duration_us < WS.min_duration_us THEN T.min_duration_us ELSE WS.min_duration_us END,
+                    max_duration_us = CASE WHEN T.max_duration_us > WS.max_duration_us THEN T.max_duration_us ELSE WS.max_duration_us END,
+                    sum_duration_us += T.sum_duration_us
+                FROM [{ConnectionInfo.SchemaName}].WorkloadSummary AS WS
+                INNER JOIN #WorkloadSummary AS T
+                    ON  T.application_id = WS.application_id
+                    AND T.database_id    = WS.database_id
+                    AND T.host_id        = WS.host_id
+                    AND T.login_id       = WS.login_id;
+            ";
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tran;
+                cmd.CommandText = sql;
+                cmd.ExecuteNonQuery();
+            }
+
+            sql = $@"
+                INSERT INTO [{ConnectionInfo.SchemaName}].WorkloadSummary 
+                SELECT * 
+                FROM #WorkloadSummary AS T
+                WHERE NOT EXISTS (
+                    SELECT *
+                    FROM [{ConnectionInfo.SchemaName}].WorkloadSummary AS WS
+                    WHERE   T.application_id = WS.application_id
+                        AND T.database_id    = WS.database_id
+                        AND T.host_id        = WS.host_id
+                        AND T.login_id       = WS.login_id
+                );
+            ";
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tran;
+                cmd.CommandText = sql;
+                cmd.ExecuteNonQuery();
+            }
+
+            logger.Info("Summary info written");
+        }
+
         private void WriteExecutionDetails(SqlConnection conn, SqlTransaction tran, int current_interval_id)
         {
             int numRows;
 
-            if(rawData == null)
-                PrepareDataTables();
-
-            lock (rawData)
+            using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+                                            SqlBulkCopyOptions.KeepIdentity |
+                                            SqlBulkCopyOptions.FireTriggers |
+                                            SqlBulkCopyOptions.CheckConstraints |
+                                            SqlBulkCopyOptions.TableLock,
+                                            tran))
             {
-                using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
-                                                SqlBulkCopyOptions.KeepIdentity |
-                                                SqlBulkCopyOptions.FireTriggers |
-                                                SqlBulkCopyOptions.CheckConstraints |
-                                                SqlBulkCopyOptions.TableLock,
-                                                tran))
+
+                bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[WorkloadDetails]";
+                bulkCopy.BatchSize = 1000;
+                bulkCopy.BulkCopyTimeout = 300;
+
+
+                var Table = from t in rawData.Keys
+                            from v in rawData[t]
+                            group new
+                            {
+                                v.cpu_us,
+                                v.duration_us,
+                                v.event_time,
+                                v.reads,
+                                v.writes
+                            }
+                            by new
+                            {
+                                sql_hash = t.sql_hash,
+                                application_id = t.application_id,
+                                database_id = t.database_id,
+                                host_id = t.host_id,
+                                login_id = t.login_id
+                            }
+                            into grp
+                            select new
+                            {
+                                interval_id = current_interval_id,
+
+                                grp.Key.sql_hash,
+                                grp.Key.application_id,
+                                grp.Key.database_id,
+                                grp.Key.host_id,
+                                grp.Key.login_id,
+
+                                avg_cpu_us = grp.Average(v => v.cpu_us),
+                                min_cpu_us = grp.Min(v => v.cpu_us),
+                                max_cpu_us = grp.Max(v => v.cpu_us),
+                                sum_cpu_us = grp.Sum(v => v.cpu_us),
+
+                                avg_reads = grp.Average(v => v.reads),
+                                min_reads = grp.Min(v => v.reads),
+                                max_reads = grp.Max(v => v.reads),
+                                sum_reads = grp.Sum(v => v.reads),
+
+                                avg_writes = grp.Average(v => v.writes),
+                                min_writes = grp.Min(v => v.writes),
+                                max_writes = grp.Max(v => v.writes),
+                                sum_writes = grp.Sum(v => v.writes),
+
+                                avg_duration_us = grp.Average(v => v.duration_us),
+                                min_duration_us = grp.Min(v => v.duration_us),
+                                max_duration_us = grp.Max(v => v.duration_us),
+                                sum_duration_us = grp.Sum(v => v.duration_us),
+
+                                execution_count = grp.Count()
+                            };
+
+                using (var reader = ObjectReader.Create(Table, "interval_id", "sql_hash", "application_id", "database_id", "host_id", "login_id", "avg_cpu_us", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "avg_reads", "min_reads", "max_reads", "sum_reads", "avg_writes", "min_writes", "max_writes", "sum_writes", "avg_duration_us", "min_duration_us", "max_duration_us", "sum_duration_us", "execution_count"))
                 {
-
-                    bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[WorkloadDetails]";
-                    bulkCopy.BatchSize = 1000;
-                    bulkCopy.BulkCopyTimeout = 300;
-
-
-                    var Table = from t in rawData.Keys
-                                from v in rawData[t]
-                                group new
-                                {
-                                    v.cpu_us,
-                                    v.duration_us,
-                                    v.event_time,
-                                    v.reads,
-                                    v.writes
-                                }
-                                by new
-                                {
-                                    sql_hash = t.sql_hash,
-                                    application_id = t.application_id,
-                                    database_id = t.database_id,
-                                    host_id = t.host_id,
-                                    login_id = t.login_id
-                                }
-                                into grp
-                                select new
-                                {
-                                    interval_id = current_interval_id,
-
-                                    grp.Key.sql_hash,
-                                    grp.Key.application_id,
-                                    grp.Key.database_id,
-                                    grp.Key.host_id,
-                                    grp.Key.login_id,
-
-                                    avg_cpu_us = grp.Average(v => v.cpu_us),
-                                    min_cpu_us = grp.Min(v => v.cpu_us),
-                                    max_cpu_us = grp.Max(v => v.cpu_us),
-                                    sum_cpu_us = grp.Sum(v => v.cpu_us),
-
-                                    avg_reads = grp.Average(v => v.reads),
-                                    min_reads = grp.Min(v => v.reads),
-                                    max_reads = grp.Max(v => v.reads),
-                                    sum_reads = grp.Sum(v => v.reads),
-
-                                    avg_writes = grp.Average(v => v.writes),
-                                    min_writes = grp.Min(v => v.writes),
-                                    max_writes = grp.Max(v => v.writes),
-                                    sum_writes = grp.Sum(v => v.writes),
-
-                                    avg_duration_us = grp.Average(v => v.duration_us),
-                                    min_duration_us = grp.Min(v => v.duration_us),
-                                    max_duration_us = grp.Max(v => v.duration_us),
-                                    sum_duration_us = grp.Sum(v => v.duration_us),
-
-                                    execution_count = grp.Count()
-                                };
-
-                    using (var reader = ObjectReader.Create(Table, "interval_id", "sql_hash", "application_id", "database_id", "host_id", "login_id", "avg_cpu_us", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "avg_reads", "min_reads", "max_reads", "sum_reads", "avg_writes", "min_writes", "max_writes", "sum_writes", "avg_duration_us", "min_duration_us", "max_duration_us", "sum_duration_us", "execution_count"))
-                    {
-                        bulkCopy.WriteToServer(reader);
-                    }
-                    numRows = rawData.Sum(x => x.Value.Count);
-                    logger.Info($"{numRows} rows aggregated");
-                    numRows = rawData.Count();
-                    logger.Info($"{numRows} rows written");
+                    bulkCopy.WriteToServer(reader);
                 }
-                rawData.Clear();
+                numRows = rawData.Sum(x => x.Value.Count);
+                logger.Info($"{numRows} rows aggregated");
+                numRows = rawData.Count();
+                logger.Info($"{numRows} rows written");
             }
         }
 
