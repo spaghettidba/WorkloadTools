@@ -401,7 +401,7 @@ namespace WorkloadTools.Consumer.Analysis
                 try
                 {
                     int current_interval_id = 0;
-                    if(WriteSummary)
+                    if(WriteDetail)
                         current_interval_id = CreateInterval(conn, tran, intervalTime);
 
                     WriteDictionary(applications, conn, tran, "applications");
@@ -616,6 +616,9 @@ namespace WorkloadTools.Consumer.Analysis
                                 max_duration_us = grp.Max(v => v.duration_us),
                                 sum_duration_us = grp.Sum(v => v.duration_us),
 
+                                min_execution_date = grp.Min(v => v.event_time),
+                                max_execution_date = grp.Max(v => v.event_time),
+
                                 execution_count = grp.Count()
                             };
 
@@ -642,6 +645,8 @@ namespace WorkloadTools.Consumer.Analysis
                     sum_writes += T.sum_writes,
                     min_duration_us = CASE WHEN T.min_duration_us < WS.min_duration_us THEN T.min_duration_us ELSE WS.min_duration_us END,
                     max_duration_us = CASE WHEN T.max_duration_us > WS.max_duration_us THEN T.max_duration_us ELSE WS.max_duration_us END,
+                    min_execution_date = CASE WHEN T.min_execution_date < WS.min_execution_date THEN T.min_execution_date ELSE WS.min_execution_date END,
+                    min_execution_date = CASE WHEN T.max_execution_date > WS.max_execution_date THEN T.max_execution_date ELSE WS.max_execution_date END,
                     sum_duration_us += T.sum_duration_us
                 FROM [{ConnectionInfo.SchemaName}].WorkloadSummary AS WS
                 INNER JOIN #WorkloadSummary AS T

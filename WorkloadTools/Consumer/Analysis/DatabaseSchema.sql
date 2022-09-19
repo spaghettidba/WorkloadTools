@@ -70,6 +70,9 @@ CREATE TABLE [{SchemaName}].[WorkloadSummary](
     [max_duration_us] [bigint] NULL,
     [sum_duration_us] [bigint] NULL,
 
+    [min_execution_date] datetime,
+    [max_execution_date] datetime,
+
     [execution_count] [bigint] NULL,
 
     CONSTRAINT PK_WorkloadSummary PRIMARY KEY CLUSTERED (
