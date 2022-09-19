@@ -622,7 +622,7 @@ namespace WorkloadTools.Consumer.Analysis
                                 execution_count = grp.Count()
                             };
 
-                using (var reader = ObjectReader.Create(Table, "application_id", "database_id", "host_id", "login_id", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "min_reads", "max_reads", "sum_reads", "min_writes", "max_writes", "sum_writes", "min_duration_us", "max_duration_us", "sum_duration_us", "execution_count"))
+                using (var reader = ObjectReader.Create(Table, "application_id", "database_id", "host_id", "login_id", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "min_reads", "max_reads", "sum_reads", "min_writes", "max_writes", "sum_writes", "min_duration_us", "max_duration_us", "sum_duration_us", "min_execution_date", "max_execution_date", "execution_count"))
                 {
                     bulkCopy.WriteToServer(reader);
                 }
@@ -646,7 +646,7 @@ namespace WorkloadTools.Consumer.Analysis
                     min_duration_us = CASE WHEN T.min_duration_us < WS.min_duration_us THEN T.min_duration_us ELSE WS.min_duration_us END,
                     max_duration_us = CASE WHEN T.max_duration_us > WS.max_duration_us THEN T.max_duration_us ELSE WS.max_duration_us END,
                     min_execution_date = CASE WHEN T.min_execution_date < WS.min_execution_date THEN T.min_execution_date ELSE WS.min_execution_date END,
-                    min_execution_date = CASE WHEN T.max_execution_date > WS.max_execution_date THEN T.max_execution_date ELSE WS.max_execution_date END,
+                    max_execution_date = CASE WHEN T.max_execution_date > WS.max_execution_date THEN T.max_execution_date ELSE WS.max_execution_date END,
                     sum_duration_us += T.sum_duration_us
                 FROM [{ConnectionInfo.SchemaName}].WorkloadSummary AS WS
                 INNER JOIN #WorkloadSummary AS T
