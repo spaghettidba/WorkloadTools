@@ -648,7 +648,7 @@ namespace WorkloadTools.Consumer.Analysis
                     sum_duration_us += T.sum_duration_us,
                     min_execution_date = CASE WHEN T.min_execution_date < WS.min_execution_date THEN T.min_execution_date ELSE WS.min_execution_date END,
                     max_execution_date = CASE WHEN T.max_execution_date > WS.max_execution_date THEN T.max_execution_date ELSE WS.max_execution_date END,
-                    execution_count += execution_count
+                    execution_count += T.execution_count
                 FROM [{ConnectionInfo.SchemaName}].WorkloadSummary AS WS
                 INNER JOIN #WorkloadSummary AS T
                     ON  T.application_id = WS.application_id
