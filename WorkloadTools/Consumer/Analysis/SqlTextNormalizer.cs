@@ -265,7 +265,7 @@ namespace WorkloadTools.Consumer.Analysis
 
 
             result.NormalizedText = _paramNameValueStr.Replace(result.NormalizedText, "@${paramname} = {STR}");
-            result.NormalizedText = _paramNameValueStr.Replace(result.NormalizedText, "@${paramname} = {NUM}");
+            result.NormalizedText = _paramNameValueNum.Replace(result.NormalizedText, "@${paramname} = {NUM}");
             result.NormalizedText = _emptyString.Replace(result.NormalizedText, "{STR}");
             result.NormalizedText = _stringConstant.Replace(result.NormalizedText, "{STR}");
             result.NormalizedText = _unicodeConstant.Replace(result.NormalizedText, "{NSTR}");

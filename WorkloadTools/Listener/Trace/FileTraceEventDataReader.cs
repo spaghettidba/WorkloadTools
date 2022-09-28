@@ -39,6 +39,8 @@ namespace WorkloadTools.Listener.Trace
 
             try
             {
+                int retryCount = 0;
+
                 while (!stopped)
                 {
                     using (SqlConnection conn = new SqlConnection())
@@ -62,7 +64,18 @@ namespace WorkloadTools.Listener.Trace
                             break;
                         }
 
-                        ReadTraceData(conn, currentIteration);
+                        try
+                        {
+                            ReadTraceData(conn, currentIteration);
+                            retryCount = 0;
+                        }
+                        catch (SqlException) {
+                            retryCount++;
+                            if(retryCount > 2)
+                            {
+                                throw;
+                            }
+                        }
 
                     }
                 }

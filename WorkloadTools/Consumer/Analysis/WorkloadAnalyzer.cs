@@ -628,8 +628,8 @@ namespace WorkloadTools.Consumer.Analysis
                 }
 
             }
-                
 
+            int affectedRows = 0;
             // merge with existing data
 
             sql = $@"
@@ -660,7 +660,7 @@ namespace WorkloadTools.Consumer.Analysis
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
-                cmd.ExecuteNonQuery();
+                affectedRows += cmd.ExecuteNonQuery();
             }
 
             sql = $@"
@@ -680,10 +680,10 @@ namespace WorkloadTools.Consumer.Analysis
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
-                cmd.ExecuteNonQuery();
+                affectedRows += cmd.ExecuteNonQuery();
             }
 
-            logger.Info("Summary info written");
+            logger.Info($"Summary info written ({affectedRows} rows)");
         }
 
         private void WriteExecutionDetails(SqlConnection conn, SqlTransaction tran, int current_interval_id)
