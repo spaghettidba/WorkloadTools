@@ -42,7 +42,8 @@ namespace WorkloadTools.Consumer.Analysis
         private static Regex _emptyString = new Regex("\\'\\'", RegexOptions.Compiled);
         private static Regex _unicodeConstant = new Regex("N{STR}", RegexOptions.Compiled);
         private static Regex _stringConstant = new Regex("(')(((?!\\1).|\\1{2})*)\\1", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _paramNameValue = new Regex(@"@(?<paramname>\w+)+\s?=\s?['[""](?<paramvalue>([^'\]""])+)['\]""]", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static Regex _paramNameValueStr = new Regex(@"@(?<paramname>\w+)\s?=\s?[N]?['[""](?<paramvalue>([^'\]""])+('{2})?)?['\]""]", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static Regex _paramNameValueNum = new Regex(@"@(?<paramname>\w+)\s?=\s?(?<paramvalue>([0-9.])+)", RegexOptions.Compiled | RegexOptions.Singleline);
         private static Regex _binaryConstant = new Regex("0X([0-9ABCDEF])+", RegexOptions.Compiled);
         private static Regex _numericConstant = new Regex("(?<prefix>[\\(\\s,=\\-><\\!\\&\\|\\+\\*\\/\\%\\~\\$])(?<digits>[\\-\\.\\d]+)", RegexOptions.Compiled);
         private static Regex _inClause = new Regex("IN\\s*\\(\\s*\\{.*\\}\\s*\\)", RegexOptions.Compiled | RegexOptions.Singleline);
@@ -263,7 +264,8 @@ namespace WorkloadTools.Consumer.Analysis
             }
 
 
-            result.NormalizedText = _paramNameValue.Replace(result.NormalizedText, "@${paramname} = {STR}");
+            result.NormalizedText = _paramNameValueStr.Replace(result.NormalizedText, "@${paramname} = {STR}");
+            result.NormalizedText = _paramNameValueStr.Replace(result.NormalizedText, "@${paramname} = {NUM}");
             result.NormalizedText = _emptyString.Replace(result.NormalizedText, "{STR}");
             result.NormalizedText = _stringConstant.Replace(result.NormalizedText, "{STR}");
             result.NormalizedText = _unicodeConstant.Replace(result.NormalizedText, "{NSTR}");
