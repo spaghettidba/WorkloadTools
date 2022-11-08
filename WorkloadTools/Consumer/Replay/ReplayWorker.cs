@@ -18,7 +18,8 @@ namespace WorkloadTools.Consumer.Replay
 {
     class ReplayWorker : IDisposable
     {
-        private const int ReplayOffsetSleepThresholdMs = 50;
+        private const int ReplayOffsetSleepThresholdMs = 25;
+        private const int ThreadSpinIterations = 5000;
 
         private static Logger logger = LogManager.GetCurrentClassLogger();
         public bool DisplayWorkerStats { get; set; }
@@ -279,9 +280,9 @@ namespace WorkloadTools.Consumer.Replay
                 // already come with the original timing
                 if (command.ReplayOffset > 0)
                 {
-                    double delay = command.ReplayOffset - (DateTime.Now - StartTime).TotalMilliseconds;
+                    double delayMs = command.ReplayOffset - (DateTime.Now - StartTime).TotalMilliseconds;
                     // Delay execution only if necessary
-                    if (delay > 0)
+                    if (delayMs > 0)
                     {
                         // Each command has a requested offset from the beginning
                         // of the workload and this class does its best to respect it.
@@ -291,15 +292,14 @@ namespace WorkloadTools.Consumer.Replay
                         // the delay that has built up to that point.
 
                         var stopwatch = Stopwatch.StartNew();
-                        while (stopwatch.Elapsed.TotalMilliseconds < delay)
-                        {
-                            // If we're getting close to the command time then don't sleep,
-                            // we need higher accuracy to keep workers on time so stay in a tigher loop
-                            if ((delay - stopwatch.Elapsed.TotalMilliseconds) < ReplayOffsetSleepThresholdMs)
-                                continue; // Immediately re-evaluate
-                            else
-                                Thread.Sleep(1);
-                        }
+                        
+                        // If we're outside of the ThreadSleepThresholdMs then sleep to give up cpu time while we wait
+                        while (stopwatch.Elapsed.TotalMilliseconds < delayMs - ReplayOffsetSleepThresholdMs)
+                            Thread.Sleep(1);
+
+                        // If we're getting close to the event time then spinwait because we need higher accuracy
+                        while (stopwatch.Elapsed.TotalMilliseconds < delayMs)
+                            Thread.SpinWait(ThreadSpinIterations);
                     }
                 }
 
