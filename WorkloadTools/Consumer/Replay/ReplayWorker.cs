@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -17,6 +18,9 @@ namespace WorkloadTools.Consumer.Replay
 {
     class ReplayWorker : IDisposable
     {
+        private const int ReplayOffsetSleepThresholdMs = 25;
+        private const int ThreadSpinIterations = 5000;
+
         private static Logger logger = LogManager.GetCurrentClassLogger();
         public bool DisplayWorkerStats { get; set; }
         public bool ConsumeResults { get; set; }
@@ -162,7 +166,7 @@ namespace WorkloadTools.Consumer.Replay
             {
                 if (stopped)
                     return null;
-                
+
                 _spinWait.SpinOnce();
             }
             return result;
@@ -270,33 +274,33 @@ namespace WorkloadTools.Consumer.Replay
                     conn.ChangeDatabase(command.Database);
                 }
 
-                // if the command comes with a replay offset, do it now
-                // the offset in milliseconds is set in
-                // FileWorkloadListener
+                // If the command comes with a replay offset, evaluate it now.
+                // The offset in milliseconds is set in FileWorkloadListener.
                 // The other listeners do not set this value, as they
                 // already come with the original timing
                 if (command.ReplayOffset > 0)
                 {
-                    // I am using 7 here as an average compensation for sleep
-                    // fluctuations due to Windows preemptive scheduling
-                    while((DateTime.Now - StartTime).TotalMilliseconds < command.ReplayOffset - 7)
+                    double delayMs = command.ReplayOffset - (DateTime.Now - StartTime).TotalMilliseconds;
+                    // Delay execution only if necessary
+                    if (delayMs > 0)
                     {
-                        // Thread.Sleep will not sleep exactly 1 millisecond.
-                        // It will yield the current thread and put it back 
-                        // in the runnable queue once the sleep delay has expired.
-                        // This means that the actual sleep time before the 
-                        // current thread gains back control can be much higher 
-                        // (15 milliseconds or more)
-                        // However we do not need to be super precise here: 
-                        // each command has a requested offset from the beginning
+                        // Each command has a requested offset from the beginning
                         // of the workload and this class does its best to respect it.
                         // If the previous commands take longer in the target environment
                         // the offset cannot be respected and the command will execute
                         // without further waits, but there is no way to recover 
                         // the delay that has built up to that point.
-                        Thread.Sleep(1);
+
+                        var stopwatch = Stopwatch.StartNew();
+                        
+                        // If we're outside of the ThreadSleepThresholdMs then sleep to give up cpu time while we wait
+                        while (stopwatch.Elapsed.TotalMilliseconds < delayMs - ReplayOffsetSleepThresholdMs)
+                            Thread.Sleep(1);
+
+                        // If we're getting close to the event time then spinwait because we need higher accuracy
+                        while (stopwatch.Elapsed.TotalMilliseconds < delayMs)
+                            Thread.SpinWait(ThreadSpinIterations);
                     }
-                    
                 }
 
                 using (SqlCommand cmd = new SqlCommand(command.CommandText))
@@ -374,7 +378,7 @@ namespace WorkloadTools.Consumer.Replay
 
                 if (StopOnError)
                 {
-                    
+
                     logger.Error($"Worker[{Name}] - Sequence[{command.EventSequence}] - Error: \n{command.CommandText}");
                     ClearPool(conn);
                     throw;
@@ -402,12 +406,12 @@ namespace WorkloadTools.Consumer.Replay
                 if (StopOnError)
                 {
                     logger.Error($"Worker[{Name}] - Sequence[{command.EventSequence}] - Error: \n{command.CommandText}");
-                    ClearPool(conn); 
+                    ClearPool(conn);
                     throw;
                 }
                 else
                 {
-                	logger.Error($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
+                    logger.Error($"Worker [{Name}] - Sequence[{command.EventSequence}] - Error: {e.Message}");
                     logger.Error(e.StackTrace);
 
                     ClearPool(conn);
