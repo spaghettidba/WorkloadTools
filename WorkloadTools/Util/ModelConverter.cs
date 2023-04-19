@@ -71,14 +71,14 @@ namespace WorkloadTools.Util
                     {
                         if ((dictionary[key] is Dictionary<string, object>))
                         {
-                            if(prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                            if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                             {
                                 Dictionary<string, object> rawDic = (Dictionary<string, object>)dictionary[key];
 
                                 object obj = Activator.CreateInstance(prop.PropertyType);
                                 foreach (var itm in rawDic.Keys)
                                 {
-                                    ((Dictionary<string,string>)obj).Add(itm, rawDic[itm].ToString());
+                                    ((Dictionary<string, string>)obj).Add(itm, rawDic[itm].ToString());
                                 }
                                 prop.SetValue(p, obj, null);
                             }
@@ -98,8 +98,10 @@ namespace WorkloadTools.Util
                                 }
                                 prop.SetValue(p, obj, null);
                             }
-                            else
+                            else 
+                            { 
                                 prop.SetValue(p, GetValueOfType(dictionary[key], prop.PropertyType), null);
+                            }
                         }
                            
                     }
@@ -126,6 +128,10 @@ namespace WorkloadTools.Util
             else if (propertyType == typeof(Int64))
             {
                 return Convert.ToInt64(v);
+            }
+            else if (propertyType == typeof(DateTime))
+            {
+                return Convert.ToDateTime(v);
             }
             else
                 return v;

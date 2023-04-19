@@ -34,12 +34,20 @@ namespace WorkloadTools
 
             try
             {
-				var startTime = DateTime.Now;
+				var startTime = Listener.StartAt;
 				var endTime = DateTime.MaxValue;
 
                 Listener.Initialize();
 
-                logger.Info($"Listener of type {Listener.GetType().Name} initialized correctly. Waiting for events.");
+                logger.Info($"Listener of type {Listener.GetType().Name} initialized correctly.");
+                logger.Info($"Event collection starts at {startTime.ToString("yyyy-MM-dd HH:mm:ss")}.");
+                // wait until Listener.StartAt has been reached
+                while (DateTime.Now.CompareTo(startTime) < 0)
+                {
+                    Thread.Sleep(100);
+                }
+
+                logger.Info("Waiting for events.");
 
                 do
                 {

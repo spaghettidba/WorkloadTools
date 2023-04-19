@@ -60,7 +60,8 @@ namespace WorkloadTools
         }
 
         public int StatsCollectionIntervalSeconds { get; set; } = 60;
-		public int TimeoutMinutes { get; set; } = 0;
+        public int TimeoutMinutes { get; set; } = 0;
+        public DateTime StartAt { get; set; } = DateTime.Now;
 
         private WorkloadEventFilter _filter;
 
