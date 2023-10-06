@@ -18,6 +18,7 @@ namespace WorkloadViewer
     /// </summary>
     public partial class App : Application
     {
+        private static Logger logger = LogManager.GetCurrentClassLogger();
 
         public Options Options { get; private set; }
 
@@ -50,10 +51,20 @@ namespace WorkloadViewer
                     {
                         pathToLog = Path.Combine(Environment.CurrentDirectory, pathToLog);
                     }
+                    Console.WriteLine($"Writing logs to {pathToLog}");
                     target.FileName = pathToLog;
                     LogManager.ReconfigExistingLoggers();
                 }
+                else
+                {
+                    Console.WriteLine($"No file targets configured");
+                }
             }
+            else
+            {
+                Console.WriteLine($"NLog not configured");
+            }
+            logger.Info("Starting application");
         }
 
     }
