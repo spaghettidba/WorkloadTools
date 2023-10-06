@@ -151,6 +151,10 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     }
                 }
 
+                // Mark the transaction
+                SetTransactionMark(serverType != ServerType.AzureSqlDatabase);
+                
+
                 Task.Factory.StartNew(() => ReadEvents());
 
                 //Initialize the source of performance counters events

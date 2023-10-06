@@ -85,8 +85,11 @@ namespace WorkloadTools.Listener.Trace
                 cmd.CommandText = traceSql;
                 traceId = (int)cmd.ExecuteScalar();
 
+                // Mark the transaction
+                SetTransactionMark(true);
+
                 // Initialize the source of execution related events
-                if(StreamSource == StreamSourceEnum.StreamFromFile)
+                if (StreamSource == StreamSourceEnum.StreamFromFile)
                     Task.Factory.StartNew(() => ReadEventsFromFile());
                 else if (StreamSource == StreamSourceEnum.StreamFromTDS)
                     Task.Factory.StartNew(() => ReadEventsFromTDS());

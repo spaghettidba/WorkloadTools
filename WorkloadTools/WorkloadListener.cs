@@ -441,5 +441,71 @@ namespace WorkloadTools
                 return DataUtils.ToDataTable(results);
             }
         }
+
+
+        protected virtual void SetTransactionMark(bool allDatabases)
+        {
+
+            using (SqlConnection conn = new SqlConnection())
+            {
+                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.Open();
+                // Create Marked Transaction
+                string sql = @"
+DECLARE @dbname sysname
+DECLARE @sql nvarchar(max), @qry nvarchar(max)
+
+SET @qry = '
+PRINT DB_NAME()
+BEGIN TRAN WorkloadTools WITH MARK ''WorkloadTools'';
+BEGIN TRY
+	CREATE TYPE WorkloadToolsType FROM int;
+	DROP TYPE WorkloadToolsType;
+	IF XACT_STATE() = 1 
+		COMMIT TRAN WorkloadTools;
+END TRY
+BEGIN CATCH
+	IF XACT_STATE() <> 0 
+		ROLLBACK TRAN WorkloadTools;
+END CATCH
+'
+
+
+DECLARE c CURSOR STATIC LOCAL FORWARD_ONLY READ_ONLY FOR
+SELECT name
+FROM sys.databases 
+WHERE database_id > 4
+" + (allDatabases ? "" : "AND database_id = DB_ID()") + @"
+ORDER BY name
+
+OPEN c 
+FETCH NEXT FROM c INTO @dbname
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+
+	SET @sql = 'EXEC ' + QUOTENAME(@dbname) + '.sys.sp_executesql @qry'
+
+	BEGIN TRY
+		EXEC sp_executesql @sql, N'@qry nvarchar(max)', @qry
+	END TRY
+	BEGIN CATCH
+		PRINT 'Unable to mark the transaction on database ' + @dbname
+	END CATCH
+
+	FETCH NEXT FROM c INTO @dbname
+END
+
+CLOSE c
+DEALLOCATE c
+                ";
+
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+
+            }
+        }
     }
 }
