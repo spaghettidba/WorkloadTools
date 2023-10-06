@@ -113,7 +113,10 @@ namespace WorkloadTools.Listener.File
         // returns -1 in case the file format is invalid
         private long ValidateFile()
         {
-            string sql = "SELECT COUNT(*) FROM Events";
+            // Only works if you didn't delete rows from the table
+            // WorkloadTools doesn't delete anything. If you deleted 
+            // rows manually, blame yourself.
+            string sql = "SELECT MAX(ROWID) FROM Events LIMIT 1;";
             long result = -1;
 
             try
