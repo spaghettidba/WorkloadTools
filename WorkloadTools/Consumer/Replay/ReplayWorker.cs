@@ -1,4 +1,6 @@
 ﻿using NLog;
+using NLog.Fluent;
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -281,6 +283,7 @@ namespace WorkloadTools.Consumer.Replay
                 if (command.ReplayOffset > 0)
                 {
                     double delayMs = command.ReplayOffset - (DateTime.Now - StartTime).TotalMilliseconds;
+
                     // Delay execution only if necessary
                     if (delayMs > 0)
                     {
@@ -290,6 +293,8 @@ namespace WorkloadTools.Consumer.Replay
                         // the offset cannot be respected and the command will execute
                         // without further waits, but there is no way to recover 
                         // the delay that has built up to that point.
+
+                        logger.Debug("Command requested a delay of [{ReplayOffset}]ms so waiting", command.ReplayOffset);
 
                         var stopwatch = Stopwatch.StartNew();
                         
@@ -301,6 +306,18 @@ namespace WorkloadTools.Consumer.Replay
                         while (stopwatch.Elapsed.TotalMilliseconds < delayMs)
                             Thread.SpinWait(ThreadSpinIterations);
                     }
+                    else
+                    {
+                        // This log entry could be REALLY noisy if we get behind.
+                        // However if we are consistently behind and the configuration has
+                        // requested SynchronizationMode we're actually doing a stress test.
+                        // So really beyond a small threshold we should probably abort entirely.
+                        logger.Warn("Command requested a delay of [{ReplayOffset}]ms but replay is behind so continuing immediately", command.ReplayOffset);
+                    }
+                }
+                else
+                {
+                    logger.Debug("No delay asked for");
                 }
 
                 using (SqlCommand cmd = new SqlCommand(command.CommandText))
