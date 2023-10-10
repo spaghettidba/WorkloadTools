@@ -18,24 +18,24 @@ namespace WorkloadTools.Consumer.Analysis
 {
     public class WorkloadAnalyzer : IDisposable
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public SqlConnectionInfo ConnectionInfo { get; set; }
         public int Interval { get; set; }
 
-        private Dictionary<long, NormalizedQuery> normalizedQueries = new Dictionary<long, NormalizedQuery>();
-        private Dictionary<string, int> applications = new Dictionary<string, int>();
-        private Dictionary<string, int> databases = new Dictionary<string, int>();
-        private Dictionary<string, int> logins = new Dictionary<string, int>();
-        private Dictionary<string, int> hosts = new Dictionary<string, int>();
+        private readonly Dictionary<long, NormalizedQuery> normalizedQueries = new Dictionary<long, NormalizedQuery>();
+        private readonly Dictionary<string, int> applications = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> databases = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> logins = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> hosts = new Dictionary<string, int>();
 
-        private Queue<WorkloadEvent> _internalQueue = new Queue<WorkloadEvent>();
+        private readonly Queue<WorkloadEvent> _internalQueue = new Queue<WorkloadEvent>();
         private Thread Worker;
         private bool stopped = false;
 
         private ConcurrentDictionary<ExecutionDetailKey,List<ExecutionDetailValue>> rawData;
 		private DataTable errorData;
-        private SqlTextNormalizer normalizer;
+        private readonly SqlTextNormalizer normalizer;
         private bool TargetTableCreated = false;
         private bool FirstIntervalWritten = false;
 
@@ -58,16 +58,14 @@ namespace WorkloadTools.Consumer.Analysis
         private DateTime lastDump = DateTime.MinValue;
         private DateTime lastEventTime = DateTime.MinValue;
 
-
         public WorkloadAnalyzer()
 		{
 			normalizer = new SqlTextNormalizer()
 			{
-				TruncateTo1024 = this.TruncateTo1024,
-				TruncateTo4000 = this.TruncateTo4000
+				TruncateTo1024 = TruncateTo1024,
+				TruncateTo4000 = TruncateTo4000
 			};
 		}
-
 
         public bool HasEventsQueued
         {
@@ -81,12 +79,12 @@ namespace WorkloadTools.Consumer.Analysis
         private void CloseInterval()
         {
             // Write collected data to the destination database
-            TimeSpan duration = lastEventTime - lastDump;
+            var duration = lastEventTime - lastDump;
             if (duration.TotalMinutes >= Interval)
             {
                 try
                 {
-                    int numRetries = 0;
+                    var numRetries = 0;
                     while (numRetries <= MaximumWriteRetries)
                     {
                         try
@@ -100,7 +98,9 @@ namespace WorkloadTools.Consumer.Analysis
                             logger.Warn(ex.Message);
 
                             if (numRetries == MaximumWriteRetries)
+                            {
                                 throw;
+                            }
                         }
                         numRetries++;
                     }
@@ -123,9 +123,7 @@ namespace WorkloadTools.Consumer.Analysis
                 }
             }
 
-
         }
-
 
         private void ProcessQueue()
         {
@@ -141,17 +139,18 @@ namespace WorkloadTools.Consumer.Analysis
                         continue;
                     }
                 
-                    WorkloadEvent data = _internalQueue.Dequeue();
+                    var data = _internalQueue.Dequeue();
                     _internalAdd(data);
                 }
             }
         }
 
-
         public void Add(WorkloadEvent evt)
         {
             if (evt is ExecutionWorkloadEvent && String.IsNullOrEmpty(((ExecutionWorkloadEvent)evt).Text))
+            {
                 return;
+            }
 
             try
             {
@@ -175,10 +174,9 @@ namespace WorkloadTools.Consumer.Analysis
 
         }
 
-
         private void ProvisionWorker()
         {
-            bool startNewWorker = false;
+            var startNewWorker = false;
             if (Worker == null)
             {
                 startNewWorker = true;
@@ -215,22 +213,32 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
-
         private void _internalAdd(WorkloadEvent evt)
         {
             if (evt is ExecutionWorkloadEvent)
+            {
                 _internalAdd((ExecutionWorkloadEvent)evt);
-			if (evt is ErrorWorkloadEvent)
-				_internalAdd((ErrorWorkloadEvent)evt);
-			if (evt is CounterWorkloadEvent)
+            }
+
+            if (evt is ErrorWorkloadEvent)
+            {
+                _internalAdd((ErrorWorkloadEvent)evt);
+            }
+
+            if (evt is CounterWorkloadEvent)
+            {
                 _internalAdd((CounterWorkloadEvent)evt);
+            }
+
             if (evt is WaitStatsWorkloadEvent)
+            {
                 _internalAdd((WaitStatsWorkloadEvent)evt);
+            }
         }
 
 		private void _internalAdd(ErrorWorkloadEvent evt)
 		{
-			DataRow row = errorData.NewRow();
+			var row = errorData.NewRow();
 			row.SetField("message", evt.Text);
             row.SetField("type", evt.Type);
             errorData.Rows.Add(row);
@@ -248,21 +256,20 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
-
         private void _internalAdd(CounterWorkloadEvent evt)
         {
             if (counterData == null)
             {
                 counterData = new DataTable();
 
-                counterData.Columns.Add("event_time", typeof(DateTime));
-                counterData.Columns.Add("counter_name", typeof(string));
-                counterData.Columns.Add("counter_value", typeof(float));
+                _ = counterData.Columns.Add("event_time", typeof(DateTime));
+                _ = counterData.Columns.Add("counter_name", typeof(string));
+                _ = counterData.Columns.Add("counter_value", typeof(float));
             }
 
             foreach(var cntr in evt.Counters.Keys)
             {
-                DataRow row = counterData.NewRow();
+                var row = counterData.NewRow();
 
                 row.SetField("event_time", evt.StartTime);
                 row.SetField("counter_name", cntr.ToString());
@@ -272,7 +279,6 @@ namespace WorkloadTools.Consumer.Analysis
             }
             
         }
-
 
         private void _internalAdd(ExecutionWorkloadEvent evt)
         {
@@ -286,39 +292,45 @@ namespace WorkloadTools.Consumer.Analysis
             var norm = normalizer.NormalizeSqlText(evt.Text, (int)evt.SPID);
 
             if (norm != null)
+            {
                 normSql = norm.NormalizedText;
+            }
             else
+            {
                 return;
+            }
 
             if (normSql == null)
+            {
                 return;
+            }
 
-            long hash = normalizer.GetHashCode(normSql);
+            var hash = normalizer.GetHashCode(normSql);
 
             if (!normalizedQueries.ContainsKey(hash))
             {
                 normalizedQueries.Add(hash, new NormalizedQuery { Hash = hash, NormalizedText = normSql, ExampleText = evt.Text });
             }
 
-            int appId = -1;
+            var appId = -1;
             if (evt.ApplicationName != null && !applications.TryGetValue(evt.ApplicationName, out appId))
             {
                 applications.Add(evt.ApplicationName, appId = applications.Count);
             }
 
-            int dbId = -1;
+            var dbId = -1;
             if (evt.DatabaseName != null && !databases.TryGetValue(evt.DatabaseName, out dbId))
             {
                 databases.Add(evt.DatabaseName, dbId = databases.Count);
             }
 
-            int hostId = -1;
+            var hostId = -1;
             if (evt.HostName != null && !hosts.TryGetValue(evt.HostName, out hostId))
             {
                 hosts.Add(evt.HostName, hostId = hosts.Count);
             }
 
-            int loginId = -1;
+            var loginId = -1;
             if (evt.LoginName != null && !logins.TryGetValue(evt.LoginName, out loginId))
             {
                 logins.Add(evt.LoginName, loginId = logins.Count);
@@ -326,7 +338,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             // Look up execution detail 
             List<ExecutionDetailValue> theList = null;
-            ExecutionDetailKey theKey = new ExecutionDetailKey()
+            var theKey = new ExecutionDetailKey()
             {
                 sql_hash = hash,
                 application_id = appId,
@@ -334,7 +346,7 @@ namespace WorkloadTools.Consumer.Analysis
                 host_id = hostId,
                 login_id = loginId
             };
-            ExecutionDetailValue theValue = new ExecutionDetailValue()
+            var theValue = new ExecutionDetailValue()
             {
                 event_time = evt.StartTime,
                 cpu_us = evt.CPU,
@@ -374,7 +386,9 @@ namespace WorkloadTools.Consumer.Analysis
                 // interval already uploaded and new queries with the 
                 // same hash have been captured
                 if(!e.Message.Contains("Violation of PRIMARY KEY"))
+                {
                     throw;
+                }
             }
             stopped = true;
         }
@@ -384,8 +398,7 @@ namespace WorkloadTools.Consumer.Analysis
         {
             logger.Trace("Writing Workload Analysis data");
 
-
-            using (SqlConnection conn = new SqlConnection())
+            using (var conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
@@ -400,18 +413,21 @@ namespace WorkloadTools.Consumer.Analysis
 
                 try
                 {
-                    int current_interval_id = 0;
+                    var current_interval_id = 0;
                     if(WriteDetail)
+                    {
                         current_interval_id = CreateInterval(conn, tran, intervalTime);
+                    }
 
                     WriteDictionary(applications, conn, tran, "applications");
                     WriteDictionary(databases, conn, tran, "databases");
                     WriteDictionary(hosts, conn, tran, "hosts");
                     WriteDictionary(logins, conn, tran, "logins");
 
-
                     if (rawData == null)
+                    {
                         PrepareDataTables();
+                    }
 
                     lock (rawData)
                     {
@@ -450,11 +466,13 @@ namespace WorkloadTools.Consumer.Analysis
         private void WriteWaitsData(SqlConnection conn, SqlTransaction tran, int current_interval_id)
         {
             if (waitsData == null)
+            {
                 return;
+            }
 
             lock (waitsData)
             {
-                using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+                using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
                                                 SqlBulkCopyOptions.KeepIdentity |
                                                 SqlBulkCopyOptions.FireTriggers |
                                                 SqlBulkCopyOptions.CheckConstraints |
@@ -465,7 +483,6 @@ namespace WorkloadTools.Consumer.Analysis
                     bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[WaitStats]";
                     bulkCopy.BatchSize = 1000;
                     bulkCopy.BulkCopyTimeout = 300;
-
 
                     var Table = from t in waitsData.AsEnumerable()
                                 group t by new
@@ -500,11 +517,13 @@ namespace WorkloadTools.Consumer.Analysis
         private void WritePerformanceCounters(SqlConnection conn, SqlTransaction tran, int current_interval_id)
         {
             if (counterData == null)
+            {
                 return;
+            }
 
             lock (counterData)
             {
-                using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+                using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
                                                 SqlBulkCopyOptions.KeepIdentity |
                                                 SqlBulkCopyOptions.FireTriggers |
                                                 SqlBulkCopyOptions.CheckConstraints |
@@ -547,22 +566,21 @@ namespace WorkloadTools.Consumer.Analysis
         private void WriteExecutionSummary(SqlConnection conn, SqlTransaction tran)
         {
             // create temporary table for uploading data
-            string sql = $@"
+            var sql = $@"
                 IF OBJECT_ID('tempdb..#WorkloadSummary') IS NOT NULL 
                     DROP TABLE #WorkloadSummary;
                     
                 SELECT TOP(0) * INTO #WorkloadSummary FROM [{ConnectionInfo.SchemaName}].WorkloadSummary;
             ";
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
-                cmd.ExecuteNonQuery();
+                _ = cmd.ExecuteNonQuery();
             }
 
-
             // bulk copy data to temp table
-            using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+            using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
                                             SqlBulkCopyOptions.KeepIdentity |
                                             SqlBulkCopyOptions.FireTriggers |
                                             SqlBulkCopyOptions.CheckConstraints |
@@ -573,7 +591,6 @@ namespace WorkloadTools.Consumer.Analysis
                 bulkCopy.DestinationTableName = "#WorkloadSummary";
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
-
 
                 var Table = from t in rawData.Keys
                             from v in rawData[t]
@@ -629,7 +646,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             }
 
-            int affectedRows = 0;
+            var affectedRows = 0;
             // merge with existing data
 
             sql = $@"
@@ -656,7 +673,7 @@ namespace WorkloadTools.Consumer.Analysis
                     AND T.host_id        = WS.host_id
                     AND T.login_id       = WS.login_id;
             ";
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
@@ -676,7 +693,7 @@ namespace WorkloadTools.Consumer.Analysis
                         AND T.login_id       = WS.login_id
                 );
             ";
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
@@ -690,7 +707,7 @@ namespace WorkloadTools.Consumer.Analysis
         {
             int numRows;
 
-            using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+            using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
                                             SqlBulkCopyOptions.KeepIdentity |
                                             SqlBulkCopyOptions.FireTriggers |
                                             SqlBulkCopyOptions.CheckConstraints |
@@ -701,7 +718,6 @@ namespace WorkloadTools.Consumer.Analysis
                 bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[WorkloadDetails]";
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
-
 
                 var Table = from t in rawData.Keys
                             from v in rawData[t]
@@ -770,11 +786,13 @@ namespace WorkloadTools.Consumer.Analysis
 		{
 
 			if (errorData == null)
-				PrepareDataTables();
+            {
+                PrepareDataTables();
+            }
 
-			lock (errorData)
+            lock (errorData)
 			{
-				using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+				using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
 												SqlBulkCopyOptions.KeepIdentity |
 												SqlBulkCopyOptions.FireTriggers |
 												SqlBulkCopyOptions.CheckConstraints |
@@ -785,7 +803,6 @@ namespace WorkloadTools.Consumer.Analysis
 					bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[Errors]";
 					bulkCopy.BatchSize = 1000;
 					bulkCopy.BulkCopyTimeout = 300;
-
 
 					var Table = from t in errorData.AsEnumerable()
 								group t by new
@@ -813,22 +830,22 @@ namespace WorkloadTools.Consumer.Analysis
 
             // create a temporary table
 
-            string sql = @"
+            var sql = @"
                 SELECT TOP(0) *
                 INTO #{0}
                 FROM [{1}].[{0}];
             ";
             sql = String.Format(sql, name, ConnectionInfo.SchemaName);
 
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
-                cmd.ExecuteNonQuery();
+                _ = cmd.ExecuteNonQuery();
             }
 
             // bulk insert into temporary
-            using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+            using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
                                                                 SqlBulkCopyOptions.KeepIdentity |
                                                                 SqlBulkCopyOptions.FireTriggers |
                                                                 SqlBulkCopyOptions.CheckConstraints |
@@ -857,35 +874,34 @@ namespace WorkloadTools.Consumer.Analysis
             ";
             sql = String.Format(sql, name.Substring(0, name.Length - 1), ConnectionInfo.SchemaName);
 
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
-                cmd.ExecuteNonQuery();
+                _ = cmd.ExecuteNonQuery();
             }
         }
-
 
         private void WriteNormalizedQueries(Dictionary<long, NormalizedQuery> values, SqlConnection conn, SqlTransaction tran)
         {
             // create a temporary table
 
-            string sql = @"
+            var sql = @"
                 SELECT TOP(0) *
                 INTO #NormalizedQueries
                 FROM [{0}].[NormalizedQueries];
             ";
             sql = String.Format(sql, ConnectionInfo.SchemaName);
 
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
-                cmd.ExecuteNonQuery();
+                _ = cmd.ExecuteNonQuery();
             }
 
             // bulk insert into temporary
-            using (SqlBulkCopy bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+            using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
                                                                 SqlBulkCopyOptions.KeepIdentity |
                                                                 SqlBulkCopyOptions.FireTriggers |
                                                                 SqlBulkCopyOptions.CheckConstraints |
@@ -896,7 +912,7 @@ namespace WorkloadTools.Consumer.Analysis
                 bulkCopy.DestinationTableName = "#NormalizedQueries";
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
-                bulkCopy.WriteToServer(DataUtils.ToDataTable(from t in values where (t.Value != null) select new { t.Value.Hash, t.Value.NormalizedText, t.Value.ExampleText }));
+                bulkCopy.WriteToServer(DataUtils.ToDataTable(from t in values where t.Value != null select new { t.Value.Hash, t.Value.NormalizedText, t.Value.ExampleText }));
 
             }
 
@@ -914,13 +930,12 @@ namespace WorkloadTools.Consumer.Analysis
             ";
             sql = String.Format(sql, ConnectionInfo.SchemaName);
 
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
-                cmd.ExecuteNonQuery();
+                _ = cmd.ExecuteNonQuery();
             }
-
 
             // Erase from memory all the normalized queries 
             // already written to the database. This should reduce
@@ -930,9 +945,8 @@ namespace WorkloadTools.Consumer.Analysis
                 values[hash] = null;
             }
             // Run the Garbage Collector in a separate task
-            Task.Factory.StartNew(() => InvokeGC());
+            _ = Task.Factory.StartNew(() => InvokeGC());
         }
-
 
         private void InvokeGC()
         {
@@ -940,10 +954,9 @@ namespace WorkloadTools.Consumer.Analysis
             GC.WaitForPendingFinalizers();
         }
 
-
         private int CreateInterval(SqlConnection conn, SqlTransaction tran, DateTime intervalTime)
         {
-            string sql = @"
+            var sql = @"
                 UPDATE [{0}].[Intervals]
                 SET  end_time = @end_time
                     ,duration_minutes = @duration_minutes
@@ -956,30 +969,30 @@ namespace WorkloadTools.Consumer.Analysis
             sql = String.Format(sql, ConnectionInfo.SchemaName);
 
             // interval id is the number of seconds since 01/01/2000
-            int interval_id = (int)intervalTime.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
+            var interval_id = (int)intervalTime.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
 
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tran;
                 cmd.CommandText = sql;
-                cmd.Parameters.AddWithValue("@interval_id", interval_id);
-                cmd.Parameters.AddWithValue("@end_time", intervalTime);
-                cmd.Parameters.AddWithValue("@duration_minutes", Interval);
-                cmd.ExecuteNonQuery();
+                _ = cmd.Parameters.AddWithValue("@interval_id", interval_id);
+                _ = cmd.Parameters.AddWithValue("@end_time", intervalTime);
+                _ = cmd.Parameters.AddWithValue("@duration_minutes", Interval);
+                _ = cmd.ExecuteNonQuery();
             }
 
             // If this the first interval of the analysis, write
             // a marker interval with duration = 0 
             if (!FirstIntervalWritten)
             {
-                using (SqlCommand cmd = conn.CreateCommand())
+                using (var cmd = conn.CreateCommand())
                 {
                     cmd.Transaction = tran;
                     cmd.CommandText = sql;
-                    cmd.Parameters.AddWithValue("@interval_id", interval_id - 1);
-                    cmd.Parameters.AddWithValue("@end_time", intervalTime.AddSeconds(-1));
-                    cmd.Parameters.AddWithValue("@duration_minutes", 0);
-                    cmd.ExecuteNonQuery();
+                    _ = cmd.Parameters.AddWithValue("@interval_id", interval_id - 1);
+                    _ = cmd.Parameters.AddWithValue("@end_time", intervalTime.AddSeconds(-1));
+                    _ = cmd.Parameters.AddWithValue("@duration_minutes", 0);
+                    _ = cmd.ExecuteNonQuery();
                     FirstIntervalWritten = true;
                 }
             }
@@ -991,21 +1004,20 @@ namespace WorkloadTools.Consumer.Analysis
         {
             rawData = new ConcurrentDictionary<ExecutionDetailKey, List<ExecutionDetailValue>>();
 			errorData = new DataTable();
-            errorData.Columns.Add("type", typeof(int));
-            errorData.Columns.Add("message", typeof(string));
+            _ = errorData.Columns.Add("type", typeof(int));
+            _ = errorData.Columns.Add("message", typeof(string));
 		}
-
 
         private void PrepareDictionaries()
         {
 			CreateTargetDatabase();
 
-			using (SqlConnection conn = new SqlConnection())
+			using (var conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
 
-                string sql = String.Format(@"SELECT * FROM [{0}].[Applications]",ConnectionInfo.SchemaName);
+                var sql = String.Format(@"SELECT * FROM [{0}].[Applications]",ConnectionInfo.SchemaName);
                 AddAllRows(conn, sql, applications);
 
                 sql = String.Format(@"SELECT * FROM [{0}].[Databases]", ConnectionInfo.SchemaName);
@@ -1024,12 +1036,12 @@ namespace WorkloadTools.Consumer.Analysis
             try
             {
 
-                using (SqlDataAdapter adapter = new SqlDataAdapter(sql, conn))
+                using (var adapter = new SqlDataAdapter(sql, conn))
                 {
-                    using (DataSet ds = new DataSet())
+                    using (var ds = new DataSet())
                     {
-                        adapter.Fill(ds);
-                        DataTable dt = ds.Tables[0];
+                        _ = adapter.Fill(ds);
+                        var dt = ds.Tables[0];
                         foreach (DataRow dr in dt.Rows)
                         {
                             d.Add((string)dr[1], (int)dr[0]);
@@ -1048,40 +1060,39 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
-
         protected void CreateTargetTables()
         {
 			CreateTargetDatabase();
 
-			string sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\DatabaseSchema.sql");
+			var sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\DatabaseSchema.sql");
 
             sql = sql.Replace("{DatabaseName}", ConnectionInfo.DatabaseName);
             sql = sql.Replace("{SchemaName}", ConnectionInfo.SchemaName);
 
-            using (SqlConnection conn = new SqlConnection())
+            using (var conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
                 conn.ChangeDatabase(ConnectionInfo.DatabaseName);
 
-                using (SqlCommand cmd = conn.CreateCommand())
+                using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = sql;
-                    cmd.ExecuteNonQuery();
+                    _ = cmd.ExecuteNonQuery();
                 }
 
                 sql = "IF OBJECT_ID('dbo.createAnalysisView') IS NULL EXEC('CREATE PROCEDURE dbo.createAnalysisView AS RETURN 0')";
-                using (SqlCommand cmd = conn.CreateCommand())
+                using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = sql;
-                    cmd.ExecuteNonQuery();
+                    _ = cmd.ExecuteNonQuery();
                 }
 
                 sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\createAnalysisView.sql");
-                using (SqlCommand cmd = conn.CreateCommand())
+                using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = sql;
-                    cmd.ExecuteNonQuery();
+                    _ = cmd.ExecuteNonQuery();
                 }
 
                 // Invoke the stored procedure to create the workload comparison view
@@ -1104,30 +1115,29 @@ namespace WorkloadTools.Consumer.Analysis
                         EXEC createAnalysisView @name1, @name2;
                     END
                 ";
-                using (SqlCommand cmd = conn.CreateCommand())
+                using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = sql;
-                    cmd.ExecuteNonQuery();
+                    _ = cmd.ExecuteNonQuery();
                 }
             }
         }
 
-
 		protected void CreateTargetDatabase()
 		{
-			string databaseName = ConnectionInfo.DatabaseName;
+			var databaseName = ConnectionInfo.DatabaseName;
 			ConnectionInfo.DatabaseName = "master";
 
 			try
 			{
-				using (SqlConnection conn = new SqlConnection())
+				using (var conn = new SqlConnection())
 				{
 					conn.ConnectionString = ConnectionInfo.ConnectionString;
 					conn.Open();
 					conn.ChangeDatabase(ConnectionInfo.DatabaseName);
-					using (SqlCommand cmd = conn.CreateCommand())
+					using (var cmd = conn.CreateCommand())
 					{
-						string createDb = @"
+						var createDb = @"
 						IF NOT EXISTS(SELECT * FROM sys.databases WHERE name = @name)
 						BEGIN
 						    DECLARE @sql nvarchar(max); 
@@ -1136,8 +1146,8 @@ namespace WorkloadTools.Consumer.Analysis
 						END
 					";
 						cmd.CommandText = createDb;
-						cmd.Parameters.AddWithValue("@name", databaseName);
-						cmd.ExecuteNonQuery();
+                        _ = cmd.Parameters.AddWithValue("@name", databaseName);
+                        _ = cmd.ExecuteNonQuery();
 					}
 				}
 			}
@@ -1152,18 +1162,25 @@ namespace WorkloadTools.Consumer.Analysis
         public void Dispose()
         {
             if (rawData != null)
+            {
                 rawData.Clear();
+            }
+
             if (errorData != null)
+            {
                 errorData.Dispose();
+            }
+
             if (counterData != null)
+            {
                 counterData.Dispose();
+            }
+
             if (waitsData != null)
+            {
                 waitsData.Dispose();
+            }
         }
-
-
-
-
 
         internal class ExecutionDetailKey : IEquatable<ExecutionDetailKey>
         {
@@ -1175,7 +1192,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             public override int GetHashCode()
             {
-                int hash = 497;
+                var hash = 497;
                 unchecked
                 {
                     hash = hash * 17 + sql_hash.GetHashCode();
@@ -1213,5 +1230,4 @@ namespace WorkloadTools.Consumer.Analysis
         }
     }
 }
-
 

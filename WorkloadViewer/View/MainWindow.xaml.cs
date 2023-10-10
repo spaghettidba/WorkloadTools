@@ -50,12 +50,12 @@ namespace WorkloadViewer
         {
             try
             {
-                DataGridColumn dgc = Queries.Columns.First(el => el.Header.ToString().Equals(msg.ColumnName));
+                var dgc = Queries.Columns.First(el => el.Header.ToString().Equals(msg.ColumnName));
                 if(dgc != null)
                 {
                     dgc.SortDirection = msg.Direction;
-                    SortDescription sd = new SortDescription(dgc.SortMemberPath, msg.Direction);
-                    CollectionViewSource cvs = (CollectionViewSource)this.Resources["WorkloadQueries"];
+                    var sd = new SortDescription(dgc.SortMemberPath, msg.Direction);
+                    var cvs = (CollectionViewSource)Resources["WorkloadQueries"];
                     cvs.SortDescriptions.Clear();
                     cvs.SortDescriptions.Add(new SortDescription(dgc.SortMemberPath, msg.Direction));
                 }
@@ -85,11 +85,11 @@ namespace WorkloadViewer
             // save text to a temp file and open with windows
             try
             {
-                TextEditor editor = (TextEditor)sender;
-                string docPath = Path.Combine(Path.GetTempPath(), editor.Tag + ".sql");
+                var editor = (TextEditor)sender;
+                var docPath = Path.Combine(Path.GetTempPath(), editor.Tag + ".sql");
 
                 // Write the string array to a new file named "WriteLines.txt".
-                using (StreamWriter outputFile = new StreamWriter(docPath))
+                using (var outputFile = new StreamWriter(docPath))
                 {
                     outputFile.WriteLine(editor.Text);
                 }

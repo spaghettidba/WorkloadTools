@@ -11,10 +11,9 @@ namespace WorkloadTools
 {
     public class WorkloadController : IDisposable
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public static String BaseLocation = new Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().CodeBase)).LocalPath;
-
 
         public WorkloadListener Listener { get; set; }
         public List<WorkloadConsumer> Consumers { get; set; } = new List<WorkloadConsumer>();
@@ -52,15 +51,22 @@ namespace WorkloadTools
                     try
                     {
                         if ((!Listener.IsRunning) || (endTime < DateTime.Now))
+                        {
                             stopped = true;
+                        }
 
                         if (endTime == DateTime.MaxValue && Listener.TimeoutMinutes != 0)
+                        {
                             endTime = startTime.AddMinutes(Listener.TimeoutMinutes);
+                        }
 
                         var evt = Listener.Read();
                         if (evt == null)
+                        {
                             continue;
-                        Parallel.ForEach(Consumers, (cons) =>
+                        }
+
+                        _ = Parallel.ForEach(Consumers, (cons) =>
                         {
                             cons.Consume(evt);
                         });
@@ -89,7 +95,7 @@ namespace WorkloadTools
                 logger.Error(e.Message);
                 logger.Error(e.StackTrace);
 
-                Exception ex = e;
+                var ex = e;
                 while ((ex = ex.InnerException) != null){
                     logger.Error(ex.Message);
                     logger.Error(ex.StackTrace);
@@ -111,12 +117,15 @@ namespace WorkloadTools
                 foreach (var cons in Consumers)
                 {
                     if (cons != null)
+                    {
                         cons.Dispose();
+                    }
                 }
 
                 if (Listener != null)
+                {
                     Listener.Dispose();
-
+                }
             }
         }
 

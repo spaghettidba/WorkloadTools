@@ -14,9 +14,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
 {
     public class FileTargetXEventDataReader : XEventDataReader, IDisposable
     {
-        private RingBuffer<ReadIteration> ReadIterations = new RingBuffer<ReadIteration>(10);
+        private readonly RingBuffer<ReadIteration> ReadIterations = new RingBuffer<ReadIteration>(10);
 
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private bool stopped = false;
 
@@ -30,7 +30,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
             {
                 while (!stopped)
                 {
-                    using (SqlConnection conn = new SqlConnection())
+                    using (var conn = new SqlConnection())
                     {
                         conn.ConnectionString = ConnectionString;
                         conn.Open();
@@ -69,16 +69,16 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 logger.Error(ex.StackTrace);
 
                 if (ex.InnerException != null)
+                {
                     logger.Error(ex.InnerException.Message);
+                }
             }
         }
-
-
 
         private void ReadXEData(SqlConnection conn, ReadIteration currentIteration)
         {
 
-            string sqlXE = @"
+            var sqlXE = @"
                 SELECT event_data, file_name, file_offset
                 FROM sys.fn_xe_file_target_read_file(
                     @filename, 
@@ -90,7 +90,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
             logger.Debug("Reading XE data...");
 
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = sqlXE;
                 cmd.CommandTimeout = 0;
@@ -106,7 +106,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     // Specify an exact file name
                     paramPath.Value = currentIteration.StartFileName;
                 } 
-
 
                 var paramInitialFile = cmd.Parameters.Add("@initial_file_name", System.Data.SqlDbType.NVarChar, 260);
                 paramInitialFile.Value = currentIteration.StartFileName;
@@ -143,23 +142,27 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 if (currentIteration.GetInitialOffset() > 0)
                 {
 
-                    SqlTransformer transformer = new SqlTransformer();
+                    var transformer = new SqlTransformer();
 
                     using (var reader = cmd.ExecuteReader())
                     {
                         try
                         {
-                            int skippedRows = 0;
+                            var skippedRows = 0;
                             while (reader.Read())
                             {
                                 if (reader["file_name"] != DBNull.Value)
+                                {
                                     currentIteration.EndFileName = (string)reader["file_name"];
+                                }
 
                                 if (reader["file_offset"] != DBNull.Value)
+                                {
                                     currentIteration.EndOffset = (long)reader["file_offset"];
+                                }
 
-                                string xmldata = (string)reader["event_data"];
-                                XmlDocument doc = new XmlDocument();
+                                var xmldata = (string)reader["event_data"];
+                                var doc = new XmlDocument();
                                 doc.LoadXml(xmldata);
                                 var evt = parseEvent(doc);
 
@@ -182,7 +185,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                     }
                                 }
 
-
                                 // this is only to print out a message, so consider
                                 // getting rid of it
                                 if (skippedRows > 0)
@@ -199,7 +201,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                 }
 
                                 if (evt.Type == WorkloadEvent.EventType.Unknown)
+                                {
                                     continue;
+                                }
 
                                 if (evt.Type == WorkloadEvent.EventType.BatchStarting
                                     ||
@@ -212,7 +216,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
                                     evt.Type == WorkloadEvent.EventType.Message)
                                 {
                                     if (transformer.Skip(evt.Text))
+                                    {
                                         continue;
+                                    }
 
                                     evt.Text = transformer.Transform(evt.Text);
                                 }
@@ -224,7 +230,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                             }
                             logger.Debug($"currentIteration.EndSequence : {currentIteration.EndSequence}");
-
 
                         }
                         catch (Exception xx)
@@ -247,8 +252,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                 // Wait before querying the events file again
                 if (currentIteration.RowsRead < ReadIteration.DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD)
+                {
                     Thread.Sleep(ReadIteration.DEFAULT_TRACE_INTERVAL_SECONDS * 1000);
-
+                }
             }
 
         }
@@ -256,7 +262,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
         private ReadIteration InitializeReadIteration(SqlConnection conn, ReadIteration previous)
         {
 
-            string sqlPath = @"
+            var sqlPath = @"
                 SELECT file_name, ISNULL(file_offset,-1) AS file_offset
                 FROM (
                     SELECT CAST(target_data AS xml).value('(/EventFileTarget/File/@name)[1]','nvarchar(1000)') AS file_name
@@ -272,7 +278,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 ) AS fileOffset;
             ";
 
-            string sqlPathLocaldb = @"
+            var sqlPathLocaldb = @"
                 IF OBJECT_ID('tempdb.dbo.trace_reader_queue') IS NOT NULL
                 BEGIN
                     SELECT TOP(1) path, CAST(1 AS bigint) AS file_offset
@@ -285,9 +291,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 END
             ";
 
-            string databaseSuffix = ServerType == ExtendedEventsWorkloadListener.ServerType.AzureSqlDatabase ? "database_" : "";
+            var databaseSuffix = ServerType == ExtendedEventsWorkloadListener.ServerType.AzureSqlDatabase ? "database_" : "";
             ReadIteration currentIteration = null;
-            using (SqlCommand cmdPath = conn.CreateCommand())
+            using (var cmdPath = conn.CreateCommand())
             {
                 if (ServerType == ExtendedEventsWorkloadListener.ServerType.LocalDB)
                 {
@@ -304,7 +310,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 {
                     logger.Debug("Initializing read iteration");
 
-                    using (SqlDataReader reader = cmdPath.ExecuteReader())
+                    using (var reader = cmdPath.ExecuteReader())
                     {
                         // should return only one row
                         if (reader.Read())
@@ -361,14 +367,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
             return currentIteration;
         }
 
-
         // Parses all event data from the the data reader
         private ExecutionWorkloadEvent parseEvent(XmlDocument doc)
         {
-            ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
+            var evt = new ExecutionWorkloadEvent();
 
-            XmlNode eventNode = doc.DocumentElement.SelectSingleNode("/event");
-            string name = eventNode.Attributes["name"].InnerText;
+            var eventNode = doc.DocumentElement.SelectSingleNode("/event");
+            var name = eventNode.Attributes["name"].InnerText;
 
             if (name == "sql_batch_completed")
             {
@@ -404,7 +409,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 return evt;
             }
 
-            DateTimeOffset timestamp = DateTimeOffset.Parse(eventNode.Attributes["timestamp"].Value);
+            var timestamp = DateTimeOffset.Parse(eventNode.Attributes["timestamp"].Value);
             evt.StartTime = timestamp.LocalDateTime;
 
             foreach (XmlNode node in eventNode.ChildNodes)
@@ -470,7 +475,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         evt.EventSequence = Convert.ToInt64(node.FirstChild.FirstChild.Value);
                         break;
                     case "is_cached":
-                        bool vIsCached = Convert.ToBoolean(node.FirstChild.FirstChild.Value);
+                        var vIsCached = Convert.ToBoolean(node.FirstChild.FirstChild.Value);
                         if (!vIsCached) /* If is not cached then consider it a new login */
                         {
                             // A nonpooled login will trigger Login event with EventSubClass = 1

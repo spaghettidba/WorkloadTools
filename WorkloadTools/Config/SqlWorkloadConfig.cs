@@ -17,9 +17,6 @@ namespace WorkloadTools.Config
 {
     public class SqlWorkloadConfig
     {
-
-        private static Logger logger = LogManager.GetCurrentClassLogger();
-
         public SqlWorkloadConfig()
         {
         }
@@ -28,11 +25,11 @@ namespace WorkloadTools.Config
 
         public static SqlWorkloadConfig LoadFromFile(string path)
         {
-            JavaScriptSerializer ser = new JavaScriptSerializer(new SqlWorkloadConfigTypeResolver());
+            var ser = new JavaScriptSerializer(new SqlWorkloadConfigTypeResolver());
             ser.RegisterConverters(new JavaScriptConverter[] { new ModelConverter() });
-            using (StreamReader r = new StreamReader(path))
+            using (var r = new StreamReader(path))
             {
-                string json = r.ReadToEnd();
+                var json = r.ReadToEnd();
                 var minifier = new JsMinifier();
                 // minify JSON to strip away comments
                 // Comments in config files are very useful but JSON parsers
@@ -62,8 +59,8 @@ namespace WorkloadTools.Config
 
         public static void Test()
         {
-            JavaScriptSerializer ser = new JavaScriptSerializer(new SqlWorkloadConfigTypeResolver());
-            SqlWorkloadConfig x = new SqlWorkloadConfig()
+            var ser = new JavaScriptSerializer(new SqlWorkloadConfigTypeResolver());
+            var x = new SqlWorkloadConfig()
             {
                 Controller = new WorkloadController()
             };
@@ -106,7 +103,7 @@ namespace WorkloadTools.Config
                 }
             });
 
-            string s = ser.Serialize(x);
+            var s = ser.Serialize(x);
 
             Console.WriteLine(s);
 

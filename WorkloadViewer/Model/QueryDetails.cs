@@ -44,7 +44,7 @@ namespace WorkloadViewer.Model
 
         private DataTable LoadQueryStats()
         {
-            DataTable result = new DataTable();
+            var result = new DataTable();
             result.Columns.Add(new DataColumn("Application", typeof(String)));
             result.Columns.Add(new DataColumn("Database", typeof(String)));
             result.Columns.Add(new DataColumn("Host", typeof(String)));
@@ -212,14 +212,14 @@ namespace WorkloadViewer.Model
 
         private PlotModel LoadPlotModel()
         {
-            PlotModel plotModel = new PlotModel();
+            var plotModel = new PlotModel();
             plotModel.LegendOrientation = LegendOrientation.Horizontal;
             plotModel.LegendPlacement = LegendPlacement.Inside;
             plotModel.LegendPosition = LegendPosition.TopLeft;
             plotModel.LegendBackground = OxyColor.FromAColor(200, OxyColors.White);
             plotModel.Title = "Average Duration";
 
-            LinearAxis offsetAxis = new LinearAxis()
+            var offsetAxis = new LinearAxis()
             {
                 MajorGridlineStyle = LineStyle.Dot,
                 MinorGridlineStyle = LineStyle.None,
@@ -229,7 +229,7 @@ namespace WorkloadViewer.Model
                 MinorTickSize = 0
             };
             plotModel.Axes.Add(offsetAxis);
-            LinearAxis valueAxis1 = new LinearAxis()
+            var valueAxis1 = new LinearAxis()
             {
                 MajorGridlineStyle = LineStyle.Dot,
                 MinorGridlineStyle = LineStyle.None,
@@ -258,7 +258,7 @@ namespace WorkloadViewer.Model
 
         private Series LoadDurationSeries(WorkloadAnalysis analysis, OxyColor color)
         {
-            LineSeries durationSeries = new LineSeries()
+            var durationSeries = new LineSeries()
             {
                 StrokeThickness = 2,
                 MarkerSize = 3,

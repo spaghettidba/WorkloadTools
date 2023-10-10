@@ -14,9 +14,9 @@ namespace WorkloadTools.Listener.Trace
     public class FileTraceEventDataReader : TraceEventDataReader
     {
 
-        private RingBuffer<ReadIteration> ReadIterations = new RingBuffer<ReadIteration>(10);
+        private readonly RingBuffer<ReadIteration> ReadIterations = new RingBuffer<ReadIteration>(10);
 
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private int TraceRowsSleepThreshold { get; set; } = 5000;
         private int TraceIntervalSeconds { get; set; } = 10;
@@ -24,26 +24,24 @@ namespace WorkloadTools.Listener.Trace
         private bool stopped = false;
         private int traceId = -1;
 
-        private TraceUtils utils;
+        private readonly TraceUtils utils;
         private bool _checkedFormat;
-
 
         public FileTraceEventDataReader(string connectionString, WorkloadEventFilter filter, IEventQueue events) : base(connectionString, filter, events)
         {
             utils = new TraceUtils();
         }
 
-
         public override void ReadEvents()
         {
 
             try
             {
-                int retryCount = 0;
+                var retryCount = 0;
 
                 while (!stopped)
                 {
-                    using (SqlConnection conn = new SqlConnection())
+                    using (var conn = new SqlConnection())
                     {
                         conn.ConnectionString = ConnectionString;
                         conn.Open();
@@ -86,7 +84,9 @@ namespace WorkloadTools.Listener.Trace
                 logger.Error(ex.StackTrace);
 
                 if (ex.InnerException != null)
+                {
                     logger.Error(ex.InnerException.Message);
+                }
 
                 Dispose();
             }
@@ -95,14 +95,14 @@ namespace WorkloadTools.Listener.Trace
         private ReadIteration InitializeReadIteration(SqlConnection conn, ReadIteration previous)
         {
 
-            string sqlPath = @"
+            var sqlPath = @"
                 SELECT value AS path
                 FROM ::fn_trace_getinfo(default)
                 WHERE traceid = @traceId
                     AND property = 2;
             ";
 
-            string sqlPathLocaldb = @"
+            var sqlPathLocaldb = @"
                 IF OBJECT_ID('tempdb.dbo.trace_reader_queue') IS NOT NULL
                 BEGIN
                     SELECT TOP(1) path
@@ -116,7 +116,7 @@ namespace WorkloadTools.Listener.Trace
             ";
             
             ReadIteration currentIteration = null;
-            using (SqlCommand cmdPath = conn.CreateCommand())
+            using (var cmdPath = conn.CreateCommand())
             {
                 if (conn.DataSource.StartsWith("(localdb)", StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -131,7 +131,7 @@ namespace WorkloadTools.Listener.Trace
                     // Get trace id
                     if (traceId == -1)
                     {
-                        string tracePath = utils.GetSqlDefaultLogPath(conn);
+                        var tracePath = utils.GetSqlDefaultLogPath(conn);
                         traceId = utils.GetTraceId(conn, Path.Combine(tracePath, "sqlworkload"));
                         if (traceId == -1)
                         {
@@ -142,12 +142,11 @@ namespace WorkloadTools.Listener.Trace
                     paramTraceId.Value = traceId;
                 }   
 
-
                 try
                 {
                     logger.Debug("Initializing read iteration");
 
-                    using (SqlDataReader reader = cmdPath.ExecuteReader())
+                    using (var reader = cmdPath.ExecuteReader())
                     {
                         // should return only one row
                         if (reader.Read())
@@ -223,7 +222,7 @@ namespace WorkloadTools.Listener.Trace
 
         private void ReadTraceData(SqlConnection conn, ReadIteration currentIteration)
         {
-            string sqlReadTrace = @"
+            var sqlReadTrace = @"
                 SELECT EventSequence
 	                ,Error
 	                ,TextData
@@ -252,9 +251,9 @@ namespace WorkloadTools.Listener.Trace
 
             logger.Debug("Reading Trace data...");
 
-            TraceEventParser parser = new TraceEventParser();
+            var parser = new TraceEventParser();
 
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = sqlReadTrace;
 
@@ -286,24 +285,28 @@ namespace WorkloadTools.Listener.Trace
                 logger.Debug($"paramInitialSequence: {paramInitialSequence.Value}");
 
             
-                SqlTransformer transformer = new SqlTransformer();
+                var transformer = new SqlTransformer();
 
                 try
                 {
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        int skippedRows = 0;
+                        var skippedRows = 0;
                         while (reader.Read())
                         {
                             if (reader["EventSequence"] != DBNull.Value)
+                            {
                                 currentIteration.EndSequence = (long)reader["EventSequence"];
+                            }
 
                             // read the event from the sqldatareader
                             var evt = parser.ParseEvent(reader);
 
                             // skip invalid events
                             if (evt.Type == WorkloadEvent.EventType.Unknown)
+                            {
                                 continue;
+                            }
 
                             // skip to the correct event in case we're reading again
                             // from the same file and we have a reference sequence
@@ -324,7 +327,6 @@ namespace WorkloadTools.Listener.Trace
                                 }
                             }
 
-
                             // this is only to print out a message, so consider
                             // getting rid of it
                             if (skippedRows > 0)
@@ -340,7 +342,6 @@ namespace WorkloadTools.Listener.Trace
                                 currentIteration.EndSequence = (long)evt.EventSequence;
                             }
 
-
                             if (evt.Type == WorkloadEvent.EventType.BatchStarting
                                 ||
                                 evt.Type == WorkloadEvent.EventType.BatchCompleted
@@ -352,10 +353,14 @@ namespace WorkloadTools.Listener.Trace
                                 evt.Type == WorkloadEvent.EventType.Message)
                             {
                                 if (transformer.Skip(evt.Text))
+                                {
                                     continue;
+                                }
 
                                 if (!Filter.Evaluate(evt))
+                                {
                                     continue;
+                                }
 
                                 evt.Text = transformer.Transform(evt.Text);
                             }
@@ -378,8 +383,9 @@ namespace WorkloadTools.Listener.Trace
                 // Wait before querying the events file again
                 if (currentIteration.RowsRead < ReadIteration.DEFAULT_TRACE_ROWS_SLEEP_THRESHOLD 
                     && currentIteration.StartFileName == currentIteration.EndFileName)
+                {
                     Thread.Sleep(ReadIteration.DEFAULT_TRACE_INTERVAL_SECONDS * 1000);
-
+                }
             }
 
         }
@@ -388,7 +394,6 @@ namespace WorkloadTools.Listener.Trace
         {
             stopped = true;
         }
-
 
         public bool IsStopped
         {

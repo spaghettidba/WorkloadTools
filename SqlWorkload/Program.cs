@@ -31,10 +31,10 @@ namespace SqlWorkload
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(GenericErrorHandler);
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
 
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
-            string version = fvi.FileMajorPart.ToString() + "." + fvi.FileMinorPart.ToString() + "." + fvi.FileBuildPart.ToString();
-            string name = assembly.FullName;
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            var fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+            var version = fvi.FileMajorPart.ToString() + "." + fvi.FileMinorPart.ToString() + "." + fvi.FileBuildPart.ToString();
+            var name = assembly.FullName;
             logger.Info(name + " " + version);
 
             try
@@ -99,7 +99,7 @@ namespace SqlWorkload
                 return;
             }
 
-            SqlWorkloadConfig config = SqlWorkloadConfig.LoadFromFile(options.ConfigurationFile);
+            var config = SqlWorkloadConfig.LoadFromFile(options.ConfigurationFile);
             config.Controller.Listener.Source = System.IO.Path.GetFullPath(config.Controller.Listener.Source);
 
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
@@ -109,7 +109,7 @@ namespace SqlWorkload
                 config.Controller.Stop();
             };
 
-            Task t = processController(config.Controller);
+            var t = processController(config.Controller);
             t.Wait();
             logger.Info("Controller stopped.");
             config.Controller.Dispose();

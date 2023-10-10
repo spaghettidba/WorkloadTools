@@ -23,7 +23,7 @@ namespace WorkloadTools
         {
             get
             {
-                string connectionString = "Data Source=" + ServerName + "; ";
+                var connectionString = "Data Source=" + ServerName + "; ";
                 connectionString += "Max Pool Size = " + MaxPoolSize + "; ";
                 if (String.IsNullOrEmpty(DatabaseName))
                 {
@@ -33,7 +33,7 @@ namespace WorkloadTools
                 {
                     // try to replace database name with the name
                     // in the database map, if any
-                    string effectiveDatabaseName = DatabaseName;
+                    var effectiveDatabaseName = DatabaseName;
                     if (DatabaseMap.ContainsKey(DatabaseName))
                     {
                         effectiveDatabaseName = DatabaseMap[DatabaseName];

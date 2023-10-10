@@ -11,7 +11,7 @@ namespace WorkloadTools.Listener.Trace
     {
         public int GetTraceId(SqlConnection conn, string path)
         {
-            string sql = @"
+            var sql = @"
                 SELECT TOP(1) id
                 FROM (
 	                SELECT id FROM sys.traces WHERE path LIKE '{0}%'
@@ -21,14 +21,14 @@ namespace WorkloadTools.Listener.Trace
                 ORDER BY id DESC
             ";
 
-            SqlCommand cmd = conn.CreateCommand();
+            var cmd = conn.CreateCommand();
             cmd.CommandText = String.Format(sql, path);
             return (int)cmd.ExecuteScalar();
         }
 
         public string GetSqlDefaultLogPath(SqlConnection conn)
         {
-            string sql = @"
+            var sql = @"
             DECLARE @defaultLog nvarchar(4000);
 
             EXEC master.dbo.xp_instance_regread
@@ -47,7 +47,7 @@ namespace WorkloadTools.Listener.Trace
 
             SELECT @defaultLog AS DefaultLog;
         ";
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = sql;
                 return (string)cmd.ExecuteScalar();
@@ -57,7 +57,7 @@ namespace WorkloadTools.Listener.Trace
         
         public bool CheckTraceFormat(SqlConnection conn, string path)
         {
-            string sql = @"
+            var sql = @"
                 SELECT COUNT(*) AS cnt
                 FROM(
                     SELECT TOP(100) *
@@ -66,14 +66,14 @@ namespace WorkloadTools.Listener.Trace
                 WHERE EventSequence IS NOT NULL
                     AND SPID IS NOT NULL
             ";
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = sql;
                 var p = cmd.CreateParameter();
                 p.ParameterName = "@path";
                 p.DbType = System.Data.DbType.AnsiString;
                 p.Value = path;
-                cmd.Parameters.Add(p);
+                _ = cmd.Parameters.Add(p);
                 return ((int)cmd.ExecuteScalar()) > 0;
             }
 

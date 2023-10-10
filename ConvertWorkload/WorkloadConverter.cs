@@ -32,10 +32,25 @@ namespace ConvertWorkload
         {
             try
             {
-                if (ApplicationFilter != null) reader.ApplicationFilter = ApplicationFilter;
-                if (DatabaseFilter != null) reader.DatabaseFilter = DatabaseFilter;
-                if (HostFilter != null) reader.HostFilter = HostFilter;
-                if (LoginFilter != null) reader.LoginFilter = LoginFilter;
+                if (ApplicationFilter != null)
+                {
+                    reader.ApplicationFilter = ApplicationFilter;
+                }
+
+                if (DatabaseFilter != null)
+                {
+                    reader.DatabaseFilter = DatabaseFilter;
+                }
+
+                if (HostFilter != null)
+                {
+                    reader.HostFilter = HostFilter;
+                }
+
+                if (LoginFilter != null)
+                {
+                    reader.LoginFilter = LoginFilter;
+                }
 
                 while ((!reader.HasFinished() || reader.HasMoreElements()) && !stopped)
                 {

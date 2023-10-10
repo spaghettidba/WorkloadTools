@@ -12,11 +12,10 @@ namespace WorkloadTools.Listener.Trace
 {
     public class ProfilerWorkloadListener : WorkloadListener
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private ConcurrentQueue<WorkloadEvent> events = new ConcurrentQueue<WorkloadEvent>();
+        private readonly ConcurrentQueue<WorkloadEvent> events = new ConcurrentQueue<WorkloadEvent>();
         private TraceServerWrapper trace;
-
 
         public ProfilerWorkloadListener() : base()
         {
@@ -27,7 +26,7 @@ namespace WorkloadTools.Listener.Trace
 
         public override void Initialize()
         {
-            SqlConnectionInfoWrapper conn = new SqlConnectionInfoWrapper
+            var conn = new SqlConnectionInfoWrapper
             {
                 ServerName = ConnectionInfo.ServerName,
                 DatabaseName = "master"
@@ -49,7 +48,7 @@ namespace WorkloadTools.Listener.Trace
             {
                 trace.InitializeAsReader(conn, Source);
 
-                Task.Factory.StartNew(() => ReadEvents());
+                _ = Task.Factory.StartNew(() => ReadEvents());
 
             }
             catch (Exception ex)
@@ -57,13 +56,13 @@ namespace WorkloadTools.Listener.Trace
                 logger.Error(ex.Message);
 
                 if (ex.InnerException != null)
+                {
                     logger.Error(ex.InnerException.Message);
+                }
 
                 throw;
             }
         }
-
-
 
         public override WorkloadEvent Read()
         {
@@ -74,10 +73,12 @@ namespace WorkloadTools.Listener.Trace
             return result;
         }
 
-
         protected override void Dispose(bool disposing)
         {
-            if (stopped) return;
+            if (stopped)
+            {
+                return;
+            }
             // close the trace, if open
             // shut down the reader thread
             stopped = true;
@@ -92,7 +93,6 @@ namespace WorkloadTools.Listener.Trace
             }
         }
 
-
         private void ReadEvents()
         {
             try
@@ -101,14 +101,21 @@ namespace WorkloadTools.Listener.Trace
                 {
                     try
                     {
-                        ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
+                        var evt = new ExecutionWorkloadEvent();
 
                         if (trace.GetValue("EventClass").ToString() == "RPC:Completed")
+                        {
                             evt.Type = WorkloadEvent.EventType.RPCCompleted;
+                        }
                         else if (trace.GetValue("EventClass").ToString() == "SQL:BatchCompleted")
+                        {
                             evt.Type = WorkloadEvent.EventType.BatchCompleted;
+                        }
                         else
+                        {
                             evt.Type = WorkloadEvent.EventType.Unknown;
+                        }
+
                         evt.ApplicationName = (string)trace.GetValue("ApplicationName");
                         evt.DatabaseName = (string)trace.GetValue("DatabaseName");
                         evt.HostName = (string)trace.GetValue("HostName");
@@ -122,7 +129,9 @@ namespace WorkloadTools.Listener.Trace
                         evt.StartTime = DateTime.Now;
 
                         if (!Filter.Evaluate(evt))
+                        {
                             continue;
+                        }
 
                         events.Enqueue(evt);
                     }
@@ -131,9 +140,10 @@ namespace WorkloadTools.Listener.Trace
                         logger.Error(ex.Message);
 
                         if (ex.InnerException != null)
+                        {
                             logger.Error(ex.InnerException.Message);
+                        }
                     }
-
 
                 } // while (Read)
 
@@ -143,7 +153,9 @@ namespace WorkloadTools.Listener.Trace
                 logger.Error(ex.Message);
 
                 if (ex.InnerException != null)
+                {
                     logger.Error(ex.InnerException.Message);
+                }
 
                 Dispose();
             }

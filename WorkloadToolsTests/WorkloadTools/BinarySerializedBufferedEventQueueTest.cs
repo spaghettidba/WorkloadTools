@@ -94,21 +94,21 @@ namespace WorkloadToolsTests.WorkloadTools
                 , -19355
                 , -166474 };
 
-            using (BinarySerializedBufferedEventQueue queue = new BinarySerializedBufferedEventQueue())
+            using (var queue = new BinarySerializedBufferedEventQueue())
             {
                 queue.BufferSize = 10000;
-                int total = 0;
-                for (int i = 0; i < numbers.Length; i++)
+                var total = 0;
+                for (var i = 0; i < numbers.Length; i++)
                 {
                     if (i == 28)
                     {
                         Debug.WriteLine("Uh oh");
                     }
-                    int num = numbers[i];
+                    var num = numbers[i];
                     if (num > 0)
                     {
-                        int initialCount = queue.Count;
-                        for (int j = 0; j < num; j++)
+                        var initialCount = queue.Count;
+                        for (var j = 0; j < num; j++)
                         {
                             queue.Enqueue(new ExecutionWorkloadEvent() { Text = $"SELECT {j} FROM sometable WHERE somecolumn = someValue ORDER BY someOtherColumn" });
                             if (i == 28)
@@ -123,10 +123,10 @@ namespace WorkloadToolsTests.WorkloadTools
                     }
                     else
                     {
-                        int initialCount = queue.Count;
+                        var initialCount = queue.Count;
                         num = num * -1;
                         WorkloadEvent evnt = null;
-                        for (int k = 0; k < num; k++)
+                        for (var k = 0; k < num; k++)
                         {
                             queue.TryDequeue(out evnt);
                             //Console.WriteLine($" {k}: should be {initialCount - k}  | is {queue.Count}");
@@ -147,21 +147,21 @@ namespace WorkloadToolsTests.WorkloadTools
         public void TestEnqueueRandomDequeueAll()
         {
 
-            using (BinarySerializedBufferedEventQueue queue = new BinarySerializedBufferedEventQueue())
+            using (var queue = new BinarySerializedBufferedEventQueue())
             {
                 queue.BufferSize = 10000;
-                Random r = new Random();
-                Stopwatch watch = new Stopwatch();
+                var r = new Random();
+                var watch = new Stopwatch();
 
-                for (int j = 0; j < 10; j++)
+                for (var j = 0; j < 10; j++)
                 {
                     watch.Reset();
                     watch.Start();
 
 
-                    int numElements = (int)(r.NextDouble() * 100000);
+                    var numElements = (int)(r.NextDouble() * 100000);
 
-                    for (int i = 0; i < numElements; i++)
+                    for (var i = 0; i < numElements; i++)
                     {
                         queue.Enqueue(new ExecutionWorkloadEvent()
                         {
@@ -173,17 +173,19 @@ namespace WorkloadToolsTests.WorkloadTools
                     Console.WriteLine($"Enqueue {numElements} elements elapsed: {watch.Elapsed}");
 
 
-                    int queueLen = queue.Count;
+                    var queueLen = queue.Count;
 
                     numElements = (int)(r.NextDouble() * 100000);
 
                     while (numElements > queueLen)
+                    {
                         numElements -= 500;
+                    }
 
                     watch.Reset();
                     watch.Start();
 
-                    for (int i = 0; i < numElements; i++)
+                    for (var i = 0; i < numElements; i++)
                     {
                         WorkloadEvent evt = null;
                         queue.TryDequeue(out evt);
@@ -197,9 +199,12 @@ namespace WorkloadToolsTests.WorkloadTools
                 watch.Reset();
                 watch.Start();
 
-                int len = queue.Count;
+                var len = queue.Count;
                 WorkloadEvent evnt = null;
-                while (queue.TryDequeue(out evnt)) ;
+                while (queue.TryDequeue(out evnt))
+                {
+                    ;
+                }
 
                 watch.Stop();
                 Console.WriteLine($"Dequeue all {len} remaining elements elapsed: {watch.Elapsed}");

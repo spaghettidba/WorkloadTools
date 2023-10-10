@@ -13,7 +13,7 @@ namespace WorkloadViewer.ViewModel
 
         public int CompareTo(object obj)
         {
-            int result = -1;
+            var result = -1;
             if(obj is FilterDefinition)
             {
                 result = Name.CompareTo(((FilterDefinition)obj).Name);

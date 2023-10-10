@@ -11,22 +11,25 @@ namespace WorkloadTools.Listener
     public class SqlTransformer
     {
 
-        private static Regex _execPrepped = new Regex("^EXEC\\s+SP_EXECUTE\\s+(?<stmtnum>\\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static Regex _execUnprep = new Regex("EXEC\\s+SP_UNPREPARE\\s+(?<stmtnum>\\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static Regex _prepareSql = new Regex("EXEC\\s+(?<preptype>SP_PREP(ARE|EXEC))\\s+@P1\\s+OUTPUT,\\s*(NULL|(N\\'.*?\\')),\\s*N(?<remaining>.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _preppedSqlStatement = new Regex("^(')(?<statement>((?!\\1).|\\1{2})*)\\1", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _doubleApostrophe = new Regex("('')(?<string>.*?)('')", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
+        private static readonly Regex _execPrepped = new Regex("^EXEC\\s+SP_EXECUTE\\s+(?<stmtnum>\\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _execUnprep = new Regex("EXEC\\s+SP_UNPREPARE\\s+(?<stmtnum>\\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _prepareSql = new Regex("EXEC\\s+(?<preptype>SP_PREP(ARE|EXEC))\\s+@P1\\s+OUTPUT,\\s*(NULL|(N\\'.*?\\')),\\s*N(?<remaining>.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _preppedSqlStatement = new Regex("^(')(?<statement>((?!\\1).|\\1{2})*)\\1", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _doubleApostrophe = new Regex("('')(?<string>.*?)('')", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
 
-        private static MatchEvaluator decimal38Evaluator = new MatchEvaluator(MakeFloat);
+        private static readonly MatchEvaluator decimal38Evaluator = new MatchEvaluator(MakeFloat);
 
         private static string MakeFloat(Match match)
         {
             if (match.Value.EndsWith("E0"))
+            {
                 return match.Value;
+            }
             else
+            {
                 return match.Value + "E0";
+            }
         }
-
 
         public string Transform(string command)
         {
@@ -35,16 +38,19 @@ namespace WorkloadTools.Listener
             {
                 command = RemoveFirstP1(command, out _);
                 if (!command.EndsWith("EXEC sp_unprepare @p1;"))
+                {
                     command += " ; EXEC sp_unprepare @p1;";
+                }
             }
-
 
             //  remove the handle from the sp_cursoropen call
             else if (command.Contains("sp_cursoropen "))
             {
                 command = RemoveFirstP1(command, out _);
                 if (!command.EndsWith("EXEC sp_cursorclose @p1;"))
+                {
                     command += " ; EXEC sp_cursorclose @p1;";
+                }
             }
 
             //  remove the handle from the sp_cursorprepexec call
@@ -52,9 +58,10 @@ namespace WorkloadTools.Listener
             {
                 command = RemoveFirstP1(command, out _);
                 if (!command.EndsWith("EXEC sp_cursorunprepare @p1;"))
+                {
                     command += " ; EXEC sp_cursorunprepare @p1;";
+                }
             }
-
 
             // trim numbers with precision > 38
             // rpc_completed events may return float parameters
@@ -79,12 +86,12 @@ namespace WorkloadTools.Listener
             return command;
         }
 
-
-
         public bool Skip(string command)
         {
             if (String.IsNullOrEmpty(command))
+            {
                 return true;
+            }
             // skip reset connection commands
             //if (command.Contains("sp_reset_connection"))
             //    return true;
@@ -95,23 +102,33 @@ namespace WorkloadTools.Listener
 
             // skip cursor fetch
             if (command.Contains("sp_cursor "))
+            {
                 return true;
+            }
 
             // skip cursor fetch
             if (command.Contains("sp_cursorfetch "))
+            {
                 return true;
+            }
 
             // skip cursor close
             if (command.Contains("sp_cursorclose "))
+            {
                 return true;
+            }
 
             // skip cursor option
             if (command.Contains("sp_cursoroption "))
+            {
                 return true;
+            }
 
             // skip cursor unprepare
             if (command.Contains("sp_cursorunprepare "))
+            {
                 return true;
+            }
 
             // skip internal commands
             if (command.Contains("fn_xe_file_target_read_file")
@@ -119,15 +136,21 @@ namespace WorkloadTools.Listener
                 command.Contains("ALTER EVENT SESSION")
                 ||
                 command.Contains("fn_trace_getinfo"))
+            {
                 return true;
+            }
 
             // skip KILL commands
             if (command.StartsWith("KILL"))
+            {
                 return true;
+            }
 
             // skip BULK INSERT commands
             if (command.StartsWith("insert bulk"))
-                return true; 
+            {
+                return true;
+            }
 
             // skip sp_execute
             //if (command.Contains("sp_execute "))
@@ -136,15 +159,14 @@ namespace WorkloadTools.Listener
             return false;
         }
 
-
         private string RemoveFirstP1(string command, out string originalP1)
         {
-            int idx = command.IndexOf("set @p1=");
+            var idx = command.IndexOf("set @p1=");
             originalP1 = null;
             if (idx > 0)
             {
                 originalP1 = "";
-                StringBuilder sb = new StringBuilder(command);
+                var sb = new StringBuilder(command);
                 idx += 8; // move past "set @p1="
 
                 // replace numeric chars with 0s
@@ -159,20 +181,19 @@ namespace WorkloadTools.Listener
             return command;
         }
 
-
         private string RemoveFirstPrepStatementNum(string command, out string originalStmtNum)
         {
-            int idx = command.IndexOf(" sp_execute ");
+            var idx = command.IndexOf(" sp_execute ");
             originalStmtNum = null;
             if (idx > 0)
             {
                 originalStmtNum = "";
-                StringBuilder sb = new StringBuilder(command);
+                var sb = new StringBuilder(command);
                 idx += 12; // move past " sp_execute "
 
                 // replace numeric chars with §
-                int iter = 0;
-                int initialIdx = idx;
+                var iter = 0;
+                var initialIdx = idx;
                 while (idx < sb.Length && Char.IsNumber(sb[idx]))
                 {
                     originalStmtNum += sb[idx];
@@ -190,19 +211,18 @@ namespace WorkloadTools.Listener
                 // remove extra characters after the newly added § symbol
                 if(initialIdx + 1 < sb.Length && iter > 1)
                 {
-                    sb.Remove(initialIdx + 1, iter - 1);
+                    _ = sb.Remove(initialIdx + 1, iter - 1);
                 }
                 command = sb.ToString();
             }
             return command;
         }
 
-
         public NormalizedSqlText Normalize(string command)
         {
-            NormalizedSqlText result = new NormalizedSqlText(command);
+            var result = new NormalizedSqlText(command);
 
-            int num = 0;
+            var num = 0;
 
             if (command.Contains("sp_reset_connection"))
             {
@@ -217,15 +237,18 @@ namespace WorkloadTools.Listener
                 return result;
             }                
 
-            Match match3 = _prepareSql.Match(command);
+            var match3 = _prepareSql.Match(command);
             if (match3.Success)
             {
                 if (match3.Groups["preptype"].ToString().ToLower() == "sp_prepare")
                 {
                     if(match3.Groups["stmtnum"].Success)
+                    {
                         num = !(match3.Groups["stmtnum"].ToString() == "NULL") ? Convert.ToInt32(match3.Groups["stmtnum"].ToString()) : 0;
-                    string sql = match3.Groups["remaining"].ToString();
-                    Match match4 = _preppedSqlStatement.Match(sql);
+                    }
+
+                    var sql = match3.Groups["remaining"].ToString();
+                    var match4 = _preppedSqlStatement.Match(sql);
                     if (match4.Success)
                     {
                         sql = match4.Groups["statement"].ToString();
@@ -233,7 +256,7 @@ namespace WorkloadTools.Listener
                         result.Statement = sql;
                         string originalHandle;
                         result.NormalizedText = RemoveFirstP1(result.OriginalText, out originalHandle);
-                        if(int.TryParse(originalHandle, out int n))
+                        if(int.TryParse(originalHandle, out var n))
                         {
                             result.Handle = n;
                         }
@@ -247,13 +270,13 @@ namespace WorkloadTools.Listener
                 return result;
             }
 
-            Match match5 = _execPrepped.Match(command);
+            var match5 = _execPrepped.Match(command);
             if (match5.Success)
             {
                 num = Convert.ToInt32(match5.Groups["stmtnum"].ToString());
                 result.Handle = num;
-                string textWithPlaceHolder = RemoveFirstPrepStatementNum(result.Statement, out string originalHandle);
-                if (int.TryParse(originalHandle, out int n))
+                var textWithPlaceHolder = RemoveFirstPrepStatementNum(result.Statement, out var originalHandle);
+                if (int.TryParse(originalHandle, out var n))
                 {
                     result.Handle = n;
                 }
@@ -267,7 +290,7 @@ namespace WorkloadTools.Listener
                 return result;
             }
 
-            Match match6 = _execUnprep.Match(command);
+            var match6 = _execUnprep.Match(command);
             if (match6.Success)
             {
                 num = Convert.ToInt32(match6.Groups["stmtnum"].ToString());
@@ -277,7 +300,6 @@ namespace WorkloadTools.Listener
                 result.CommandType = NormalizedSqlText.CommandTypeEnum.SP_UNPREPARE;
                 return result;
             }
-
 
             return result;
         }

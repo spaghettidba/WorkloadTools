@@ -30,7 +30,6 @@ namespace WorkloadTools
         {
         }
 
-
         public FilterColumnName ColumnName { get; set; }
         public string[] PredicateValue {
             get => _predicateValue;
@@ -39,9 +38,9 @@ namespace WorkloadTools
                 if (value != null)
                 {
                     ComparisonOperator = new FilterComparisonOperator[_predicateValue.Length];
-                    for (int i = 0; i < value.Length; i++)
+                    for (var i = 0; i < value.Length; i++)
                     {
-                        string thisValue = value[i];
+                        var thisValue = value[i];
                         if (!String.IsNullOrEmpty(thisValue) && thisValue.StartsWith("^"))
                         {
                             _predicateValue[i] = thisValue.Substring(1);
@@ -73,7 +72,7 @@ namespace WorkloadTools
 
         public static string ComparisonOperatorAsString(FilterComparisonOperator op)
         {
-            string result = String.Empty;
+            var result = String.Empty;
             switch (op)
             {
                 case FilterComparisonOperator.Equal:

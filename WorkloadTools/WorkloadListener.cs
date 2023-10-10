@@ -13,7 +13,7 @@ namespace WorkloadTools
 {
     public abstract class WorkloadListener : IDisposable
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public SqlConnectionInfo ConnectionInfo { get; set; }
         public string Source { get; set; }
@@ -28,7 +28,10 @@ namespace WorkloadTools
             get { return _applicationFilter; }
             set {
                 _applicationFilter = value;
-                if(_filter != null) _filter.ApplicationFilter.PredicateValue = _applicationFilter;
+                if(_filter != null)
+                {
+                    _filter.ApplicationFilter.PredicateValue = _applicationFilter;
+                }
             }
         }
         public string[] DatabaseFilter
@@ -37,7 +40,10 @@ namespace WorkloadTools
             set
             {
                 _databaseFilter = value;
-                if (_filter != null) _filter.DatabaseFilter.PredicateValue = _databaseFilter;
+                if (_filter != null)
+                {
+                    _filter.DatabaseFilter.PredicateValue = _databaseFilter;
+                }
             }
         }
         public string[] HostFilter
@@ -46,7 +52,10 @@ namespace WorkloadTools
             set
             {
                 _hostFilter = value;
-                if (_filter != null) _filter.HostFilter.PredicateValue = _hostFilter;
+                if (_filter != null)
+                {
+                    _filter.HostFilter.PredicateValue = _hostFilter;
+                }
             }
         } 
         public string[] LoginFilter
@@ -55,7 +64,10 @@ namespace WorkloadTools
             set
             {
                 _loginFilter = value;
-                if (_filter != null) _filter.LoginFilter.PredicateValue = _loginFilter;
+                if (_filter != null)
+                {
+                    _filter.LoginFilter.PredicateValue = _loginFilter;
+                }
             }
         }
 
@@ -130,7 +142,7 @@ namespace WorkloadTools
             {
                 while (!stopped)
                 {
-                    CounterWorkloadEvent evt = new CounterWorkloadEvent();
+                    var evt = new CounterWorkloadEvent();
                     evt.Type = WorkloadEvent.EventType.PerformanceCounter;
                     evt.StartTime = DateTime.Now;
 
@@ -150,20 +162,21 @@ namespace WorkloadTools
                 logger.Error(ex.StackTrace);
 
                 if (ex.InnerException != null)
+                {
                     logger.Error(ex.InnerException.Message);
+                }
             }
         }
-
 
         private int GetLastCPUUsage()
         {
 
-            using (SqlConnection conn = new SqlConnection())
+            using (var conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
                 // Calculate CPU usage during the last minute interval
-                string sql = @"
+                var sql = @"
                     IF SERVERPROPERTY('Edition') = 'SQL Azure'
                         AND SERVERPROPERTY('EngineEdition') = 5
                     BEGIN
@@ -253,9 +266,9 @@ namespace WorkloadTools
 
                 sql = String.Format(sql,StatsCollectionIntervalSeconds / 60);
 
-                int avg_CPU_percent = -1;
+                var avg_CPU_percent = -1;
 
-                using (SqlCommand cmd = conn.CreateCommand())
+                using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = sql;
                     avg_CPU_percent = (int)cmd.ExecuteScalar();
@@ -265,8 +278,6 @@ namespace WorkloadTools
             }
         }
 
-
-
         protected virtual void ReadWaitStatsEvents()
         {
             try
@@ -274,11 +285,11 @@ namespace WorkloadTools
                 DataTable lastWaits = null;
                 while (!stopped)
                 {
-                    WaitStatsWorkloadEvent evt = new WaitStatsWorkloadEvent();
+                    var evt = new WaitStatsWorkloadEvent();
                     evt.Type = WorkloadEvent.EventType.WAIT_stats;
                     evt.StartTime = DateTime.Now;
 
-                    DataTable newWaits = GetWaits();
+                    var newWaits = GetWaits();
                     evt.Waits = GetDiffWaits(newWaits, lastWaits);
                     lastWaits = newWaits;
 
@@ -293,7 +304,9 @@ namespace WorkloadTools
                 logger.Error(ex.StackTrace);
 
                 if (ex.InnerException != null)
+                {
                     logger.Error(ex.InnerException.Message);
+                }
             }
         }
 
@@ -303,7 +316,7 @@ namespace WorkloadTools
             // return all zeros
             if (lastWaits == null)
             {
-                DataTable result = newWaits.Clone();
+                var result = newWaits.Clone();
                 foreach (DataRow dr in newWaits.Rows)
                 {
                     var nr = result.Rows.Add();
@@ -318,23 +331,24 @@ namespace WorkloadTools
 
             // catch the case when stats are reset
             long newWaitCount = 0;
-            object newWaitCountObj = newWaits.Compute("SUM(wait_count)", null);
+            var newWaitCountObj = newWaits.Compute("SUM(wait_count)", null);
             if (newWaitCountObj != DBNull.Value)
             {
                 newWaitCount = Convert.ToInt64(newWaitCountObj);
             }
             long lastWaitCount = 0;
-            object lastWaitCountObj = lastWaits.Compute("SUM(wait_count)", null);
+            var lastWaitCountObj = lastWaits.Compute("SUM(wait_count)", null);
             if (lastWaitCountObj != DBNull.Value)
             {
                 lastWaitCount = Convert.ToInt64(lastWaitCountObj);
             }
 
-
             // if newWaits < lastWaits --> reset
             // I can return newWaits without having to compute the diff
             if (newWaitCount < lastWaitCount)
+            {
                 return newWaits;
+            }
 
             var results = from table1 in newWaits.AsEnumerable()
                           join table2 in lastWaits.AsEnumerable()
@@ -354,12 +368,12 @@ namespace WorkloadTools
         private DataTable GetWaits()
         {
 
-            using (SqlConnection conn = new SqlConnection())
+            using (var conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
                 // Calculate waits since instance restart
-                string sql = @"
+                var sql = @"
                     WITH [Waits] 
                     AS (
 	                    SELECT wait_type, wait_time_ms/ 1000.0 AS [WaitS],
@@ -419,11 +433,11 @@ namespace WorkloadTools
 
                 DataTable waits = null;
 
-                using (SqlDataAdapter adapter = new SqlDataAdapter(sql, conn))
+                using (var adapter = new SqlDataAdapter(sql, conn))
                 {
-                    using (DataSet ds = new DataSet())
+                    using (var ds = new DataSet())
                     {
-                        adapter.Fill(ds);
+                        _ = adapter.Fill(ds);
                         waits = ds.Tables[0];
                     }
                 }
@@ -442,16 +456,15 @@ namespace WorkloadTools
             }
         }
 
-
         protected virtual void SetTransactionMark(bool allDatabases)
         {
 
-            using (SqlConnection conn = new SqlConnection())
+            using (var conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
                 // Create Marked Transaction
-                string sql = @"
+                var sql = @"
 DECLARE @dbname sysname
 DECLARE @sql nvarchar(max), @qry nvarchar(max)
 
@@ -500,9 +513,9 @@ CLOSE c
 DEALLOCATE c
                 ";
 
-                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                using (var cmd = new SqlCommand(sql, conn))
                 {
-                    cmd.ExecuteNonQuery();
+                    _ = cmd.ExecuteNonQuery();
                 }
 
             }

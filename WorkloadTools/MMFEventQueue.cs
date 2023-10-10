@@ -9,8 +9,8 @@ namespace WorkloadTools
 {
     public class MMFEventQueue : IDisposable , IEventQueue
     {
-        private ConcurrentQueue<PilePointer> pointers;
-        private MMFPile pile;
+        private readonly ConcurrentQueue<PilePointer> pointers;
+        private readonly MMFPile pile;
 
         // this has no effect on a memory mapped file...
         public int BufferSize { get; set; }
@@ -23,7 +23,6 @@ namespace WorkloadTools
             pile.Start();
         }
 
-
         public bool TryDequeue(out WorkloadEvent result)
         {
             try
@@ -35,7 +34,7 @@ namespace WorkloadTools
                     return false;
                 }
                 result = (WorkloadEvent)pile.Get(pp);
-                pile.Delete(pp);
+                _ = pile.Delete(pp);
             }
             catch(Exception)
             {

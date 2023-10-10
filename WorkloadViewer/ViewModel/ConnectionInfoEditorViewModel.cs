@@ -104,7 +104,9 @@ namespace WorkloadViewer.ViewModel
             finally
             {
                 if(Dialog.IsVisible)
+                {
                     await _dialogCoordinator.HideMetroDialogAsync(Context, Dialog);
+                }
             }
         }
     }

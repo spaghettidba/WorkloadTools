@@ -11,12 +11,12 @@ namespace WorkloadTools.Consumer.Replay
 {
     public class ReplayConsumer : BufferedWorkloadConsumer
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private SpinWait spin = new SpinWait();
         public int ThreadLimit = 256;//32
         public int InactiveWorkerTerminationTimeoutSeconds = 300;
-        private Semaphore WorkLimiter;
+        private readonly Semaphore WorkLimiter;
 
         public bool DisplayWorkerStats { get; set; } = true;
         public bool ConsumeResults { get; set; } = true;
@@ -30,14 +30,8 @@ namespace WorkloadTools.Consumer.Replay
         private LogLevel _CommandErrorLogLevel = LogLevel.Error;
         public string CommandErrorLogLevel
         {
-            get
-            {
-                return _CommandErrorLogLevel.Name;
-            }
-            set
-            {
-                _CommandErrorLogLevel = LogLevel.FromString(value);
-            }
+            get => _CommandErrorLogLevel.Name;
+            set => _CommandErrorLogLevel = LogLevel.FromString(value);
         }
 
         public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();
@@ -45,8 +39,8 @@ namespace WorkloadTools.Consumer.Replay
         public SqlConnectionInfo ConnectionInfo { get; set; }
         public ThreadingModeEnum ThreadingMode { get; set; } = ThreadingModeEnum.WorkerTask;
 
-        private ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
-        private Thread runner;
+        private readonly ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
+
         private Thread sweeper;
 
         private long eventCount;
@@ -92,10 +86,14 @@ namespace WorkloadTools.Consumer.Replay
             eventCount++;
 
             if (!(evnt is ExecutionWorkloadEvent))
+            {
                 return;
+            }
 
             if (evnt.Type != WorkloadEvent.EventType.RPCStarting && evnt.Type != WorkloadEvent.EventType.BatchStarting)
+            {
                 return;
+            }
 
             if (totalEventCount > 0)
             {
@@ -120,9 +118,9 @@ namespace WorkloadTools.Consumer.Replay
                 logger.Info("All future delays will be calculated from this point + 1s, triggered by event {@event}", evnt);
             }
 
-            ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
+            var evt = (ExecutionWorkloadEvent)evnt;
 
-            ReplayCommand command = new ReplayCommand()
+            var command = new ReplayCommand()
             {
                 CommandText = evt.Text,
                 Database = evt.DatabaseName,
@@ -132,11 +130,10 @@ namespace WorkloadTools.Consumer.Replay
                 EventSequence = evt.EventSequence
             };
 
-            int session_id = -1;
+            var session_id = -1;
             session_id = (int)evt.SPID;
 
-            ReplayWorker rw = null;
-            if (ReplayWorkers.TryGetValue(session_id, out rw))
+            if (ReplayWorkers.TryGetValue(session_id, out var rw))
             {
                 // Ensure that the buffer does not get too big
                 while (rw.QueueLength >= (BufferSize * .9))
@@ -151,23 +148,23 @@ namespace WorkloadTools.Consumer.Replay
 
                 rw = new ReplayWorker(session_id.ToString())
                 {
-                    ConnectionInfo = this.ConnectionInfo,
+                    ConnectionInfo = ConnectionInfo,
                     ReplayIntervalSeconds = 0,
                     StopOnError = false,
-                    DisplayWorkerStats = this.DisplayWorkerStats,
-                    ConsumeResults = this.ConsumeResults,
-                    QueryTimeoutSeconds = this.QueryTimeoutSeconds,
-                    WorkerStatsCommandCount = this.WorkerStatsCommandCount,
-                    MimicApplicationName = this.MimicApplicationName,
-                    DatabaseMap = this.DatabaseMap,
+                    DisplayWorkerStats = DisplayWorkerStats,
+                    ConsumeResults = ConsumeResults,
+                    QueryTimeoutSeconds = QueryTimeoutSeconds,
+                    WorkerStatsCommandCount = WorkerStatsCommandCount,
+                    MimicApplicationName = MimicApplicationName,
+                    DatabaseMap = DatabaseMap,
                     StartTime = startTime,
-                    FailRetryCount = this.FailRetryCount,
-                    TimeoutRetryCount = this.TimeoutRetryCount,
+                    FailRetryCount = FailRetryCount,
+                    TimeoutRetryCount = TimeoutRetryCount,
                     CommandErrorLogLevel = _CommandErrorLogLevel,
-                    RaiseErrorsToSqlEventTracing = this.RaiseErrorsToSqlEventTracing
+                    RaiseErrorsToSqlEventTracing = RaiseErrorsToSqlEventTracing
                 };
 
-                ReplayWorkers.TryAdd(session_id, rw);
+                _ = ReplayWorkers.TryAdd(session_id, rw);
                 rw.AppendCommand(command);
             }
 
@@ -191,8 +188,10 @@ namespace WorkloadTools.Consumer.Replay
                                         catch { Console.WriteLine(e.Message); }
                                     }
                                 }
-                                ));
-                sweeper.IsBackground = true;
+                                ))
+                {
+                    IsBackground = true
+                };
                 sweeper.Start();
             }
         }
@@ -221,7 +220,7 @@ namespace WorkloadTools.Consumer.Replay
                         continue;
                     }
 
-                    foreach (ReplayWorker wrk in ReplayWorkers.Values)
+                    foreach (var wrk in ReplayWorkers.Values)
                     {
                         if (wrk.LastCommandTime < DateTime.Now.AddSeconds(-InactiveWorkerTerminationTimeoutSeconds) && !wrk.HasCommands)
                         {
@@ -244,8 +243,8 @@ namespace WorkloadTools.Consumer.Replay
 
         private void RemoveWorker(string name)
         {
-            ReplayWorker outWrk;
-            ReplayWorkers.TryRemove(int.Parse(name), out outWrk);
+            _ = ReplayWorkers.TryRemove(int.Parse(name), out var outWrk);
+
             logger.Trace("Disposing worker [{Worker}]", name);
             if (outWrk != null)
             {
@@ -254,12 +253,14 @@ namespace WorkloadTools.Consumer.Replay
             }
         }
 
-
         private void RunWorker(ReplayWorker wrk)
         {
             try
             {
-                if (stopped) return;
+                if (stopped)
+                {
+                    return;
+                }
 
                 if (wrk.HasCommands)
                 {
@@ -269,11 +270,11 @@ namespace WorkloadTools.Consumer.Replay
                         {
                             // Using a semaphore to avoid overwhelming the threadpool
                             // Without this precaution, the memory consumption goes to the roof
-                            WorkLimiter.WaitOne();
+                            _ = WorkLimiter.WaitOne();
 
                             // Queue the execution of a statement in the threadpool.
                             // The statement will get executed in a separate thread eventually.
-                            ThreadPool.QueueUserWorkItem(
+                            _ = ThreadPool.QueueUserWorkItem(
                                 delegate
                                 {
                                     try
@@ -297,7 +298,7 @@ namespace WorkloadTools.Consumer.Replay
                         finally
                         {
                             // Release the semaphore
-                            WorkLimiter.Release();
+                            _ = WorkLimiter.Release();
                         }
                     }
                     else if (ThreadingMode == ThreadingModeEnum.Tasks)
@@ -309,10 +310,10 @@ namespace WorkloadTools.Consumer.Replay
                         {
                             // Using a semaphore to avoid overwhelming the threadpool
                             // Without this precaution, the memory consumption goes to the roof
-                            WorkLimiter.WaitOne();
+                            _ = WorkLimiter.WaitOne();
 
                             // Start a new Task to run the statement
-                            Task t = Task.Factory.StartNew(
+                            var t = Task.Factory.StartNew(
                                 delegate
                                 {
                                     try
@@ -336,7 +337,7 @@ namespace WorkloadTools.Consumer.Replay
                         finally
                         {
                             // Release the semaphore
-                            WorkLimiter.Release();
+                            _ = WorkLimiter.Release();
                         }
                     }
                     else if (ThreadingMode == ThreadingModeEnum.WorkerTask)

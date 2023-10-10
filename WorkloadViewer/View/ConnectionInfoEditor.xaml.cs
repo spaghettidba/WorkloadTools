@@ -39,22 +39,22 @@ namespace WorkloadViewer.View
                 //Fist of all, remove focus from the current text control and set it to the button
                 Keyboard.Focus(OKButton);
                 // Then fire the click event and its associated command
-                ButtonAutomationPeer peer = new ButtonAutomationPeer(OKButton);
-                IInvokeProvider invokeProv = peer.GetPattern(PatternInterface.Invoke) as IInvokeProvider;
+                var peer = new ButtonAutomationPeer(OKButton);
+                var invokeProv = peer.GetPattern(PatternInterface.Invoke) as IInvokeProvider;
                 invokeProv.Invoke();
             }
         }
 
         private void Baseline_PasswordChanged(object sender, RoutedEventArgs e)
         {
-            if (this.DataContext != null)
-            { ((dynamic)this.DataContext).BaselinePassword = ((PasswordBox)sender).Password; }
+            if (DataContext != null)
+            { ((dynamic)DataContext).BaselinePassword = ((PasswordBox)sender).Password; }
         }
 
         private void Benchmark_PasswordChanged(object sender, RoutedEventArgs e)
         {
-            if (this.DataContext != null)
-            { ((dynamic)this.DataContext).BenchmarkPassword = ((PasswordBox)sender).Password; }
+            if (DataContext != null)
+            { ((dynamic)DataContext).BenchmarkPassword = ((PasswordBox)sender).Password; }
         }
     }
 }

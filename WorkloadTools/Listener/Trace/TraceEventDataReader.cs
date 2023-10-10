@@ -26,8 +26,6 @@ namespace WorkloadTools.Listener.Trace
             Filter = filter;
         }
 
-
-
         public abstract void ReadEvents();
 
         public abstract void Stop();

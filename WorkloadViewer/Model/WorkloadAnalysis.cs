@@ -25,36 +25,44 @@ namespace WorkloadViewer.Model
 
         public void Load()
         {
-            using (SqlConnection conn = new SqlConnection())
+            using (var conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
 
-                Dictionary<long, NormalizedQuery> NormalizedQueries = new Dictionary<long, NormalizedQuery>();
+                var NormalizedQueries = new Dictionary<long, NormalizedQuery>();
 
-                int numIntervals = 0;
-                int preaggregation = 1;
-                using (SqlCommand cmd = conn.CreateCommand())
+                var numIntervals = 0;
+                var preaggregation = 1;
+                using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM " + ConnectionInfo.SchemaName + ".Intervals WHERE duration_minutes > 0;";
                     cmd.CommandTimeout = 0;
                     numIntervals = (int)cmd.ExecuteScalar();
                 }
                 if (numIntervals > 500) // around 8 hours
+                {
                     preaggregation = 15;
-                if (numIntervals > 1000) // around 16 hours
-                    preaggregation = 30;
-                if (numIntervals > 2000) // around 32 hours
-                    preaggregation = 60;
+                }
 
-                using (SqlCommand cmd = conn.CreateCommand())
+                if (numIntervals > 1000) // around 16 hours
+                {
+                    preaggregation = 30;
+                }
+
+                if (numIntervals > 2000) // around 32 hours
+                {
+                    preaggregation = 60;
+                }
+
+                using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT TOP(1) end_time FROM " + ConnectionInfo.SchemaName + ".Intervals ORDER BY interval_id ASC ";
                     cmd.CommandTimeout = 0;
                     StartDate = (DateTime)cmd.ExecuteScalar();
                 }
 
-                using (SqlCommand cmd = conn.CreateCommand())
+                using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM " + ConnectionInfo.SchemaName + ".NormalizedQueries";
                     cmd.CommandTimeout = 0;
@@ -72,10 +80,10 @@ namespace WorkloadViewer.Model
                     }
                 }
 
-                using (SqlCommand cmd = conn.CreateCommand())
+                using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandTimeout = 0;
-                    string sqlText = WorkloadViewer.Properties.Resources.WorkloadAnalysis;
+                    var sqlText = WorkloadViewer.Properties.Resources.WorkloadAnalysis;
                     cmd.CommandText = sqlText.Replace("capture", ConnectionInfo.SchemaName);
                     cmd.CommandText = cmd.CommandText.Replace("preaggregation", preaggregation.ToString());
                     cmd.CommandTimeout = 0;
@@ -86,7 +94,7 @@ namespace WorkloadViewer.Model
                         {
                             try
                             {
-                                WorkloadAnalysisPoint point = new WorkloadAnalysisPoint()
+                                var point = new WorkloadAnalysisPoint()
                                 {
                                     OffsetMinutes = rdr.GetInt32(rdr.GetOrdinal("offset_minutes")),
                                     DurationMinutes = rdr.GetInt32(rdr.GetOrdinal("duration_minutes")),

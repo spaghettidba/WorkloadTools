@@ -15,10 +15,10 @@ namespace WorkloadTools.Listener.ExtendedEvents
             DatabaseFilter = new ExtendedEventsFilterPredicate(FilterPredicate.FilterColumnName.DatabaseName);
             HostFilter = new ExtendedEventsFilterPredicate(FilterPredicate.FilterColumnName.HostName);
             LoginFilter = new ExtendedEventsFilterPredicate(FilterPredicate.FilterColumnName.LoginName);
-            ((ExtendedEventsFilterPredicate)ApplicationFilter).IsSqlAzure = this.IsSqlAzure;
-            ((ExtendedEventsFilterPredicate)DatabaseFilter).IsSqlAzure = this.IsSqlAzure;
-            ((ExtendedEventsFilterPredicate)HostFilter).IsSqlAzure = this.IsSqlAzure;
-            ((ExtendedEventsFilterPredicate)LoginFilter).IsSqlAzure = this.IsSqlAzure;
+            ((ExtendedEventsFilterPredicate)ApplicationFilter).IsSqlAzure = IsSqlAzure;
+            ((ExtendedEventsFilterPredicate)DatabaseFilter).IsSqlAzure = IsSqlAzure;
+            ((ExtendedEventsFilterPredicate)HostFilter).IsSqlAzure = IsSqlAzure;
+            ((ExtendedEventsFilterPredicate)LoginFilter).IsSqlAzure = IsSqlAzure;
 
         }
     }

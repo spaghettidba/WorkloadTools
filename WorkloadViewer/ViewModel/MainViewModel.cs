@@ -37,8 +37,14 @@ namespace WorkloadViewer.ViewModel
         {
             get
             {
-                if(CompareMode) return Visibility.Visible;
-                else return Visibility.Collapsed;
+                if(CompareMode)
+                {
+                    return Visibility.Visible;
+                }
+                else
+                {
+                    return Visibility.Collapsed;
+                }
             }
         }
 
@@ -108,7 +114,7 @@ namespace WorkloadViewer.ViewModel
 
         private async void InitializeAll()
         {
-            ProgressDialogController controller = await _dialogCoordinator.ShowProgressAsync(this, "Loading data", String.Empty, false);
+            var controller = await _dialogCoordinator.ShowProgressAsync(this, "Loading data", String.Empty, false);
             controller.SetIndeterminate();
 
             try
@@ -236,7 +242,7 @@ namespace WorkloadViewer.ViewModel
             // Initialize the queries
             logger.Info("Entering baseline evaluation");
 
-            bool zoomIsSet = PlotModels[0].DefaultXAxis != null;
+            var zoomIsSet = PlotModels[0].DefaultXAxis != null;
 
             double xstart = 0;
             double xend = 0;
@@ -245,7 +251,10 @@ namespace WorkloadViewer.ViewModel
             {
                 xstart = PlotModels[0].DefaultXAxis.ActualMinimum;
                 xend = PlotModels[0].DefaultXAxis.ActualMaximum;
-                if (xstart < 0) xstart = 0;
+                if (xstart < 0)
+                {
+                    xstart = 0;
+                }
             }
 
             var baseline = from t in _baselineWorkloadAnalysis.Points
@@ -389,7 +398,7 @@ namespace WorkloadViewer.ViewModel
             RaisePropertyChanged("CompareModeVisibility");
             RaisePropertyChanged("CompareMode");
 
-            string sortCol = CompareMode ? "diff_sum_duration_us" : "sum_duration_us";
+            var sortCol = CompareMode ? "diff_sum_duration_us" : "sum_duration_us";
             var msg = new SortColMessage(sortCol, System.ComponentModel.ListSortDirection.Descending);
             Messenger.Default.Send<SortColMessage>(msg);
         }
@@ -437,8 +446,8 @@ namespace WorkloadViewer.ViewModel
 
         private void InitializeCharts()
         {
-            bool useDateAxis = _options.BenchmarkSchema == null;
-            double baseOffset = useDateAxis ? DateTimeAxis.ToDouble(_baselineWorkloadAnalysis.StartDate) : 0;
+            var useDateAxis = _options.BenchmarkSchema == null;
+            var baseOffset = useDateAxis ? DateTimeAxis.ToDouble(_baselineWorkloadAnalysis.StartDate) : 0;
 
             CpuPlotModel = InitializePlotModel(useDateAxis);
             CpuPlotModel.Axes[1].Title = "Cpu (us)";
@@ -478,7 +487,7 @@ namespace WorkloadViewer.ViewModel
 
         private PlotModel InitializePlotModel(bool dateXAxis)
         {
-            PlotModel plotModel = new PlotModel();
+            var plotModel = new PlotModel();
             plotModel.LegendOrientation = LegendOrientation.Horizontal;
             plotModel.LegendPlacement = LegendPlacement.Inside;
             plotModel.LegendPosition = LegendPosition.TopLeft;
@@ -486,7 +495,7 @@ namespace WorkloadViewer.ViewModel
 
             if (!dateXAxis)
             {
-                LinearAxis offsetAxis = new LinearAxis()
+                var offsetAxis = new LinearAxis()
                 {
                     MajorGridlineStyle = LineStyle.Dot,
                     MinorGridlineStyle = LineStyle.None,
@@ -511,7 +520,7 @@ namespace WorkloadViewer.ViewModel
                 };
                 plotModel.Axes.Add(offsetAxis);
             }
-            LinearAxis valueAxis1 = new LinearAxis() {
+            var valueAxis1 = new LinearAxis() {
                 MajorGridlineStyle = LineStyle.Dot,
                 MinorGridlineStyle = LineStyle.None,
                 Position = AxisPosition.Left,
@@ -546,10 +555,13 @@ namespace WorkloadViewer.ViewModel
             try
             {
 
-                double xstart = plotModel.DefaultXAxis.ActualMinimum;
-                double xend = plotModel.DefaultXAxis.ActualMaximum;
+                var xstart = plotModel.DefaultXAxis.ActualMinimum;
+                var xend = plotModel.DefaultXAxis.ActualMaximum;
 
-                if (xstart < 0) xstart = 0;
+                if (xstart < 0)
+                {
+                    xstart = 0;
+                }
 
                 foreach (var pm in PlotModels)
                 {
@@ -573,9 +585,11 @@ namespace WorkloadViewer.ViewModel
         private Series LoadCpuSeries(WorkloadAnalysis analysis, OxyColor color, double baseOffset)
         {
             if (analysis == null)
+            {
                 return null;
+            }
 
-            LineSeries cpuSeries = new LineSeries()
+            var cpuSeries = new LineSeries()
             {
                 StrokeThickness = 2,
                 MarkerSize = 3,
@@ -630,9 +644,11 @@ namespace WorkloadViewer.ViewModel
         private Series LoadDurationSeries(WorkloadAnalysis analysis, OxyColor color, double baseOffset)
         {
             if (analysis == null)
+            {
                 return null;
+            }
 
-            LineSeries durationSeries = new LineSeries()
+            var durationSeries = new LineSeries()
             {
                 StrokeThickness = 2,
                 MarkerSize = 3,
@@ -686,9 +702,11 @@ namespace WorkloadViewer.ViewModel
         private Series LoadBatchesSeries(WorkloadAnalysis analysis, OxyColor color, double baseOffset)
         {
             if (analysis == null)
+            {
                 return null;
+            }
 
-            LineSeries batchesSeries = new LineSeries()
+            var batchesSeries = new LineSeries()
             {
                 StrokeThickness = 2,
                 MarkerSize = 3,
@@ -741,12 +759,12 @@ namespace WorkloadViewer.ViewModel
 
         private void InitializeFilters()
         {
-            var baseApplications = (
+            var baseApplications = 
                 from t in _baselineWorkloadAnalysis.Points
                 group t by new { application = t.ApplicationName }
                 into grp
                 select grp.Key.application
-            );
+            ;
             if(_benchmarkWorkloadAnalysis != null)
             {
                 baseApplications = baseApplications.Union(
@@ -762,12 +780,12 @@ namespace WorkloadViewer.ViewModel
                     select new FilterDefinition() { Name = name, IsChecked = true }
                 );
 
-            var baseHosts = (
+            var baseHosts = 
                 from t in _baselineWorkloadAnalysis.Points
                 group t by new { host = t.HostName }
                 into grp
                 select grp.Key.host
-            );
+            ;
             if (_benchmarkWorkloadAnalysis != null)
             {
                 baseHosts = baseHosts.Union(
@@ -783,12 +801,12 @@ namespace WorkloadViewer.ViewModel
                     select new FilterDefinition() { Name = name, IsChecked = true }
                 );
 
-            var baseDatabases = (
+            var baseDatabases = 
                 from t in _baselineWorkloadAnalysis.Points
                 group t by new { database = t.DatabaseName }
                 into grp
                 select grp.Key.database
-            );
+            ;
             if (_benchmarkWorkloadAnalysis != null)
             {
                 baseDatabases = baseDatabases.Union(
@@ -804,12 +822,12 @@ namespace WorkloadViewer.ViewModel
                     select new FilterDefinition() { Name = name, IsChecked = true }
                 );
 
-            var baseLogins = (
+            var baseLogins = 
                 from t in _baselineWorkloadAnalysis.Points
                 group t by new { login = t.LoginName }
                 into grp
                 select grp.Key.login
-            );
+            ;
             if (_benchmarkWorkloadAnalysis != null)
             {
                 baseLogins = baseLogins.Union(

@@ -38,10 +38,10 @@ namespace ConvertWorkload
         {
             try
             {
-                SqlConnectionInfo info = new SqlConnectionInfo();
+                var info = new SqlConnectionInfo();
                 info.ServerName = "(localdb)\\MSSQLLocalDB";
 
-                string sqlCreateTable = @"
+                var sqlCreateTable = @"
                     IF OBJECT_ID('tempdb.dbo.trace_reader_queue') IS NULL
                     BEGIN
                         CREATE TABLE tempdb.dbo.trace_reader_queue (
@@ -53,14 +53,14 @@ namespace ConvertWorkload
                     INSERT INTO tempdb.dbo.trace_reader_queue (path) VALUES(@path);
                 ";
 
-                using (SqlConnection conn = new SqlConnection())
+                using (var conn = new SqlConnection())
                 {
                     conn.ConnectionString = info.ConnectionString;
                     conn.Open();
-                    using (SqlCommand cmd = conn.CreateCommand())
+                    using (var cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = sqlCreateTable;
-                        SqlParameter prm = new SqlParameter()
+                        var prm = new SqlParameter()
                         {
                             ParameterName = "@path",
                             DbType = System.Data.DbType.String,
@@ -82,7 +82,9 @@ namespace ConvertWorkload
                 logger.Error(ex.Message);
 
                 if (ex.InnerException != null)
+                {
                     logger.Error(ex.InnerException.Message);
+                }
 
                 Dispose();
             }
@@ -103,7 +105,7 @@ namespace ConvertWorkload
         {
             if (!started)
             {
-                Task t = Task.Factory.StartNew(ReadEventsFromFile);
+                var t = Task.Factory.StartNew(ReadEventsFromFile);
                 started = true;
             }
 
@@ -111,7 +113,9 @@ namespace ConvertWorkload
             while (!Events.TryDequeue(out result))
             {
                 if (stopped || finished)
+                {
                     return null;
+                }
 
                 Thread.Sleep(5);
             }

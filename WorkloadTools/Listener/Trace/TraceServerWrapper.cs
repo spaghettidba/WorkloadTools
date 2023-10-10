@@ -12,10 +12,10 @@ namespace WorkloadTools.Listener.Trace
 {
     public class TraceServerWrapper
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static Assembly _baseAssembly;
-        private static Type _baseType;
+        private static readonly Assembly _baseAssembly;
+        private static readonly Type _baseType;
 
         private bool isRunning = false;
         public bool IsRunning { get { return isRunning; } }
@@ -45,14 +45,13 @@ namespace WorkloadTools.Listener.Trace
 
         public object TraceServer { get; set; }
 
-
         public object this[
             string name
         ]
         {
             get
             {
-                PropertyInfo indexer = _baseType
+                var indexer = _baseType
                     .GetProperties()
                     .Single(p => p.GetIndexParameters().Length == 1 && p.GetIndexParameters()[0].ParameterType == typeof(string));
                 //PropertyInfo indexer = _baseType.GetProperty("Item");
@@ -75,20 +74,20 @@ namespace WorkloadTools.Listener.Trace
         {
             //_baseType.InvokeMember("Pause", BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod, (Binder)null, TraceServer, (object[])null);
             isRunning = false;
-            _baseType.InvokeMember("Stop", BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod, (Binder)null, TraceServer, (object[])null);
+            _ = _baseType.InvokeMember("Stop", BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod, (Binder)null, TraceServer, (object[])null);
         }
 
         public void Close()
         {
-            _baseType.InvokeMember("Close", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod, (Binder)null, TraceServer, (object[])null);
+            _ = _baseType.InvokeMember("Close", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod, (Binder)null, TraceServer, (object[])null);
         }
 
         public void InitializeAsReader(SqlConnectionInfoWrapper connectionInfo, string TraceDefinition)
         {
             try
             {
-                object[] args = new object[2] { connectionInfo.SqlConnectionInfo, TraceDefinition };
-                _baseType.InvokeMember("InitializeAsReader", BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod, (Binder)null, TraceServer, args);
+                var args = new object[2] { connectionInfo.SqlConnectionInfo, TraceDefinition };
+                _ = _baseType.InvokeMember("InitializeAsReader", BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod, (Binder)null, TraceServer, args);
                 isRunning = true;
             }
             catch (Exception)

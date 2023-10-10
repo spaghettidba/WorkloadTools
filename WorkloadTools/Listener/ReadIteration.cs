@@ -19,7 +19,7 @@ namespace WorkloadTools.Listener
         private static int _lastFileHash;
         private static long _lastOffset;
 
-        private static Dictionary<string, SortedSet<long>> recordedOffsets = new Dictionary<string, SortedSet<long>>();
+        private static readonly Dictionary<string, SortedSet<long>> recordedOffsets = new Dictionary<string, SortedSet<long>>();
 
         private static void AddOffset(string filename, long offset)
         {
@@ -37,13 +37,13 @@ namespace WorkloadTools.Listener
             {
                 if (!offsets.Contains(offset))
                 {
-                    offsets.Add(offset);
+                    _ = offsets.Add(offset);
                 }
             }
             else
             {
                 offsets = new SortedSet<long>();
-                offsets.Add(offset);
+                _ = offsets.Add(offset);
                 recordedOffsets.Add(filename, offsets);
             }
 
@@ -103,15 +103,13 @@ namespace WorkloadTools.Listener
         public long RowsRead { get; set; }
         public int Files { get; set; }
 
-
-
         // try to identify the root part of the rollover file name
         // the root is the part of the name before the numeric suffix
         // EG: mySessionName1234.xel => root = mySessionName
         public string GetXEFilePattern()
         {
-            string filePattern = "";
-            for (int j = StartFileName.Length - 4; j > 1 && StartFileName.Substring(j - 1, 1).All(char.IsDigit); j--)
+            var filePattern = "";
+            for (var j = StartFileName.Length - 4; j > 1 && StartFileName.Substring(j - 1, 1).All(char.IsDigit); j--)
             {
                 filePattern = StartFileName.Substring(0, j - 1);
             }
@@ -119,17 +117,25 @@ namespace WorkloadTools.Listener
             return filePattern;
         }
 
-
         // Initial offset to be used as a parameter to the fn_xe_file_target_read_file function
         public long GetInitialOffset()
         {
             long result = -1;
             if (MinOffset > result)
+            {
                 result = MinOffset;
+            }
+
             if (StartOffset > result)
+            {
                 result = StartOffset;
+            }
+
             if (EndOffset > result)
+            {
                 result = EndOffset;
+            }
+
             return result;
         }
 
@@ -137,9 +143,15 @@ namespace WorkloadTools.Listener
         {
             long result = -1;
             if (StartSequence > result)
+            {
                 result = StartSequence;
+            }
+
             if (EndSequence > result)
+            {
                 result = EndSequence;
+            }
+
             return result;
         }
     }

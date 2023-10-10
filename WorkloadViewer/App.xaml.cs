@@ -27,7 +27,7 @@ namespace WorkloadViewer
             base.OnStartup(e);
 
             Options = new Options();
-            bool optionsAreGood = CommandLine.Parser.Default.ParseArguments(e.Args, Options);
+            var optionsAreGood = CommandLine.Parser.Default.ParseArguments(e.Args, Options);
 
             if (!optionsAreGood)
             {
