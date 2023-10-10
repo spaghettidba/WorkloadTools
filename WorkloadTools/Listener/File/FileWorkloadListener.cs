@@ -21,18 +21,6 @@ namespace WorkloadTools.Listener.File
         // after another without waiting
         public bool SynchronizationMode { get; set; } = true;
 
-        // Default behaviour is to load all the Event columns into the
-        // data reader which may be faster at runtime and avoid the
-        // FileWorkloadListener introducing a delay. The trade off is
-        // that the initial command execution causes Sqlite to copy
-        // every result row into a temp file, which requires disk space
-        // and time. On a 200gb Sqlite file, with no filters applied
-        // this required 198gb temp space. LoadEventDetailsOnDemand = true
-        // loads only the row_id column and so only 3gb of temp space is
-        // required for the same file, but during replay every event is
-        // a call to Sqlite.
-        public bool LoadEventDetailsOnDemand { get; set; } = false;
-
         private DateTime startTime = DateTime.MinValue;
         private long totalEvents;
         private SQLiteConnection conn;
@@ -70,22 +58,9 @@ namespace WorkloadTools.Listener.File
             {
                 string sql = string.Empty;
 
-                if (!LoadEventDetailsOnDemand)
-                {
-                    // Sqllite will copy the entire contents of the resultset into a "etilqs" temp file which
-                    // on large data sets can be VERY slow and requires enough disk space on the drive hosting
-                    // the User's temp folder for 99% of the trace file.
-
-                    // Events are executed on event_sequence order
-                    logger.Info("Reading the full data for every event that matches filters. This may take awhile on large trace files please be patient");
-                    sql = "SELECT * FROM Events " + filters + " ORDER BY start_time ASC, row_id ASC";
-                }
-                else
-                {
-                    // Events are executed on event_sequence order
-                    logger.Info("Reading the row_id for every event that matches filters. This may take awhile on large trace files please be patient");
-                    sql = "SELECT row_id FROM Events " + filters + " ORDER BY start_time ASC, row_id ASC";
-                }
+                // Events are executed on event_sequence order
+                logger.Info("Reading the full data for every event that matches filters. This may take awhile on large trace files please be patient");
+                sql = "SELECT * FROM Events " + filters + " ORDER BY start_time ASC, row_id ASC";
 
                 conn = new SQLiteConnection(connectionString);
                 conn.Open();
@@ -143,7 +118,7 @@ namespace WorkloadTools.Listener.File
                     }
                 }
 
-                logger.Info($"The source file contains {result} events.");
+                logger.Info("The source file contains {result} events", result);
             }
             catch (Exception e)
             {
@@ -157,7 +132,7 @@ namespace WorkloadTools.Listener.File
         public override WorkloadEvent Read()
         {
             WorkloadEvent result = null;
-            long commandOffset = 0;
+            double commandOffset = 0;
 
             // first I need to return the event that
             // contains the total number of events in the file
@@ -167,9 +142,6 @@ namespace WorkloadTools.Listener.File
                 totalEventsMessageSent = true;
                 return totalEventsMessage;
             }
-
-            SQLiteConnection m_dbConnection = null;
-            SQLiteCommand command = null;
 
             // process actual events from the file
             try
@@ -182,19 +154,6 @@ namespace WorkloadTools.Listener.File
                 bool validEventFound = false;
                 SqlTransformer transformer = new SqlTransformer();
 
-                if (LoadEventDetailsOnDemand)
-                {
-                    m_dbConnection = new SQLiteConnection(connectionString);
-                    m_dbConnection.Open();
-
-                    // Just declare the command and it's parameter once then update
-                    // the parameter value and re-execute on each iteration.
-                    string sql = "SELECT * FROM Events WHERE row_id = $row_id";
-
-                    command = new SQLiteCommand(sql, m_dbConnection);
-                    command.Parameters.Add("$row_id", DbType.Int64);
-                }
-
                 do
                 {
                     if (!reader.Read())
@@ -203,26 +162,7 @@ namespace WorkloadTools.Listener.File
                         return null;
                     }
 
-                    long row_id = reader.GetInt64(reader.GetOrdinal("row_id"));
-
-                    if (LoadEventDetailsOnDemand)
-                    {
-                        command.Parameters["$row_id"].Value = row_id;
-
-                        using (SQLiteDataReader rdr = command.ExecuteReader())
-                        {
-                            if (!rdr.Read())
-                            {
-                                throw new Exception($"row_id [{row_id}] not found.");
-                            }
-
-                            result = ReadEvent(row_id, rdr);
-                        }
-                    }
-                    else
-                    {
-                        result = ReadEvent(row_id, reader);
-                    }
+                    result = ReadEvent(reader);
 
                     // Handle replay sleep for synchronization mode
                     // The sleep cannot happen here, but it has to 
@@ -235,7 +175,7 @@ namespace WorkloadTools.Listener.File
                         {
                             if (startTime != DateTime.MinValue)
                             {
-                                commandOffset = (long)(result.StartTime - startTime).TotalMilliseconds;
+                                commandOffset = (result.StartTime - startTime).TotalMilliseconds;
                                 if (commandOffset > 0)
                                 {
                                     execEvent.ReplayOffset = commandOffset;
@@ -297,26 +237,14 @@ namespace WorkloadTools.Listener.File
                 logger.Error($"Unable to read next event. Current event date: {eventDate}");
                 throw;
             }
-            finally
-            {
-                if (command != null)
-                {
-                    command.Dispose();
-                }
-
-                if (m_dbConnection != null)
-                {
-                    m_dbConnection.Close();
-                    m_dbConnection.Dispose();
-                }
-            }
 
             return result;
         }
 
-        private WorkloadEvent ReadEvent(long row_id, SQLiteDataReader reader)
+        private WorkloadEvent ReadEvent(SQLiteDataReader reader)
         {
             WorkloadEvent.EventType type = (WorkloadEvent.EventType)reader.GetInt32(reader.GetOrdinal("event_type"));
+            long row_id = reader.GetInt64(reader.GetOrdinal("row_id"));
 
             try
             {

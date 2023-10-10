@@ -21,6 +21,6 @@ namespace WorkloadTools
         public long? EventSequence { get; set; }
         // This is the requested offset in milliseconds
         // from the the beginning of the workload
-        public long ReplayOffset { get; set; } = 0; // MILLISECONDS 
+        public double ReplayOffset { get; set; } = 0; // MILLISECONDS 
     }
 }

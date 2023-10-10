@@ -415,6 +415,11 @@ namespace WorkloadTools.Consumer.WorkloadFile
 	                event_sequence DESC
                 );
 
+                CREATE INDEX IF NOT EXISTS Index_Start_Time_Row_ID ON Events(
+	                Start_Time ASC,
+	                Row_ID ASC
+                );
+
                 CREATE TABLE IF NOT EXISTS Counters (
                     row_id INTEGER,
                     name TEXT NULL,

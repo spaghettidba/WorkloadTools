@@ -24,14 +24,12 @@ namespace WorkloadTools
         private bool disposed = false;
         private const int MAX_DISPOSE_TIMEOUT_SECONDS = 5;
 
-
         public WorkloadController()
         {
         }
 
         public void Run()
         {
-
             try
             {
 				var startTime = Listener.StartAt;
@@ -39,15 +37,15 @@ namespace WorkloadTools
 
                 Listener.Initialize();
 
-                logger.Info($"Listener of type {Listener.GetType().Name} initialized correctly.");
-                logger.Info($"Event collection starts at {startTime.ToString("yyyy-MM-dd HH:mm:ss")}.");
+                logger.Info("Listener of type {ListenerTypeName} initialized correctly", Listener.GetType().Name);
+                logger.Info("Event collection starts at {startTime}", startTime);
                 // wait until Listener.StartAt has been reached
                 while (DateTime.Now.CompareTo(startTime) < 0)
                 {
                     Thread.Sleep(100);
                 }
 
-                logger.Info("Waiting for events.");
+                logger.Info("Waiting for events");
 
                 do
                 {
@@ -98,8 +96,6 @@ namespace WorkloadTools
                 }
             }
         }
-
-
 
         public void Stop()
         {
