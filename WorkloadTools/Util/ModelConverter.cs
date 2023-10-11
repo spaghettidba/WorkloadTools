@@ -18,11 +18,11 @@ namespace WorkloadTools.Util
         {
             get
             {
-                List<Type> result = new List<Type>();
-                Assembly currentAssembly = Assembly.GetExecutingAssembly();
-                string nameSpace = "WorkloadTools";
-                Type[] types = currentAssembly.GetTypes().Where(t => t != null && t.FullName.StartsWith(nameSpace) & !t.FullName.Contains("+")).ToArray();
-                foreach (Type t in types)
+                var result = new List<Type>();
+                var currentAssembly = Assembly.GetExecutingAssembly();
+                var nameSpace = "WorkloadTools";
+                var types = currentAssembly.GetTypes().Where(t => t != null && t.FullName.StartsWith(nameSpace) & !t.FullName.Contains("+")).ToArray();
+                foreach (var t in types)
                 {
                     try
                     {
@@ -36,8 +36,6 @@ namespace WorkloadTools.Util
                 return result;
             }
         }
-
-
 
         public override object Deserialize(IDictionary<string, object> dictionary, Type type, JavaScriptSerializer serializer)
         {
@@ -55,7 +53,7 @@ namespace WorkloadTools.Util
 
             var props = type.GetProperties();
 
-            foreach (string key in dictionary.Keys)
+            foreach (var key in dictionary.Keys)
             {
                 var prop = props.Where(t => t.Name == key).FirstOrDefault();
                 if (prop != null)
@@ -63,19 +61,23 @@ namespace WorkloadTools.Util
                     if (prop.Name.EndsWith("Filter"))
                     {
                         if (dictionary[key] is string)
+                        {
                             prop.SetValue(p, new string[] { (string)dictionary[key] }, null);
+                        }
                         else
+                        {
                             prop.SetValue(p, (string[])((ArrayList)dictionary[key]).ToArray(typeof(string)), null);
+                        }
                     }
                     else
                     {
-                        if ((dictionary[key] is Dictionary<string, object>))
+                        if (dictionary[key] is Dictionary<string, object>)
                         {
                             if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                             {
-                                Dictionary<string, object> rawDic = (Dictionary<string, object>)dictionary[key];
+                                var rawDic = (Dictionary<string, object>)dictionary[key];
 
-                                object obj = Activator.CreateInstance(prop.PropertyType);
+                                var obj = Activator.CreateInstance(prop.PropertyType);
                                 foreach (var itm in rawDic.Keys)
                                 {
                                     ((Dictionary<string, string>)obj).Add(itm, rawDic[itm].ToString());
@@ -91,10 +93,10 @@ namespace WorkloadTools.Util
                         {
                             if (dictionary[key] is IList && prop.PropertyType.IsGenericType)
                             {
-                                object obj = Activator.CreateInstance(prop.PropertyType);
+                                var obj = Activator.CreateInstance(prop.PropertyType);
                                 foreach (var itm in (IEnumerable)dictionary[key])
                                 {
-                                    ((IList)obj).Add(itm);
+                                    _ = ((IList)obj).Add(itm);
                                 }
                                 prop.SetValue(p, obj, null);
                             }
@@ -134,7 +136,9 @@ namespace WorkloadTools.Util
                 return Convert.ToDateTime(v);
             }
             else
+            {
                 return v;
+            }
         }
 
         public override IDictionary<string, object> Serialize(object obj, JavaScriptSerializer serializer)

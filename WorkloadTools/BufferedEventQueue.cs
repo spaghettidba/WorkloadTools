@@ -9,7 +9,7 @@ namespace WorkloadTools
 {
     public abstract class BufferedEventQueue : IEventQueue 
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private int _bufferSize;
 
@@ -56,8 +56,6 @@ namespace WorkloadTools
         protected abstract void WriteEvents(WorkloadEvent[] events);
 
         protected abstract WorkloadEvent[] ReadEvents(int count);
-
-
 
         public virtual void Enqueue(WorkloadEvent evt)
         {
@@ -109,7 +107,6 @@ namespace WorkloadTools
             }
         }
 
-
         private void EnqueueAll(WorkloadEvent[] source)
         {
             EnqueueAll(source, source.Length);
@@ -124,13 +121,17 @@ namespace WorkloadTools
 
             if (_head < _tail)
             {
-                int numFirst = _array.Length - _tail;
-                if (numFirst > count) numFirst = count;
+                var numFirst = _array.Length - _tail;
+                if (numFirst > count)
+                {
+                    numFirst = count;
+                }
+
                 Array.Copy(source, 0, _array, _tail, numFirst);
                 _tail = (_tail + numFirst) % _array.Length;
                 if (numFirst < count)
                 {
-                    int numSecond = count - numFirst;
+                    var numSecond = count - numFirst;
                     Array.Copy(source, numFirst, _array, _tail, numSecond);
                     _tail = (_tail + numSecond) % _array.Length;
                 }
@@ -144,9 +145,6 @@ namespace WorkloadTools
             _totOverflowSize -= count;
         }
 
-
-
-
         public virtual bool TryDequeue(out WorkloadEvent result)
         {
             result = null;
@@ -155,7 +153,9 @@ namespace WorkloadTools
                 lock (syncRoot)
                 {
                     if (Count == 0)
+                    {
                         return false;
+                    }
 
                     result = _array[_head];
                     _array[_head] = null;
@@ -169,7 +169,7 @@ namespace WorkloadTools
                         // events on disk, then we read them back 
                         if (_totOverflowSize - _overflowSize > 0) 
                         {
-                            if ((_size == _array.Length - _overflowBufferSize))
+                            if (_size == _array.Length - _overflowBufferSize)
                             {
                                 EnqueueAll(ReadEvents(_overflowBufferSize));
                             }

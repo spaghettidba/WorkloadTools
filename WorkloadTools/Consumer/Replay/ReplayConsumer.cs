@@ -1,39 +1,46 @@
-using NLog;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using WorkloadTools.Consumer.Replay;
+
+using NLog;
 
 namespace WorkloadTools.Consumer.Replay
 {
     public class ReplayConsumer : BufferedWorkloadConsumer
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private SpinWait spin = new SpinWait();
         public int ThreadLimit = 256;//32
         public int InactiveWorkerTerminationTimeoutSeconds = 300;
-        private Semaphore WorkLimiter;
+        private readonly Semaphore WorkLimiter;
 
-		public bool DisplayWorkerStats { get; set; } = true;
-		public bool ConsumeResults { get; set; } = true;
-		public int QueryTimeoutSeconds { get; set; } = 30;
-		public int WorkerStatsCommandCount { get; set; } = 1000;
-		public bool MimicApplicationName { get; set; } = false;
+        public bool DisplayWorkerStats { get; set; } = true;
+        public bool ConsumeResults { get; set; } = true;
+        public int QueryTimeoutSeconds { get; set; } = 30;
+        public int WorkerStatsCommandCount { get; set; } = 1000;
+        public bool MimicApplicationName { get; set; } = false;
         public int FailRetryCount { get; set; } = 0;
         public int TimeoutRetryCount { get; set; } = 0;
+        public bool RaiseErrorsToSqlEventTracing { get; private set; } = true;
+
+        private LogLevel _CommandErrorLogLevel = LogLevel.Error;
+        public string CommandErrorLogLevel
+        {
+            get => _CommandErrorLogLevel.Name;
+            set => _CommandErrorLogLevel = LogLevel.FromString(value);
+        }
 
         public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();
 
-		public SqlConnectionInfo ConnectionInfo { get; set; }
+        public SqlConnectionInfo ConnectionInfo { get; set; }
         public ThreadingModeEnum ThreadingMode { get; set; } = ThreadingModeEnum.WorkerTask;
 
-        private ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
-        private Thread runner;
+        private readonly ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
+
         private Thread sweeper;
 
         private long eventCount;
@@ -59,56 +66,74 @@ namespace WorkloadTools.Consumer.Replay
 
         public override void ConsumeBuffered(WorkloadEvent evnt)
         {
-            if(evnt is MessageWorkloadEvent)
+            if (evnt is MessageWorkloadEvent messageEvent)
             {
-                MessageWorkloadEvent msgEvent = evnt as MessageWorkloadEvent;
-                if (msgEvent.MsgType == MessageWorkloadEvent.MessageType.TotalEvents)
+                if (messageEvent.MsgType == MessageWorkloadEvent.MessageType.TotalEvents)
                 {
                     try
                     {
-                        totalEventCount = (long)msgEvent.Value;
+                        totalEventCount = (long)messageEvent.Value;
                     }
                     catch (Exception e)
                     {
-                        logger.Error($"Unable to set the total number of events: {e.Message}");
+                        logger.Error(e, $"Unable to set the total number of events");
                     }
                 }
             }
 
+            // totalEventCount is EVERY Event except the initial MessageWorkloadEvent for the TotalEvents,
+            // so always increment the counter.
+            eventCount++;
+
             if (!(evnt is ExecutionWorkloadEvent))
+            {
                 return;
+            }
 
             if (evnt.Type != WorkloadEvent.EventType.RPCStarting && evnt.Type != WorkloadEvent.EventType.BatchStarting)
-                return;
-
-            eventCount++;
-            if ((eventCount > 0) && (eventCount % WorkerStatsCommandCount == 0))
             {
-                string percentInfo = (totalEventCount > 0) ? "( " + ((eventCount * 100) / totalEventCount).ToString() + "% )" : "";
-                logger.Info($"{eventCount} events queued for replay {percentInfo}");
+                return;
+            }
+
+            if (totalEventCount > 0)
+            {
+                if (eventCount % (totalEventCount / 1000) == 0)
+                {
+                    var percentInfo = eventCount / totalEventCount;
+                    logger.Info("{eventCount} ({percentInfo:P}) events replayed - {bufferedEventCount} events buffered", eventCount, percentInfo, Buffer.Count);
+                }
+            }
+            else
+            {
+                if (eventCount % WorkerStatsCommandCount == 0)
+                {
+                    logger.Info("{eventCount} events replayed - {bufferedEventCount} events buffered", eventCount, Buffer.Count);
+                }
             }
 
             if (startTime == DateTime.MinValue)
             {
-                startTime = DateTime.Now;
+                // Pad the start time so that the first event isn't behind by the time the worker has started up on a thread.
+                startTime = DateTime.Now.AddTicks(TimeSpan.TicksPerSecond);
+                logger.Info("All future delays will be calculated from this point + 1s, triggered by event {@event}", evnt);
             }
 
-            ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
+            var evt = (ExecutionWorkloadEvent)evnt;
 
-            ReplayCommand command = new ReplayCommand()
+            var command = new ReplayCommand()
             {
                 CommandText = evt.Text,
                 Database = evt.DatabaseName,
                 ApplicationName = evt.ApplicationName,
                 ReplayOffset = evt.ReplayOffset,
+                StartTime = evt.StartTime,
                 EventSequence = evt.EventSequence
             };
 
-            int session_id = -1;
+            var session_id = -1;
             session_id = (int)evt.SPID;
 
-            ReplayWorker rw = null;
-            if (ReplayWorkers.TryGetValue(session_id, out rw))
+            if (ReplayWorkers.TryGetValue(session_id, out var rw))
             {
                 // Ensure that the buffer does not get too big
                 while (rw.QueueLength >= (BufferSize * .9))
@@ -119,53 +144,37 @@ namespace WorkloadTools.Consumer.Replay
             }
             else
             {
-                rw = new ReplayWorker()
+                logger.Debug("Creating Worker {Worker}", session_id);
+
+                rw = new ReplayWorker(session_id.ToString())
                 {
-                    ConnectionInfo = this.ConnectionInfo,
+                    ConnectionInfo = ConnectionInfo,
                     ReplayIntervalSeconds = 0,
                     StopOnError = false,
-                    Name = session_id.ToString(),
-					DisplayWorkerStats = this.DisplayWorkerStats,
-					ConsumeResults = this.ConsumeResults,
-					QueryTimeoutSeconds = this.QueryTimeoutSeconds,
-					WorkerStatsCommandCount = this.WorkerStatsCommandCount,
-					MimicApplicationName = this.MimicApplicationName,
-                    DatabaseMap = this.DatabaseMap,
+                    DisplayWorkerStats = DisplayWorkerStats,
+                    ConsumeResults = ConsumeResults,
+                    QueryTimeoutSeconds = QueryTimeoutSeconds,
+                    WorkerStatsCommandCount = WorkerStatsCommandCount,
+                    MimicApplicationName = MimicApplicationName,
+                    DatabaseMap = DatabaseMap,
                     StartTime = startTime,
-                    FailRetryCount = this.FailRetryCount,
-                    TimeoutRetryCount = this.TimeoutRetryCount
+                    FailRetryCount = FailRetryCount,
+                    TimeoutRetryCount = TimeoutRetryCount,
+                    CommandErrorLogLevel = _CommandErrorLogLevel,
+                    RaiseErrorsToSqlEventTracing = RaiseErrorsToSqlEventTracing
                 };
-                ReplayWorkers.TryAdd(session_id, rw);
+
+                _ = ReplayWorkers.TryAdd(session_id, rw);
                 rw.AppendCommand(command);
-
-                logger.Info($"Worker [{session_id}] - Starting");
             }
 
-            if(runner == null)
-            {
-
-                runner = new Thread(new ThreadStart(
-                                delegate
-                                {
-                                    try
-                                    {
-                                        RunWorkers();
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        try { logger.Error(e, "Unhandled exception in ReplayConsumer.RunWorkers"); }
-                                        catch { Console.WriteLine(e.Message); }
-                                    }
-                                }
-                                ));
-                runner.IsBackground = true;
-                runner.Start();
-            }
-
+            // Ensure the worker is running.
+            // If new it needs starting for the first time.
+            // If existing it may have stopped if the command queue became empty.
+            RunWorker(rw);
 
             if (sweeper == null)
             {
-
                 sweeper = new Thread(new ThreadStart(
                                 delegate
                                 {
@@ -179,25 +188,23 @@ namespace WorkloadTools.Consumer.Replay
                                         catch { Console.WriteLine(e.Message); }
                                     }
                                 }
-                                ));
-                sweeper.IsBackground = true;
+                                ))
+                {
+                    IsBackground = true
+                };
                 sweeper.Start();
             }
-
         }
-
 
         protected override void Dispose(bool disposing)
         {
-            foreach(var r in ReplayWorkers.Values)
+            foreach (var r in ReplayWorkers.Values)
             {
                 r.Dispose();
             }
             WorkLimiter.Dispose();
             stopped = true;
         }
-
-
 
         // Sweeper thread: removes from the workers list all the workers
         // that have not executed a command in the last 5 minutes
@@ -213,7 +220,7 @@ namespace WorkloadTools.Consumer.Replay
                         continue;
                     }
 
-                    foreach (ReplayWorker wrk in ReplayWorkers.Values)
+                    foreach (var wrk in ReplayWorkers.Values)
                     {
                         if (wrk.LastCommandTime < DateTime.Now.AddSeconds(-InactiveWorkerTerminationTimeoutSeconds) && !wrk.HasCommands)
                         {
@@ -231,16 +238,14 @@ namespace WorkloadTools.Consumer.Replay
 
                 Thread.Sleep(InactiveWorkerTerminationTimeoutSeconds * 1000); // sleep some seconds
             }
-            logger.Trace("Sweeper thread stopped.");
+            logger.Trace("Sweeper thread stopped");
         }
-
-
 
         private void RemoveWorker(string name)
         {
-            ReplayWorker outWrk;
-            ReplayWorkers.TryRemove(Int32.Parse(name), out outWrk);
-            logger.Trace($"Worker [{name}] - Disposing");
+            _ = ReplayWorkers.TryRemove(int.Parse(name), out var outWrk);
+
+            logger.Trace("Disposing worker [{Worker}]", name);
             if (outWrk != null)
             {
                 outWrk.Stop();
@@ -248,132 +253,114 @@ namespace WorkloadTools.Consumer.Replay
             }
         }
 
-
-        private void RunWorkers()
+        private void RunWorker(ReplayWorker wrk)
         {
-            while (!stopped)
+            try
             {
-                if (ReplayWorkers.IsEmpty)
+                if (stopped)
                 {
-                    Thread.Sleep(100);
-                    continue;
+                    return;
                 }
 
-
-                try
+                if (wrk.HasCommands)
                 {
-                    foreach (ReplayWorker wrk in ReplayWorkers.Values)
+                    if (ThreadingMode == ThreadingModeEnum.ThreadPools)
                     {
-                        if (stopped) return;
-
-                        if (wrk.IsStopped)
+                        try
                         {
-                            RemoveWorker(wrk.Name);
-                        }
+                            // Using a semaphore to avoid overwhelming the threadpool
+                            // Without this precaution, the memory consumption goes to the roof
+                            _ = WorkLimiter.WaitOne();
 
-                        if (wrk.HasCommands)
-                        {
-
-                            if (ThreadingMode == ThreadingModeEnum.ThreadPools)
-                            {
-                                try
+                            // Queue the execution of a statement in the threadpool.
+                            // The statement will get executed in a separate thread eventually.
+                            _ = ThreadPool.QueueUserWorkItem(
+                                delegate
                                 {
-                                    // Using a semaphore to avoid overwhelming the threadpool
-                                    // Without this precaution, the memory consumption goes to the roof
-                                    WorkLimiter.WaitOne();
-
-                                    // Queue the execution of a statement in the threadpool.
-                                    // The statement will get executed in a separate thread eventually.
-                                    ThreadPool.QueueUserWorkItem(delegate { try { wrk.ExecuteNextCommand(); } catch (Exception e) { try { logger.Error(e, "Unhandled exception in ReplayWorker.ExecuteCommand"); } catch { Console.WriteLine(e.Message); } } });
-                                }
-                                finally
-                                {
-                                    // Release the semaphore
-                                    WorkLimiter.Release();
-                                }
-                            }
-                            else if (ThreadingMode == ThreadingModeEnum.Tasks)
-                            {
-                                try
-                                {
-                                    // Using a semaphore to avoid overwhelming the threadpool
-                                    // Without this precaution, the memory consumption goes to the roof
-                                    WorkLimiter.WaitOne();
-
-                                    // Start a new Task to run the statement
-                                    Task t = Task.Factory.StartNew(delegate { try { wrk.ExecuteNextCommand(); } catch (Exception e) { try { logger.Error(e, "Unhandled exception in ReplayWorker.ExecuteCommand"); } catch { Console.WriteLine(e.Message); } } });
-                                }
-                                finally
-                                {
-                                    // Release the semaphore
-                                    WorkLimiter.Release();
-                                }
-                            }
-                            else if (ThreadingMode == ThreadingModeEnum.WorkerTask)
-                            {
-                                try
-                                {
-                                    if (!wrk.IsRunning)
+                                    try
                                     {
-                                        wrk.Start();
+                                        wrk.ExecuteNextCommand();
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        try
+                                        {
+                                            logger.Error(e, "Unhandled exception in ReplayWorker.ExecuteCommand");
+                                        }
+                                        catch
+                                        {
+                                            Console.WriteLine(e.Message);
+                                        }
                                     }
                                 }
-                                catch (Exception e)
-                                {
-                                    logger.Error(e, "Exception in ReplayWorker.RunWorkers - WorkerTask");
-                                }
-                            }
-                            else if (ThreadingMode == ThreadingModeEnum.Serial)
-                            {
-                                try
-                                {
-                                    wrk.ExecuteNextCommand();
-                                }
-                                catch (Exception e)
-                                {
-                                    logger.Error(e, "Exception in ReplayWorker.RunWorkers - WorkerTask");
-                                }
-                            }
+                                );
                         }
-                    };
-
-
-                    if (ThreadingMode == ThreadingModeEnum.WorkerTask)
-                    {
-                        // Sleep 1 second before checking whether more workers
-                        // are available and not started
-                        Thread.Sleep(1000);
+                        finally
+                        {
+                            // Release the semaphore
+                            _ = WorkLimiter.Release();
+                        }
                     }
-                    else
+                    else if (ThreadingMode == ThreadingModeEnum.Tasks)
                     {
-                        // Sleep 1 millisecond after every execution of all the statements
-                        // queued in the ReplayWorkers. 
-                        // This sleep is absolutely necessary to avoid burning CPU when
-                        // all the ReplayWorkers do not contain any statements.
-                        Thread.Sleep(1);
+                        // TODO: Is this not the same as WorkerTask?
+                        // Here the task is created by ReplayConsumer.
+                        // With WorkerTask the task is created by ReplayWorker.Start.
+                        try
+                        {
+                            // Using a semaphore to avoid overwhelming the threadpool
+                            // Without this precaution, the memory consumption goes to the roof
+                            _ = WorkLimiter.WaitOne();
+
+                            // Start a new Task to run the statement
+                            var t = Task.Factory.StartNew(
+                                delegate
+                                {
+                                    try
+                                    {
+                                        wrk.ExecuteNextCommand();
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        try
+                                        {
+                                            logger.Error(e, "Unhandled exception in ReplayWorker.ExecuteCommand");
+                                        }
+                                        catch
+                                        {
+                                            Console.WriteLine(e.Message);
+                                        }
+                                    }
+                                }
+                                );
+                        }
+                        finally
+                        {
+                            // Release the semaphore
+                            _ = WorkLimiter.Release();
+                        }
+                    }
+                    else if (ThreadingMode == ThreadingModeEnum.WorkerTask)
+                    {
+                        if (!wrk.IsRunning)
+                        {
+                            wrk.Start();
+                        }
+                    }
+                    else if (ThreadingMode == ThreadingModeEnum.Serial)
+                    {
+                        wrk.ExecuteNextCommand();
                     }
                 }
-                catch (InvalidOperationException)
-                {
-                    //ignore ...
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, "Exception in ReplayWorker.RunWorkers");
-                }
-
             }
-
-
-            if (ThreadingMode == ThreadingModeEnum.WorkerTask)
+            catch (InvalidOperationException)
             {
-                foreach (ReplayWorker wrk in ReplayWorkers.Values)
-                {
-                    wrk.Stop();
-                    wrk.Dispose();
-                }
+                //ignore ...
             }
-            logger.Trace("Worker thread stopped.");
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Error starting worker");
+            }
         }
 
         public override bool HasMoreEvents()

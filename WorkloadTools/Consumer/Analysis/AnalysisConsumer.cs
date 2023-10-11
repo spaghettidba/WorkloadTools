@@ -9,7 +9,7 @@ namespace WorkloadTools.Consumer.Analysis
 {
     public class AnalysisConsumer : BufferedWorkloadConsumer
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private WorkloadAnalyzer analyzer;
 
         private int _uploadIntervalSeconds;
@@ -51,11 +51,11 @@ namespace WorkloadTools.Consumer.Analysis
                 analyzer = new WorkloadAnalyzer()
                 {
                     Interval = UploadIntervalSeconds / 60,
-                    ConnectionInfo = this.ConnectionInfo,
-					MaximumWriteRetries = this.MaximumWriteRetries,
-					TruncateTo1024 = this.SqlNormalizerTruncateTo1024,
-					TruncateTo4000 = this.SqlNormalizerTruncateTo4000,
-                    WriteDetail = this.WriteDetail
+                    ConnectionInfo = ConnectionInfo,
+					MaximumWriteRetries = MaximumWriteRetries,
+					TruncateTo1024 = SqlNormalizerTruncateTo1024,
+					TruncateTo4000 = SqlNormalizerTruncateTo4000,
+                    WriteDetail = WriteDetail
 				};
             }
 

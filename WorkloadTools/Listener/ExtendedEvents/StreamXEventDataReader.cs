@@ -18,7 +18,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
             Field
         }
 
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private bool stopped;
 
@@ -26,14 +26,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
         {
         }
 
-
         public override void ReadEvents()
         {
 
             EventCount = 0;
-            SqlTransformer transformer = new SqlTransformer();
+            var transformer = new SqlTransformer();
 
-            using (QueryableXEventData eventstream = new QueryableXEventData(
+            using (var eventstream = new QueryableXEventData(
                                             ConnectionString,
                                             SessionName,
                                             EventStreamSourceOptions.EventStream,
@@ -44,12 +43,12 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                 while (!stopped && eventsEnumerator.MoveNext())
                 {
-                    PublishedEvent evt = eventsEnumerator.Current;
-                    ExecutionWorkloadEvent workloadEvent = new ExecutionWorkloadEvent();
+                    var evt = eventsEnumerator.Current;
+                    var workloadEvent = new ExecutionWorkloadEvent();
                     try
                     {
                         workloadEvent.EventSequence = Convert.ToInt64(TryGetValue(evt, FieldType.Action, "event_sequence"));
-                        string commandText = String.Empty;
+                        var commandText = String.Empty;
                         if (evt.Name == "rpc_starting")
                         {
                             commandText = (string)TryGetValue(evt, FieldType.Field, "statement");
@@ -72,7 +71,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         }
                         else if (evt.Name == "login")
                         {
-                            bool vIsCached = Convert.ToBoolean(TryGetValue(evt, FieldType.Field, "is_cached"));
+                            var vIsCached = Convert.ToBoolean(TryGetValue(evt, FieldType.Field, "is_cached"));
                             if (!vIsCached) /* If is not cached then consider it a new login */
                             {
                                 workloadEvent.Type = WorkloadEvent.EventType.RPCStarting;
@@ -90,18 +89,27 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         else if (evt.Name == "attention")
                         {
                             workloadEvent = new ErrorWorkloadEvent();
-                            object value = TryGetValue(evt, FieldType.Action, "sql_text");
+                            var value = TryGetValue(evt, FieldType.Action, "sql_text");
 
                             if (value == null)
+                            {
                                 continue;
+                            }
 
                             try
                             {
                                 if (value is string)
+                                {
                                     commandText = (string)value;
+                                }
                                 else if (value is byte[])
+                                {
                                     commandText = Encoding.Unicode.GetString((byte[])value);
-                                else throw new ArgumentException("Argument is of the wrong type");
+                                }
+                                else
+                                {
+                                    throw new ArgumentException("Argument is of the wrong type");
+                                }
                             }
                             catch (Exception e)
                             {
@@ -114,7 +122,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         else if (evt.Name == "user_event")
                         {
                             workloadEvent = new ErrorWorkloadEvent();
-                            int num = (int)TryGetValue(evt, FieldType.Field, "event_id");
+                            var num = (int)TryGetValue(evt, FieldType.Field, "event_id");
                             if (num == 83 || num == 82)
                             {
                                 if (TryGetString(evt, FieldType.Field, "user_info").StartsWith("WorkloadTools."))
@@ -152,8 +160,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             workloadEvent.LoginName = TryGetString(evt, FieldType.Action, "server_principal_name");
                             workloadEvent.SPID = TryGetInt32(evt, FieldType.Action, "session_id");
                             if (commandText != null)
+                            {
                                 workloadEvent.Text = commandText;
-
+                            }
 
                             workloadEvent.StartTime = evt.Timestamp.LocalDateTime;
 
@@ -196,7 +205,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
                             workloadEvent.Type == WorkloadEvent.EventType.Message)
                         {
                             if (transformer.Skip(workloadEvent.Text))
+                            {
                                 continue;
+                            }
 
                             workloadEvent.Text = transformer.Transform(workloadEvent.Text);
                         }
@@ -231,9 +242,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 }
             }
         }
-
-
-
 
         private object TryGetValue(PublishedEvent evt, FieldType t, string name)
         {
@@ -270,14 +278,21 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         private string TryGetString(PublishedEvent evt, FieldType t, string name)
         {
-            object tmp = TryGetValue(evt, t, name);
+            var tmp = TryGetValue(evt, t, name);
             if(tmp != null && tmp.GetType() != typeof(DBNull))
             {
                 if (tmp is string)
+                {
                     return (string)tmp;
+                }
                 else if (tmp is byte[])
+                {
                     return Encoding.Unicode.GetString((byte[])tmp);
-                else throw new ArgumentException("Argument is of the wrong type");
+                }
+                else
+                {
+                    throw new ArgumentException("Argument is of the wrong type");
+                }
             }
             else
             {
@@ -285,10 +300,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
             }
         }
 
-
         private int? TryGetInt32(PublishedEvent evt, FieldType t, string name)
         {
-            object tmp = TryGetValue(evt, t, name);
+            var tmp = TryGetValue(evt, t, name);
             if (tmp != null && tmp.GetType() != typeof(DBNull))
             {
                 return Convert.ToInt32(tmp);
@@ -301,7 +315,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         private long? TryGetInt64(PublishedEvent evt, FieldType t, string name)
         {
-            object tmp = TryGetValue(evt, t, name);
+            var tmp = TryGetValue(evt, t, name);
             if (tmp != null && tmp.GetType() != typeof(DBNull))
             {
                 return Convert.ToInt64(tmp);

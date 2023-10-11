@@ -17,25 +17,24 @@ namespace WorkloadTools.Util
         {
             var tb = new DataTable(typeof(T).Name);
 
-            PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            var props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-            foreach (PropertyInfo prop in props)
+            foreach (var prop in props)
             {
-                Type t = GetCoreType(prop.PropertyType);
-                tb.Columns.Add(prop.Name, t);
+                var t = GetCoreType(prop.PropertyType);
+                _ = tb.Columns.Add(prop.Name, t);
             }
 
-
-            foreach (T item in items)
+            foreach (var item in items)
             {
                 var values = new object[props.Length];
 
-                for (int i = 0; i < props.Length; i++)
+                for (var i = 0; i < props.Length; i++)
                 {
                     values[i] = props[i].GetValue(item, null);
                 }
 
-                tb.Rows.Add(values);
+                _ = tb.Rows.Add(values);
             }
 
             return tb;

@@ -18,7 +18,6 @@ namespace WorkloadTools.Consumer.Analysis
             SP_RESET_CONNECTION_NONPOOLED
         }
 
-
         public NormalizedSqlText()
         {
             CommandType = CommandTypeEnum.OTHER;

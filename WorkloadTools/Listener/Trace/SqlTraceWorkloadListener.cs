@@ -16,8 +16,7 @@ namespace WorkloadTools.Listener.Trace
 {
     public class SqlTraceWorkloadListener : WorkloadListener
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
-
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public enum StreamSourceEnum
         {
@@ -38,7 +37,7 @@ namespace WorkloadTools.Listener.Trace
 		
 		
 
-        private TraceUtils utils;
+        private readonly TraceUtils utils;
 
 		public SqlTraceWorkloadListener() : base()
         {
@@ -47,10 +46,9 @@ namespace WorkloadTools.Listener.Trace
             utils = new TraceUtils();
         }
 
-
         public override void Initialize()
         {
-            using (SqlConnection conn = new SqlConnection())
+            using (var conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
@@ -61,7 +59,7 @@ namespace WorkloadTools.Listener.Trace
                     traceSql = System.IO.File.ReadAllText(Source);
 
                     // Push Down EventFilters
-                    string filters = "";
+                    var filters = "";
                     filters += Environment.NewLine + Filter.ApplicationFilter.PushDown();
                     filters += Environment.NewLine + Filter.DatabaseFilter.PushDown();
                     filters += Environment.NewLine + Filter.HostFilter.PushDown();
@@ -75,13 +73,13 @@ namespace WorkloadTools.Listener.Trace
                     throw new ArgumentException("Cannot open the source script to start the sql trace", e);
                 }
 
-                int id = utils.GetTraceId(conn, Path.Combine(tracePath, "sqlworkload"));
+                var id = utils.GetTraceId(conn, Path.Combine(tracePath, "sqlworkload"));
                 if(id > 0)
                 {
                     StopTrace(conn, id);
                 }
 
-                SqlCommand cmd = conn.CreateCommand();
+                var cmd = conn.CreateCommand();
                 cmd.CommandText = traceSql;
                 traceId = (int)cmd.ExecuteScalar();
 
@@ -90,19 +88,21 @@ namespace WorkloadTools.Listener.Trace
 
                 // Initialize the source of execution related events
                 if (StreamSource == StreamSourceEnum.StreamFromFile)
-                    Task.Factory.StartNew(() => ReadEventsFromFile());
+                {
+                    _ = Task.Factory.StartNew(() => ReadEventsFromFile());
+                }
                 else if (StreamSource == StreamSourceEnum.StreamFromTDS)
-                    Task.Factory.StartNew(() => ReadEventsFromTDS());
-
+                {
+                    _ = Task.Factory.StartNew(() => ReadEventsFromTDS());
+                }
 
                 // Initialize the source of performance counters events
-                Task.Factory.StartNew(() => ReadPerfCountersEvents());
+                _ = Task.Factory.StartNew(() => ReadPerfCountersEvents());
 
                 // Initialize the source of wait stats events
-                Task.Factory.StartNew(() => ReadWaitStatsEvents());
+                _ = Task.Factory.StartNew(() => ReadWaitStatsEvents());
             }
         }
-
 
         public override WorkloadEvent Read()
         {
@@ -112,7 +112,9 @@ namespace WorkloadTools.Listener.Trace
                 while (!Events.TryDequeue(out result))
                 {
                     if (stopped)
+                    {
                         return null;
+                    }
 
                     Thread.Sleep(5);
                 }
@@ -120,15 +122,20 @@ namespace WorkloadTools.Listener.Trace
             }
             catch (Exception)
             {
-                if (stopped) return null;
-                else throw;
+                if (stopped)
+                {
+                    return null;
+                }
+                else
+                {
+                    throw;
+                }
             }
         }
 
-
         private void ReadEventsFromTDS()
         {
-            using (FileTraceEventDataReader reader = new FileTraceEventDataReader(ConnectionInfo.ConnectionString, Filter, Events))
+            using (var reader = new FileTraceEventDataReader(ConnectionInfo.ConnectionString, Filter, Events))
             {
                 reader.ReadEvents();
             }
@@ -145,12 +152,11 @@ namespace WorkloadTools.Listener.Trace
                 while(!stopped)
                 {
                     // get first trace rollover file
-                    List<string> files = Directory.GetFiles(tracePath, "sqlworkload*.trc").ToList();
+                    var files = Directory.GetFiles(tracePath, "sqlworkload*.trc").ToList();
                     files.Sort();
-                    string traceFile = files.ElementAt(0);
+                    var traceFile = files.ElementAt(0);
 
-
-                    using (TraceFileWrapper reader = new TraceFileWrapper())
+                    using (var reader = new TraceFileWrapper())
                     {
                         reader.InitializeAsReader(traceFile);
 
@@ -158,18 +164,29 @@ namespace WorkloadTools.Listener.Trace
                         {
                             try
                             {
-                                ExecutionWorkloadEvent evt = new ExecutionWorkloadEvent();
+                                var evt = new ExecutionWorkloadEvent();
 
                                 if (reader.GetValue("EventClass").ToString() == "RPC:Starting")
+                                {
                                     evt.Type = WorkloadEvent.EventType.RPCStarting;
+                                }
                                 else if (reader.GetValue("EventClass").ToString() == "SQL:BatchStarting")
+                                {
                                     evt.Type = WorkloadEvent.EventType.BatchStarting;
+                                }
                                 else if (reader.GetValue("EventClass").ToString() == "RPC:Completed")
+                                {
                                     evt.Type = WorkloadEvent.EventType.RPCCompleted;
+                                }
                                 else if (reader.GetValue("EventClass").ToString() == "SQL:BatchCompleted")
+                                {
                                     evt.Type = WorkloadEvent.EventType.BatchCompleted;
+                                }
                                 else
+                                {
                                     evt.Type = WorkloadEvent.EventType.Unknown;
+                                }
+
                                 evt.ApplicationName = (string)reader.GetValue("ApplicationName");
                                 evt.DatabaseName = (string)reader.GetValue("DatabaseName");
                                 evt.HostName = (string)reader.GetValue("HostName");
@@ -187,7 +204,9 @@ namespace WorkloadTools.Listener.Trace
                                 }
 
                                 if (!Filter.Evaluate(evt))
+                                {
                                     continue;
+                                }
 
                                 Events.Enqueue(evt);
                             }
@@ -196,9 +215,10 @@ namespace WorkloadTools.Listener.Trace
                                 logger.Error(ex.Message);
 
                                 if (ex.InnerException != null)
+                                {
                                     logger.Error(ex.InnerException.Message);
+                                }
                             }
-
 
                         } // while (Read)
 
@@ -211,22 +231,21 @@ namespace WorkloadTools.Listener.Trace
                 logger.Error(ex.Message);
 
                 if (ex.InnerException != null)
+                {
                     logger.Error(ex.InnerException.Message);
+                }
 
                 Dispose();
             }
 
         }
 
-
-
-
         
 
         protected override void Dispose(bool disposing)
         {
             stopped = true;
-            using (SqlConnection conn = new SqlConnection())
+            using (var conn = new SqlConnection())
             {
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
@@ -235,10 +254,9 @@ namespace WorkloadTools.Listener.Trace
             logger.Info("Trace with id={0} stopped successfully.", traceId);
         }
 
-
         private void StopTrace(SqlConnection conn, int id)
         {
-                SqlCommand cmd = conn.CreateCommand();
+                var cmd = conn.CreateCommand();
                 cmd.CommandText = String.Format(@"
                     IF EXISTS (
                         SELECT *
@@ -250,7 +268,7 @@ namespace WorkloadTools.Listener.Trace
                         EXEC sp_trace_setstatus {0}, 2;
                     END
                 ", id);
-                cmd.ExecuteNonQuery();
+            _ = cmd.ExecuteNonQuery();
         }
 
     }

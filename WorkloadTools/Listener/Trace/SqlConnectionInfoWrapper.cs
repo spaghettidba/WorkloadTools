@@ -9,7 +9,7 @@ namespace WorkloadTools.Listener.Trace
 {
     public class SqlConnectionInfoWrapper
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public object SqlConnectionInfo { get; set; }
         public string ServerName
@@ -20,7 +20,7 @@ namespace WorkloadTools.Listener.Trace
             }
             set
             {
-                SqlConnectionInfo.GetType().GetProperty("ServerName")?.GetSetMethod()?.Invoke(SqlConnectionInfo, new object[] { value });
+                _ = (SqlConnectionInfo.GetType().GetProperty("ServerName")?.GetSetMethod()?.Invoke(SqlConnectionInfo, new object[] { value }));
             }
         }
         public string DatabaseName
@@ -31,7 +31,7 @@ namespace WorkloadTools.Listener.Trace
             }
             set
             {
-                SqlConnectionInfo.GetType().GetProperty("DatabaseName")?.GetSetMethod()?.Invoke(SqlConnectionInfo, new object[] { value });
+                _ = (SqlConnectionInfo.GetType().GetProperty("DatabaseName")?.GetSetMethod()?.Invoke(SqlConnectionInfo, new object[] { value }));
             }
         }
         public bool UseIntegratedSecurity
@@ -42,7 +42,7 @@ namespace WorkloadTools.Listener.Trace
             }
             set
             {
-                SqlConnectionInfo.GetType().GetProperty("UseIntegratedSecurity")?.GetSetMethod()?.Invoke(SqlConnectionInfo, new object[] { value });
+                _ = (SqlConnectionInfo.GetType().GetProperty("UseIntegratedSecurity")?.GetSetMethod()?.Invoke(SqlConnectionInfo, new object[] { value }));
             }
         }
         public string UserName
@@ -53,7 +53,7 @@ namespace WorkloadTools.Listener.Trace
             }
             set
             {
-                SqlConnectionInfo.GetType().GetProperty("UserName")?.GetSetMethod()?.Invoke(SqlConnectionInfo, new object[] { value });
+                _ = (SqlConnectionInfo.GetType().GetProperty("UserName")?.GetSetMethod()?.Invoke(SqlConnectionInfo, new object[] { value }));
             }
         }
         public string Password
@@ -64,7 +64,7 @@ namespace WorkloadTools.Listener.Trace
             }
             set
             {
-                SqlConnectionInfo.GetType().GetProperty("Password")?.GetSetMethod()?.Invoke(SqlConnectionInfo, new object[] { value });
+                _ = (SqlConnectionInfo.GetType().GetProperty("Password")?.GetSetMethod()?.Invoke(SqlConnectionInfo, new object[] { value }));
             }
         }
 
@@ -74,7 +74,7 @@ namespace WorkloadTools.Listener.Trace
             try
             {
 #pragma warning disable 618
-                Assembly assembly = Assembly.LoadWithPartialName("Microsoft.SqlServer.ConnectionInfo");
+                var assembly = Assembly.LoadWithPartialName("Microsoft.SqlServer.ConnectionInfo");
 #pragma warning restore 618
                 type = assembly.GetType("Microsoft.SqlServer.Management.Common.SqlConnectionInfo");
                 SqlConnectionInfo = type.InvokeMember((string)null, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance, (Binder)null, (object)null, (object[])null);
@@ -86,7 +86,6 @@ namespace WorkloadTools.Listener.Trace
                 throw;
             }
         }
-
 
     }
 }

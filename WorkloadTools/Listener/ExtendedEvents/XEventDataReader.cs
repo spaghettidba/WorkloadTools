@@ -29,12 +29,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
             ServerType = serverType;
         }
 
-
-
         public abstract void ReadEvents();
 
         public abstract void Stop();
-
 
     }
 }

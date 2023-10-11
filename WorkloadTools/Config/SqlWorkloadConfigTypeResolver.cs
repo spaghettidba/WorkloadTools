@@ -9,14 +9,14 @@ namespace WorkloadTools.Config
     internal class SqlWorkloadConfigTypeResolver : SimpleTypeResolver
     {
 
-        private static Dictionary<string, Type> mappedTypes = new Dictionary<string, Type>();
+        private static readonly Dictionary<string, Type> mappedTypes = new Dictionary<string, Type>();
 
         static SqlWorkloadConfigTypeResolver()
         {
-            Assembly currentAssembly = Assembly.GetExecutingAssembly();
-            string nameSpace = "WorkloadTools";
-            Type[] types = currentAssembly.GetTypes().Where(t => t != null && t.FullName.StartsWith(nameSpace) & !t.FullName.Contains("+")).ToArray();
-            foreach (Type t in types)
+            var currentAssembly = Assembly.GetExecutingAssembly();
+            var nameSpace = "WorkloadTools";
+            var types = currentAssembly.GetTypes().Where(t => t != null && t.FullName.StartsWith(nameSpace) & !t.FullName.Contains("+")).ToArray();
+            foreach (var t in types)
             {
                 try
                 {
@@ -33,8 +33,13 @@ namespace WorkloadTools.Config
         public override Type ResolveType(string id)
         {
             if (mappedTypes.ContainsKey(id))
+            {
                 return mappedTypes[id];
-            else return base.ResolveType(id);
+            }
+            else
+            {
+                return base.ResolveType(id);
+            }
         }
 
         public override string ResolveTypeId(Type type)

@@ -13,7 +13,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 {
     public class ExtendedEventsWorkloadListener : WorkloadListener
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         private SpinWait spin = new SpinWait();
 
@@ -48,7 +48,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         public override void Initialize()
         {
-            using (SqlConnection conn = new SqlConnection())
+            using (var conn = new SqlConnection())
             {
                 if (ConnectionInfo == null)
                 {
@@ -85,12 +85,12 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     sessionSql = System.IO.File.ReadAllText(Source);
 
                     // Push Down EventFilters
-                    string filters = String.Empty;
+                    var filters = String.Empty;
 
-                    string appFilter = Filter.ApplicationFilter.PushDown();
-                    string dbFilter = Filter.DatabaseFilter.PushDown();
-                    string hostFilter = Filter.HostFilter.PushDown();
-                    string loginFilter = Filter.LoginFilter.PushDown();
+                    var appFilter = Filter.ApplicationFilter.PushDown();
+                    var dbFilter = Filter.DatabaseFilter.PushDown();
+                    var hostFilter = Filter.HostFilter.PushDown();
+                    var loginFilter = Filter.LoginFilter.PushDown();
 
                     if (appFilter != String.Empty)
                     {
@@ -114,8 +114,8 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         filters = "WHERE " + filters;
                     }
 
-                    string sessionType = serverType == ServerType.AzureSqlDatabase ? "DATABASE" : "SERVER";
-                    string principalName = serverType == ServerType.AzureSqlDatabase ? "username" : "server_principal_name";
+                    var sessionType = serverType == ServerType.AzureSqlDatabase ? "DATABASE" : "SERVER";
+                    var principalName = serverType == ServerType.AzureSqlDatabase ? "username" : "server_principal_name";
 
                     sessionSql = String.Format(sessionSql, filters, sessionType, principalName);
 
@@ -129,43 +129,40 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 {
                     StopSession(conn);
 
-                    using (SqlCommand cmd = conn.CreateCommand())
+                    using (var cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = sessionSql;
-                        cmd.ExecuteNonQuery();
+                        _ = cmd.ExecuteNonQuery();
                     }
                     if (FileTargetPath != null)
                     {
-                        string sql = @"
+                        var sql = @"
                         ALTER EVENT SESSION [{2}] ON {0}
                         ADD TARGET package0.event_file(SET filename=N'{1}',max_file_size=(100))
                     ";
 
                         sql = String.Format(sql, serverType == ServerType.FullInstance ? "SERVER" : "DATABASE", FileTargetPath, SessionName);
 
-                        using (SqlCommand cmd = conn.CreateCommand())
+                        using (var cmd = conn.CreateCommand())
                         {
                             cmd.CommandText = sql;
-                            cmd.ExecuteNonQuery();
+                            _ = cmd.ExecuteNonQuery();
                         }
                     }
                 }
 
                 // Mark the transaction
                 SetTransactionMark(serverType != ServerType.AzureSqlDatabase);
-                
 
-                Task.Factory.StartNew(() => ReadEvents());
+                _ = Task.Factory.StartNew(() => ReadEvents());
 
                 //Initialize the source of performance counters events
-                Task.Factory.StartNew(() => ReadPerfCountersEvents());
+                _ = Task.Factory.StartNew(() => ReadPerfCountersEvents());
 
                 // Initialize the source of wait stats events
-                Task.Factory.StartNew(() => ReadWaitStatsEvents());
+                _ = Task.Factory.StartNew(() => ReadWaitStatsEvents());
             }
         }
-
-
 
         public override WorkloadEvent Read()
         {
@@ -175,7 +172,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 while (!Events.TryDequeue(out result))
                 {
                     if (stopped)
+                    {
                         return null;
+                    }
 
                     spin.SpinOnce();
                 }
@@ -184,8 +183,14 @@ namespace WorkloadTools.Listener.ExtendedEvents
             }
             catch (Exception)
             {
-                if (stopped) return null;
-                else throw;
+                if (stopped)
+                {
+                    return null;
+                }
+                else
+                {
+                    throw;
+                }
             }
         }
 
@@ -200,7 +205,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 reader.Stop();
                 if (!ReuseExistingSession)
                 {
-                    using (SqlConnection conn = new SqlConnection())
+                    using (var conn = new SqlConnection())
                     {
                         conn.ConnectionString = ConnectionInfo.ConnectionString;
                         conn.Open();
@@ -218,7 +223,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
         private void StopSession(SqlConnection conn)
         {
-            string sql = @"
+            var sql = @"
                 DECLARE @condition bit = 0;
 
                 IF SERVERPROPERTY('Edition') = 'SQL Azure'
@@ -260,13 +265,12 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 END
             ";
             sql = String.Format(sql, serverType == ServerType.AzureSqlDatabase ? "DATABASE" : "SERVER", SessionName);
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = sql;
-                cmd.ExecuteNonQuery();
+                _ = cmd.ExecuteNonQuery();
             }
         }
-
 
         private void ReadEvents()
         {
@@ -293,7 +297,9 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     logger.Error(ex.StackTrace);
 
                     if (ex.InnerException != null)
+                    {
                         logger.Error(ex.InnerException.Message);
+                    }
 
                     Dispose();
                 }
@@ -304,18 +310,14 @@ namespace WorkloadTools.Listener.ExtendedEvents
             }
         }
 
-
-
-
-
         private void LoadServerType(SqlConnection conn)
         {
-            using (SqlCommand cmd = conn.CreateCommand())
+            using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = "SELECT SERVERPROPERTY('Edition')";
-                string edition = (string)cmd.ExecuteScalar();
+                var edition = (string)cmd.ExecuteScalar();
                 cmd.CommandText = "SELECT SERVERPROPERTY('EngineEdition')";
-                int engineEdition = (int)cmd.ExecuteScalar();
+                var engineEdition = (int)cmd.ExecuteScalar();
                 if (edition == "SQL Azure")
                 {
                     serverType = ServerType.AzureSqlDatabase;

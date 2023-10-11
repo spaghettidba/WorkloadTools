@@ -11,10 +11,9 @@ namespace WorkloadTools
 {
     public class WorkloadController : IDisposable
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public static String BaseLocation = new Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().CodeBase)).LocalPath;
-
 
         public WorkloadListener Listener { get; set; }
         public List<WorkloadConsumer> Consumers { get; set; } = new List<WorkloadConsumer>();
@@ -24,14 +23,12 @@ namespace WorkloadTools
         private bool disposed = false;
         private const int MAX_DISPOSE_TIMEOUT_SECONDS = 5;
 
-
         public WorkloadController()
         {
         }
 
         public void Run()
         {
-
             try
             {
 				var startTime = Listener.StartAt;
@@ -39,30 +36,37 @@ namespace WorkloadTools
 
                 Listener.Initialize();
 
-                logger.Info($"Listener of type {Listener.GetType().Name} initialized correctly.");
-                logger.Info($"Event collection starts at {startTime.ToString("yyyy-MM-dd HH:mm:ss")}.");
+                logger.Info("Listener of type {ListenerTypeName} initialized correctly", Listener.GetType().Name);
+                logger.Info("Event collection starts at {startTime}", startTime);
                 // wait until Listener.StartAt has been reached
                 while (DateTime.Now.CompareTo(startTime) < 0)
                 {
                     Thread.Sleep(100);
                 }
 
-                logger.Info("Waiting for events.");
+                logger.Info("Waiting for events");
 
                 do
                 {
                     try
                     {
                         if ((!Listener.IsRunning) || (endTime < DateTime.Now))
+                        {
                             stopped = true;
+                        }
 
                         if (endTime == DateTime.MaxValue && Listener.TimeoutMinutes != 0)
+                        {
                             endTime = startTime.AddMinutes(Listener.TimeoutMinutes);
+                        }
 
                         var evt = Listener.Read();
                         if (evt == null)
+                        {
                             continue;
-                        Parallel.ForEach(Consumers, (cons) =>
+                        }
+
+                        _ = Parallel.ForEach(Consumers, (cons) =>
                         {
                             cons.Consume(evt);
                         });
@@ -91,15 +95,13 @@ namespace WorkloadTools
                 logger.Error(e.Message);
                 logger.Error(e.StackTrace);
 
-                Exception ex = e;
+                var ex = e;
                 while ((ex = ex.InnerException) != null){
                     logger.Error(ex.Message);
                     logger.Error(ex.StackTrace);
                 }
             }
         }
-
-
 
         public void Stop()
         {
@@ -115,12 +117,15 @@ namespace WorkloadTools
                 foreach (var cons in Consumers)
                 {
                     if (cons != null)
+                    {
                         cons.Dispose();
+                    }
                 }
 
                 if (Listener != null)
+                {
                     Listener.Dispose();
-
+                }
             }
         }
 

@@ -22,7 +22,7 @@ namespace WorkloadViewer.Model
         {
             get
             {
-                string connectionString = "Data Source=" + ServerName + ";";
+                var connectionString = "Data Source=" + ServerName + ";";
                 if (String.IsNullOrEmpty(DatabaseName))
                 {
                     connectionString += "Initial Catalog = master; ";

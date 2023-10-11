@@ -1,4 +1,5 @@
 ﻿using NLog;
+
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -13,7 +14,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
     public class WorkloadFileWriterConsumer : BufferedWorkloadConsumer
     {
 
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public string OutputFile { get; set; }
         public static int CACHE_SIZE = 1000;
@@ -27,7 +28,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
         private int row_id = 1;
         private string connectionString;
 
-        private object syncRoot = new object();
+        private readonly object syncRoot = new object();
 
         private SQLiteConnection conn;
         private SQLiteCommand events_cmd;
@@ -37,7 +38,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         private long _rowsInserted = 0;
 
-        private string insert_events = @"
+        private readonly string insert_events = @"
                 INSERT INTO Events (
                     row_id,
                     event_sequence,
@@ -71,7 +72,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     $writes
                 );";
 
-        private string update_events = @"
+        private readonly string update_events = @"
                 UPDATE Events SET cpu = $cpu,
                                   duration = $duration,
                                   reads = $reads,
@@ -86,7 +87,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                                 ORDER BY EVENT_SEQUENCE DESC
                                 LIMIT 1);";
 
-        private string insert_waits = @"
+        private readonly string insert_waits = @"
                 INSERT INTO Waits (
                     row_id,
                     wait_type,
@@ -104,7 +105,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     $wait_count
                 );";
 
-        private string insert_counters = @"
+        private readonly string insert_counters = @"
                 INSERT INTO Counters (
                     row_id,
                     name,
@@ -116,14 +117,16 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     $value
                 );";
 
-        private Queue<WorkloadEvent> cache = new Queue<WorkloadEvent>(CACHE_SIZE);
+        private readonly Queue<WorkloadEvent> cache = new Queue<WorkloadEvent>(CACHE_SIZE);
 
         private bool forceFlush = false;
 
         public override void ConsumeBuffered(WorkloadEvent evt)
         {
             if (!databaseInitialized)
+            {
                 InitializeDatabase();
+            }
 
             lock (syncRoot)
             {
@@ -133,10 +136,9 @@ namespace WorkloadTools.Consumer.WorkloadFile
             }
         }
 
-
         private void Flush()
         {
-            if(DateTime.Now.Subtract(lastFlush).TotalMinutes >= CACHE_FLUSH_HEARTBEAT_MINUTES)
+            if (DateTime.Now.Subtract(lastFlush).TotalMinutes >= CACHE_FLUSH_HEARTBEAT_MINUTES)
             {
                 forceFlush = true;
             }
@@ -194,33 +196,41 @@ namespace WorkloadTools.Consumer.WorkloadFile
             }
 
             if (events_cmd == null)
+            {
                 events_cmd = new SQLiteCommand(insert_events, conn);
+            }
 
             if (events_update_cmd == null)
+            {
                 events_update_cmd = new SQLiteCommand(update_events, conn);
+            }
 
             if (waits_cmd == null)
+            {
                 waits_cmd = new SQLiteCommand(insert_waits, conn);
+            }
 
             if (counters_cmd == null)
+            {
                 counters_cmd = new SQLiteCommand(insert_counters, conn);
+            }
         }
 
         private void UpdateExecutionEvent(WorkloadEvent evnt)
         {
-            ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
+            var evt = (ExecutionWorkloadEvent)evnt;
 
-            events_update_cmd.Parameters.AddWithValue("$event_sequence", evt.EventSequence);
-            events_update_cmd.Parameters.AddWithValue("$session_id", evt.SPID);
-            events_update_cmd.Parameters.AddWithValue("$cpu", evt.CPU);
-            events_update_cmd.Parameters.AddWithValue("$duration", evt.Duration);
-            events_update_cmd.Parameters.AddWithValue("$reads", evt.Reads);
-            events_update_cmd.Parameters.AddWithValue("$writes", evt.Writes);
-            events_update_cmd.Parameters.AddWithValue("$sql_text", evt.Text);
+            _ = events_update_cmd.Parameters.AddWithValue("$event_sequence", evt.EventSequence);
+            _ = events_update_cmd.Parameters.AddWithValue("$session_id", evt.SPID);
+            _ = events_update_cmd.Parameters.AddWithValue("$cpu", evt.CPU);
+            _ = events_update_cmd.Parameters.AddWithValue("$duration", evt.Duration);
+            _ = events_update_cmd.Parameters.AddWithValue("$reads", evt.Reads);
+            _ = events_update_cmd.Parameters.AddWithValue("$writes", evt.Writes);
+            _ = events_update_cmd.Parameters.AddWithValue("$sql_text", evt.Text);
 
             int rowcount;
             rowcount = events_update_cmd.ExecuteNonQuery();
-            if (rowcount == 0) 
+            if (rowcount == 0)
             {
                 logger.Debug("Starting event not found - " + $"EventSequence: {evt.EventSequence}");
             }
@@ -228,24 +238,24 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         private void InsertExecutionEvent(WorkloadEvent evnt)
         {
-            ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
+            var evt = (ExecutionWorkloadEvent)evnt;
 
-            events_cmd.Parameters.AddWithValue("$row_id", row_id++);
-            events_cmd.Parameters.AddWithValue("$event_sequence", evt.EventSequence);
-            events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
-            events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
-            events_cmd.Parameters.AddWithValue("$client_app_name", evt.ApplicationName);
-            events_cmd.Parameters.AddWithValue("$client_host_name", evt.HostName);
-            events_cmd.Parameters.AddWithValue("$database_name", evt.DatabaseName);
-            events_cmd.Parameters.AddWithValue("$server_principal_name", evt.LoginName);
-            events_cmd.Parameters.AddWithValue("$session_id", evt.SPID);
-            events_cmd.Parameters.AddWithValue("$sql_text", evt.Text);
-            events_cmd.Parameters.AddWithValue("$cpu", evt.CPU);
-            events_cmd.Parameters.AddWithValue("$duration", evt.Duration);
-            events_cmd.Parameters.AddWithValue("$reads", evt.Reads);
-            events_cmd.Parameters.AddWithValue("$writes", evt.Writes);
+            _ = events_cmd.Parameters.AddWithValue("$row_id", row_id++);
+            _ = events_cmd.Parameters.AddWithValue("$event_sequence", evt.EventSequence);
+            _ = events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
+            _ = events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
+            _ = events_cmd.Parameters.AddWithValue("$client_app_name", evt.ApplicationName);
+            _ = events_cmd.Parameters.AddWithValue("$client_host_name", evt.HostName);
+            _ = events_cmd.Parameters.AddWithValue("$database_name", evt.DatabaseName);
+            _ = events_cmd.Parameters.AddWithValue("$server_principal_name", evt.LoginName);
+            _ = events_cmd.Parameters.AddWithValue("$session_id", evt.SPID);
+            _ = events_cmd.Parameters.AddWithValue("$sql_text", evt.Text);
+            _ = events_cmd.Parameters.AddWithValue("$cpu", evt.CPU);
+            _ = events_cmd.Parameters.AddWithValue("$duration", evt.Duration);
+            _ = events_cmd.Parameters.AddWithValue("$reads", evt.Reads);
+            _ = events_cmd.Parameters.AddWithValue("$writes", evt.Writes);
 
-            events_cmd.ExecuteNonQuery();
+            _ = events_cmd.ExecuteNonQuery();
 
         }
 
@@ -253,7 +263,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
         {
             try
             {
-                if ((evnt is ExecutionWorkloadEvent))
+                if (evnt is ExecutionWorkloadEvent)
                 {
                     if ((evnt.Type == WorkloadEvent.EventType.BatchCompleted) || (evnt.Type == WorkloadEvent.EventType.RPCCompleted))
                     {
@@ -264,23 +274,35 @@ namespace WorkloadTools.Consumer.WorkloadFile
                         InsertExecutionEvent(evnt);
                     }
                 }
-                    
-                if ((evnt is CounterWorkloadEvent))
+
+                if (evnt is CounterWorkloadEvent)
+                {
                     InsertCounterEvent(evnt);
-                if ((evnt is WaitStatsWorkloadEvent))
+                }
+
+                if (evnt is WaitStatsWorkloadEvent)
+                {
                     InsertWaitEvent(evnt);
+                }
 
                 _rowsInserted++;
-                if((_rowsInserted % CACHE_SIZE == 0) || forceFlush)
+                if ((_rowsInserted % CACHE_SIZE == 0) || forceFlush)
                 {
-                    if (forceFlush) forceFlush = false;
+                    if (forceFlush)
+                    {
+                        forceFlush = false;
+                    }
+
                     logger.Info($"{_rowsInserted} events saved");
                 }
             }
             catch (Exception e)
             {
                 if (stopped)
+                {
                     return;
+                }
+
                 logger.Error(e, "Unable to write to the destination file");
                 throw;
             }
@@ -289,39 +311,39 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         private void InsertWaitEvent(WorkloadEvent evnt)
         {
-            WaitStatsWorkloadEvent evt = (WaitStatsWorkloadEvent)evnt;
+            var evt = (WaitStatsWorkloadEvent)evnt;
 
-            events_cmd.Parameters.AddWithValue("$row_id", row_id++);
-            events_cmd.Parameters.AddWithValue("$event_sequence", null);
-            events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
-            events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
-            events_cmd.Parameters.AddWithValue("$client_app_name", null);
-            events_cmd.Parameters.AddWithValue("$client_host_name", null);
-            events_cmd.Parameters.AddWithValue("$database_name", null);
-            events_cmd.Parameters.AddWithValue("$server_principal_name", null);
-            events_cmd.Parameters.AddWithValue("$session_id", null);
-            events_cmd.Parameters.AddWithValue("$sql_text", null);
-            events_cmd.Parameters.AddWithValue("$cpu", null);
-            events_cmd.Parameters.AddWithValue("$duration", null);
-            events_cmd.Parameters.AddWithValue("$reads", null);
-            events_cmd.Parameters.AddWithValue("$writes", null);
+            _ = events_cmd.Parameters.AddWithValue("$row_id", row_id++);
+            _ = events_cmd.Parameters.AddWithValue("$event_sequence", null);
+            _ = events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
+            _ = events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
+            _ = events_cmd.Parameters.AddWithValue("$client_app_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$client_host_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$database_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$server_principal_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$session_id", null);
+            _ = events_cmd.Parameters.AddWithValue("$sql_text", null);
+            _ = events_cmd.Parameters.AddWithValue("$cpu", null);
+            _ = events_cmd.Parameters.AddWithValue("$duration", null);
+            _ = events_cmd.Parameters.AddWithValue("$reads", null);
+            _ = events_cmd.Parameters.AddWithValue("$writes", null);
 
-            events_cmd.ExecuteNonQuery();
+            _ = events_cmd.ExecuteNonQuery();
 
-            SQLiteTransaction tran = conn.BeginTransaction();
+            var tran = conn.BeginTransaction();
             try
             {
 
                 foreach (DataRow dr in evt.Waits.Rows)
                 {
-                    waits_cmd.Parameters.AddWithValue("$row_id", row_id);
-                    waits_cmd.Parameters.AddWithValue("$wait_type", dr["wait_type"]);
-                    waits_cmd.Parameters.AddWithValue("$wait_sec", dr["wait_sec"]);
-                    waits_cmd.Parameters.AddWithValue("$resource_sec", dr["resource_sec"]);
-                    waits_cmd.Parameters.AddWithValue("$signal_sec", dr["signal_sec"]);
-                    waits_cmd.Parameters.AddWithValue("$wait_count", dr["wait_count"]);
+                    _ = waits_cmd.Parameters.AddWithValue("$row_id", row_id);
+                    _ = waits_cmd.Parameters.AddWithValue("$wait_type", dr["wait_type"]);
+                    _ = waits_cmd.Parameters.AddWithValue("$wait_sec", dr["wait_sec"]);
+                    _ = waits_cmd.Parameters.AddWithValue("$resource_sec", dr["resource_sec"]);
+                    _ = waits_cmd.Parameters.AddWithValue("$signal_sec", dr["signal_sec"]);
+                    _ = waits_cmd.Parameters.AddWithValue("$wait_count", dr["wait_count"]);
 
-                    waits_cmd.ExecuteNonQuery();
+                    _ = waits_cmd.ExecuteNonQuery();
                 }
 
                 tran.Commit();
@@ -335,37 +357,36 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         private void InsertCounterEvent(WorkloadEvent evnt)
         {
-            CounterWorkloadEvent evt = (CounterWorkloadEvent)evnt;
+            var evt = (CounterWorkloadEvent)evnt;
 
-            events_cmd.Parameters.AddWithValue("$row_id", row_id++);
-            events_cmd.Parameters.AddWithValue("$event_sequence", null);
-            events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
-            events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
-            events_cmd.Parameters.AddWithValue("$client_app_name", null);
-            events_cmd.Parameters.AddWithValue("$client_host_name", null);
-            events_cmd.Parameters.AddWithValue("$database_name", null);
-            events_cmd.Parameters.AddWithValue("$server_principal_name", null);
-            events_cmd.Parameters.AddWithValue("$session_id", null);
-            events_cmd.Parameters.AddWithValue("$sql_text", null);
-            events_cmd.Parameters.AddWithValue("$cpu", null);
-            events_cmd.Parameters.AddWithValue("$duration", null);
-            events_cmd.Parameters.AddWithValue("$reads", null);
-            events_cmd.Parameters.AddWithValue("$writes", null);
+            _ = events_cmd.Parameters.AddWithValue("$row_id", row_id++);
+            _ = events_cmd.Parameters.AddWithValue("$event_sequence", null);
+            _ = events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
+            _ = events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
+            _ = events_cmd.Parameters.AddWithValue("$client_app_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$client_host_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$database_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$server_principal_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$session_id", null);
+            _ = events_cmd.Parameters.AddWithValue("$sql_text", null);
+            _ = events_cmd.Parameters.AddWithValue("$cpu", null);
+            _ = events_cmd.Parameters.AddWithValue("$duration", null);
+            _ = events_cmd.Parameters.AddWithValue("$reads", null);
+            _ = events_cmd.Parameters.AddWithValue("$writes", null);
 
-            events_cmd.ExecuteNonQuery();
+            _ = events_cmd.ExecuteNonQuery();
 
-            SQLiteTransaction tran = conn.BeginTransaction();
+            var tran = conn.BeginTransaction();
             try
             {
 
                 foreach (var dr in evt.Counters)
                 {
-                    counters_cmd.Parameters.AddWithValue("$row_id", row_id);
-                    counters_cmd.Parameters.AddWithValue("$name", dr.Key.ToString());
-                    counters_cmd.Parameters.AddWithValue("$value", dr.Value);
+                    _ = counters_cmd.Parameters.AddWithValue("$row_id", row_id);
+                    _ = counters_cmd.Parameters.AddWithValue("$name", dr.Key.ToString());
+                    _ = counters_cmd.Parameters.AddWithValue("$value", dr.Value);
 
-
-                    counters_cmd.ExecuteNonQuery();
+                    _ = counters_cmd.ExecuteNonQuery();
                 }
 
                 tran.Commit();
@@ -383,75 +404,76 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
             if (!File.Exists(OutputFile))
             {
-                Directory.CreateDirectory(Directory.GetParent(OutputFile).FullName);
+                _ = Directory.CreateDirectory(Directory.GetParent(OutputFile).FullName);
                 SQLiteConnection.CreateFile(OutputFile);
             }
 
-            string sqlCreateTable = @"
-                CREATE TABLE IF NOT EXISTS FileProperties (
-                    name TEXT NOT NULL PRIMARY KEY,
-                    value TEXT NOT NULL
-                );
+            var sqlCreateTable = $@"
+CREATE TABLE IF NOT EXISTS FileProperties (
+    name TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
 
-                CREATE TABLE IF NOT EXISTS Events (
-                    row_id INTEGER PRIMARY KEY,
-                    event_sequence INTEGER,
-                    event_type INTEGER,
-                    start_time date NOT NULL,
-                    client_app_name TEXT NULL, 
-                    client_host_name TEXT NULL, 
-                    database_name TEXT NULL, 
-                    server_principal_name TEXT NULL, 
-                    session_id INTEGER NULL, 
-                    sql_text  TEXT NULL,
-                    cpu INTEGER NULL,
-                    duration INTEGER NULL,
-                    reads INTEGER NULL,
-                    writes INTEGER NULL
-                );
+CREATE TABLE IF NOT EXISTS Events (
+    row_id INTEGER PRIMARY KEY,
+    event_sequence INTEGER,
+    event_type INTEGER,
+    start_time date NOT NULL,
+    client_app_name TEXT NULL, 
+    client_host_name TEXT NULL, 
+    database_name TEXT NULL, 
+    server_principal_name TEXT NULL, 
+    session_id INTEGER NULL, 
+    sql_text  TEXT NULL,
+    cpu INTEGER NULL,
+    duration INTEGER NULL,
+    reads INTEGER NULL,
+    writes INTEGER NULL
+);
 
-                CREATE UNIQUE INDEX IF NOT EXISTS Index_Session_ID_Event_Sequence ON Events(
-	                session_id ASC,
-	                event_sequence DESC
-                );
+CREATE UNIQUE INDEX IF NOT EXISTS Index_Session_ID_Event_Sequence ON Events(
+    session_id ASC,
+    event_sequence DESC
+);
 
-                CREATE TABLE IF NOT EXISTS Counters (
-                    row_id INTEGER,
-                    name TEXT NULL,
-                    value FLOAT NULL
-                );
+CREATE INDEX IF NOT EXISTS Index_Start_Time_Row_ID ON Events(
+    Start_Time ASC,
+    Row_ID ASC
+);
 
-                CREATE TABLE IF NOT EXISTS Waits (
-                    row_id INTEGER,
-                    wait_type TEXT NULL,
-                    wait_sec INTEGER NULL,
-                    resource_sec INTEGER NULL,
-                    signal_sec INTEGER NULL,
-                    wait_count INTEGER NULL 
-                );
+CREATE TABLE IF NOT EXISTS Counters (
+    row_id INTEGER,
+    name TEXT NULL,
+    value FLOAT NULL
+);
 
-                INSERT INTO FileProperties (name, value)
-                SELECT 'FormatVersion','{0}'
-                WHERE NOT EXISTS (
-                    SELECT *
-                    FROM FileProperties
+CREATE TABLE IF NOT EXISTS Waits (
+    row_id INTEGER,
+    wait_type TEXT NULL,
+    wait_sec INTEGER NULL,
+    resource_sec INTEGER NULL,
+    signal_sec INTEGER NULL,
+    wait_count INTEGER NULL 
+);
+
+INSERT INTO FileProperties (name, value)
+SELECT 'FormatVersion','{Assembly.GetEntryAssembly().GetName().Version}'
+ WHERE NOT EXISTS (SELECT *
+                     FROM FileProperties
                     WHERE name = 'FormatVersion'
-                );
-            ";
+                  );";
 
-            sqlCreateTable = String.Format(sqlCreateTable, Assembly.GetEntryAssembly().GetName().Version.ToString());
-
-            string sqlMaxSeq = @"SELECT COALESCE(MAX(row_id),0) + 1 FROM Events;";
+            var sqlMaxSeq = @"SELECT COALESCE(MAX(row_id), 0) + 1 FROM Events;";
 
             connectionString = "Data Source=" + OutputFile + ";Version=3;Cache Size=10000;Locking Mode=Exclusive;Journal Mode=Memory;";
 
-            using (SQLiteConnection m_dbConnection = new SQLiteConnection(connectionString))
+            using (var m_dbConnection = new SQLiteConnection(connectionString))
             {
                 m_dbConnection.Open();
                 try
                 {
-                    SQLiteCommand command = new SQLiteCommand(sqlCreateTable, m_dbConnection);
-                    command.ExecuteNonQuery();
+                    var command = new SQLiteCommand(sqlCreateTable, m_dbConnection);
+                    _ = command.ExecuteNonQuery();
 
                     command = new SQLiteCommand(sqlMaxSeq, m_dbConnection);
                     row_id = Convert.ToInt32(command.ExecuteScalar());
@@ -478,19 +500,14 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
             try
             {
-                if (conn != null)
-                {
-                    conn.Close();
-                    conn.Dispose();
-                }
-                if(events_cmd != null)
-                    events_cmd.Dispose();
-                if (waits_cmd != null)
-                    waits_cmd.Dispose();
-                if (counters_cmd != null)
-                    counters_cmd.Dispose();
+                conn?.Close();
+                conn?.Dispose();
+
+                events_cmd?.Dispose();
+                waits_cmd?.Dispose();
+                counters_cmd?.Dispose();
             }
-            catch(Exception)
+            catch (Exception)
             {
                 //ignore
             }

@@ -26,10 +26,10 @@ namespace ConvertWorkload
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(GenericErrorHandler);
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
 
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
-            string version = fvi.FileMajorPart.ToString() + "." + fvi.FileMinorPart.ToString() + "." + fvi.FileBuildPart.ToString();
-            string name = assembly.FullName;
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            var fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+            var version = fvi.FileMajorPart.ToString() + "." + fvi.FileMinorPart.ToString() + "." + fvi.FileBuildPart.ToString();
+            var name = assembly.FullName;
             logger.Info(name + " " + version);
 
 
@@ -74,7 +74,7 @@ namespace ConvertWorkload
 
             // check whether localdb is installed
             logger.Info("Checking LocalDB...");
-            LocalDBManager manager = new LocalDBManager();
+            var manager = new LocalDBManager();
             if (!manager.CanConnectToLocalDB())
             {
                 logger.Info("Installing LocalDB...");
@@ -99,15 +99,26 @@ namespace ConvertWorkload
                 reader = new ExtendedEventsEventReader(options.InputFile);
             }
             EventWriter writer = new WorkloadFileEventWriter(options.OutputFile);
-            WorkloadConverter converter = new WorkloadConverter(reader, writer);
+            var converter = new WorkloadConverter(reader, writer);
             if(options.ApplicationFilter != null)
+            {
                 converter.ApplicationFilter = new string[1] { options.ApplicationFilter };
-            if(options.DatabaseFilter != null)
+            }
+
+            if (options.DatabaseFilter != null)
+            {
                 converter.DatabaseFilter = new string[1] { options.DatabaseFilter };
-            if(options.HostFilter != null)
+            }
+
+            if (options.HostFilter != null)
+            {
                 converter.HostFilter = new string[1] { options.HostFilter };
-            if(options.LoginFilter != null)
+            }
+
+            if (options.LoginFilter != null)
+            {
                 converter.LoginFilter = new string[1] { options.LoginFilter };
+            }
 
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
                 e.Cancel = true;
@@ -116,7 +127,7 @@ namespace ConvertWorkload
                 converter.Stop();
             };
 
-            Task t = processConverter(converter);
+            var t = processConverter(converter);
             t.Wait();
             logger.Info("Converter stopped.");
         }

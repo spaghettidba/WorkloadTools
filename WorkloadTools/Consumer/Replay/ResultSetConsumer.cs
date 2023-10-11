@@ -8,11 +8,11 @@ namespace WorkloadTools.Consumer.Replay
 {
     public class ResultSetConsumer : IDisposable
     {
-        private SqlDataReader reader;
+        private readonly SqlDataReader reader;
 
         public ResultSetConsumer(SqlDataReader sqlDataReader)
         {
-            this.reader = sqlDataReader;
+            reader = sqlDataReader;
         }
 
         public void Consume()

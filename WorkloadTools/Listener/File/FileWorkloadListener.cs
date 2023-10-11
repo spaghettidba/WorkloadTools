@@ -1,21 +1,21 @@
-﻿using NLog;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System;
 using System.Data;
+using System.Data.Common;
 using System.Data.SQLite;
 using System.Linq;
 using System.Text;
-using System.Threading;
+
+using NLog;
+
 using WorkloadTools.Util;
 
 namespace WorkloadTools.Listener.File
 {
     public class FileWorkloadListener : WorkloadListener
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        // default behaviour is replay events in synchronization mode
+        // Default behaviour is replay events in synchronization mode
         // (keeping the same event rate found in the source workload).
         // The other option is stress mode: events are replayed one
         // after another without waiting
@@ -35,7 +35,6 @@ namespace WorkloadTools.Listener.File
             Filter = new FileEventFilter();
         }
 
-
         public override void Initialize()
         {
             connectionString = "Data Source=" + Source + ";Version=3;Read Only=True;Journal Mode=Off;Synchronous=Off;";
@@ -53,80 +52,62 @@ namespace WorkloadTools.Listener.File
             };
 
             // Push Down EventFilters
-            string filters = String.Empty;
-
-            string appFilter = Filter.ApplicationFilter.PushDown();
-            string dbFilter = Filter.DatabaseFilter.PushDown();
-            string hostFilter = Filter.HostFilter.PushDown();
-            string loginFilter = Filter.LoginFilter.PushDown();
-
-            if (appFilter != String.Empty)
-            {
-                filters += ((filters == String.Empty) ? String.Empty : " AND ") + appFilter;
-            }
-            if (dbFilter != String.Empty)
-            {
-                filters += ((filters == String.Empty) ? String.Empty : " AND ") + dbFilter;
-            }
-            if (hostFilter != String.Empty)
-            {
-                filters += ((filters == String.Empty) ? String.Empty : " AND ") + hostFilter;
-            }
-            if (loginFilter != String.Empty)
-            {
-                filters += ((filters == String.Empty) ? String.Empty : " AND ") + loginFilter;
-            }
-
-            if (filters != String.Empty)
-            {
-                filters = "WHERE (" + filters + ") ";
-
-                // these events should not be filtered out
-                // 4 - PerformanceCounter
-                // 5 - Timeout
-                // 6 - WaitStats
-				// 7 - Error
-                filters += "OR event_type IN (4,5,6,7)"; 
-            }
-
-
+            var filters = GetFilterClause();
 
             try
             {
+                var sql = string.Empty;
+
                 // Events are executed on event_sequence order
-                string sql = "SELECT * FROM Events " + filters + " ORDER BY event_sequence ASC";
+                logger.Info("Reading the full data for every event that matches filters. This may take awhile on large trace files please be patient");
+                sql = "SELECT * FROM Events " + filters + " ORDER BY start_time ASC, row_id ASC";
+
                 conn = new SQLiteConnection(connectionString);
                 conn.Open();
-                SQLiteCommand command = new SQLiteCommand(sql, conn);
+                var command = new SQLiteCommand(sql, conn);
                 reader = command.ExecuteReader();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 logger.Error(e);
                 throw;
             }
-
         }
-
 
         // returns the number of events to replay, if any
         // returns -1 in case the file format is invalid
         private long ValidateFile()
         {
-            // Only works if you didn't delete rows from the table
-            // WorkloadTools doesn't delete anything. If you deleted 
-            // rows manually, blame yourself.
-            string sql = "SELECT MAX(ROWID) FROM Events LIMIT 1;";
+            // Push Down EventFilters
+            var filters = GetFilterClause();
+
+            string sql;
+            if (string.IsNullOrEmpty(filters))
+            {
+                // Only works if you didn't delete rows from the table
+                // WorkloadTools doesn't delete anything. If you deleted 
+                // rows manually, blame yourself.
+                sql = "SELECT MAX(ROWID) FROM Events LIMIT 1";
+            }
+            else
+            {
+                // SELECT COUNT(*) can be slow on large traces unless VACUUM is used in
+                // Sqlite, but is the only solution when filters are applied.
+                // When filters are applied extra indexes may be useful in future,
+                // especially on large traces.
+                sql = "SELECT COUNT(*) FROM Events";
+            }
+
             long result = -1;
 
             try
             {
-                using (SQLiteConnection m_dbConnection = new SQLiteConnection(connectionString))
+                using (var m_dbConnection = new SQLiteConnection(connectionString))
                 {
                     m_dbConnection.Open();
                     try
                     {
-                        SQLiteCommand command = new SQLiteCommand(sql, m_dbConnection);
+                        var command = new SQLiteCommand(sql, m_dbConnection);
                         result = (long)command.ExecuteScalar();
                     }
                     catch (Exception e)
@@ -136,7 +117,7 @@ namespace WorkloadTools.Listener.File
                     }
                 }
 
-                logger.Info($"The source file contains {result} events.");
+                logger.Info("The source file contains {result} events", result);
             }
             catch (Exception e)
             {
@@ -146,21 +127,18 @@ namespace WorkloadTools.Listener.File
             return result;
         }
 
-
         public override WorkloadEvent Read()
         {
             WorkloadEvent result = null;
-            long commandOffset = 0;
 
             // first I need to return the event that
             // contains the total number of events in the file
             // once this is done I can start sending the actual events
-            if(!totalEventsMessageSent)
+            if (!totalEventsMessageSent)
             {
                 totalEventsMessageSent = true;
                 return totalEventsMessage;
             }
-
 
             // process actual events from the file
             try
@@ -170,8 +148,8 @@ namespace WorkloadTools.Listener.File
                     return null;
                 }
 
-                bool validEventFound = false;
-                SqlTransformer transformer = new SqlTransformer();
+                var validEventFound = false;
+                var transformer = new SqlTransformer();
 
                 do
                 {
@@ -180,6 +158,7 @@ namespace WorkloadTools.Listener.File
                         stopped = true;
                         return null;
                     }
+
                     result = ReadEvent(reader);
 
                     // Handle replay sleep for synchronization mode
@@ -187,14 +166,13 @@ namespace WorkloadTools.Listener.File
                     // happen later in the replay workflow, because
                     // it would only delay the insertion in the queue
                     // and it would not separate the events during the replay
-                    if (result is ExecutionWorkloadEvent)
+                    if (result is ExecutionWorkloadEvent execEvent)
                     {
-                        ExecutionWorkloadEvent execEvent = result as ExecutionWorkloadEvent;
                         if (SynchronizationMode)
                         {
                             if (startTime != DateTime.MinValue)
                             {
-                                commandOffset = (long)((result.StartTime - startTime).TotalMilliseconds);
+                                var commandOffset = (result.StartTime - startTime).TotalMilliseconds;
                                 if (commandOffset > 0)
                                 {
                                     execEvent.ReplayOffset = commandOffset;
@@ -225,7 +203,9 @@ namespace WorkloadTools.Listener.File
                             execEvent.Type == WorkloadEvent.EventType.Message)
                         {
                             if (transformer.Skip(execEvent.Text))
+                            {
                                 continue;
+                            }
 
                             execEvent.Text = transformer.Transform(execEvent.Text);
                         }
@@ -246,11 +226,16 @@ namespace WorkloadTools.Listener.File
             }
             catch (Exception e)
             {
-                if (stopped) return null;
+                if (stopped)
+                {
+                    return null;
+                }
 
                 DateTime? eventDate = null;
-                if(result != null)
+                if (result != null)
+                {
                     eventDate = result.StartTime;
+                }
 
                 logger.Error(e);
                 logger.Error($"Unable to read next event. Current event date: {eventDate}");
@@ -260,89 +245,98 @@ namespace WorkloadTools.Listener.File
             return result;
         }
 
-
         private WorkloadEvent ReadEvent(SQLiteDataReader reader)
         {
-            WorkloadEvent.EventType type = (WorkloadEvent.EventType)reader.GetInt32(reader.GetOrdinal("event_type"));
-            long row_id = reader.GetInt64(reader.GetOrdinal("row_id"));
+            var type = (WorkloadEvent.EventType)reader.GetInt32(reader.GetOrdinal("event_type"));
+            var row_id = reader.GetInt64(reader.GetOrdinal("row_id"));
+
             try
             {
                 switch (type)
                 {
                     case WorkloadEvent.EventType.PerformanceCounter:
-                        CounterWorkloadEvent cr = new CounterWorkloadEvent();
-                        cr.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
+                        var cr = new CounterWorkloadEvent
+                        {
+                            StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"))
+                        };
                         ReadCounters(row_id, cr);
+
                         return cr;
+
                     case WorkloadEvent.EventType.WAIT_stats:
-                        WaitStatsWorkloadEvent wr = new WaitStatsWorkloadEvent();
-                        wr.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
-                        wr.Type = type;
-                        return wr;
+                        return new WaitStatsWorkloadEvent
+                        {
+                            StartTime = reader.GetDateTime(reader.GetOrdinal("start_time")),
+                            Type = type
+                        };
+
                     case WorkloadEvent.EventType.Error:
-                        ErrorWorkloadEvent er = new ErrorWorkloadEvent();
-                        er.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
-                        er.Type = type;
-                        er.Text = GetString(reader, "sql_text");
-                        return er;
+                        return new ErrorWorkloadEvent
+                        {
+                            StartTime = reader.GetDateTime(reader.GetOrdinal("start_time")),
+                            Type = type,
+                            Text = GetString(reader, "sql_text")
+                        };
+
                     default:
-                        ExecutionWorkloadEvent result = new ExecutionWorkloadEvent();
-                        result.EventSequence = GetInt64(reader, "event_sequence");
-                        result.ApplicationName = GetString(reader, "client_app_name");
-                        result.StartTime = reader.GetDateTime(reader.GetOrdinal("start_time"));
-                        result.HostName = GetString(reader, "client_host_name");
-                        result.DatabaseName = GetString(reader, "database_name");
-                        result.LoginName = GetString(reader, "server_principal_name");
-                        result.SPID = reader.GetInt32(reader.GetOrdinal("session_id"));
-                        result.Text = GetString(reader, "sql_text");
-                        result.CPU = GetInt64(reader, "cpu");
-                        result.Duration = GetInt64(reader, "duration");
-                        result.Reads = GetInt64(reader, "reads");
-                        result.Writes = GetInt64(reader, "writes");
-                        result.Type = type;
-                        return result;
+                        return new ExecutionWorkloadEvent
+                        {
+                            EventSequence = GetInt64(reader, "event_sequence"),
+                            ApplicationName = GetString(reader, "client_app_name"),
+                            StartTime = reader.GetDateTime(reader.GetOrdinal("start_time")),
+                            HostName = GetString(reader, "client_host_name"),
+                            DatabaseName = GetString(reader, "database_name"),
+                            LoginName = GetString(reader, "server_principal_name"),
+                            SPID = reader.GetInt32(reader.GetOrdinal("session_id")),
+                            Text = GetString(reader, "sql_text"),
+                            CPU = GetInt64(reader, "cpu"),
+                            Duration = GetInt64(reader, "duration"),
+                            Reads = GetInt64(reader, "reads"),
+                            Writes = GetInt64(reader, "writes"),
+                            Type = type
+                        };
+
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                throw new InvalidOperationException($"Invalid data at row_id {row_id}",e);
+                throw new InvalidOperationException($"Invalid data at row_id {row_id}", e);
             }
         }
 
-
         private string GetString(SQLiteDataReader reader, string columnName)
         {
-            object result = reader[columnName];
-            if(result != null)
+            var result = reader[columnName];
+            if (result != null)
             {
                 if (result.GetType() == typeof(DBNull))
                 {
                     result = null;
                 }
-                else if (result is byte[])
+                else if (result is byte[] v)
                 {
-                    result = Encoding.Unicode.GetString((byte[])result);
+                    result = Encoding.Unicode.GetString(v);
                 }
             }
             return (string)result;
         }
-    
-		private long? GetInt64(SQLiteDataReader reader, string columnName)
-		{
-			object result = reader[columnName];
-			if (result != null)
-			{
-				if (result.GetType() == typeof(DBNull))
-				{
-					result = null;
-				}
-			}
-			return (long?)result;
-		}
+
+        private long? GetInt64(SQLiteDataReader reader, string columnName)
+        {
+            var result = reader[columnName];
+            if (result != null)
+            {
+                if (result.GetType() == typeof(DBNull))
+                {
+                    result = null;
+                }
+            }
+            return (long?)result;
+        }
 
         protected override void Dispose(bool disposing)
         {
-            if((reader != null) && (!reader.IsClosed))
+            if ((reader != null) && (!reader.IsClosed))
             {
                 reader.Close();
             }
@@ -357,21 +351,21 @@ namespace WorkloadTools.Listener.File
         {
         }
 
-        private void ReadCounters(Int64 row_id, CounterWorkloadEvent cev)
+        private void ReadCounters(long row_id, CounterWorkloadEvent cev)
         {
-            string sql = "SELECT * FROM Counters WHERE row_id = $row_id";
+            var sql = "SELECT * FROM Counters WHERE row_id = $row_id";
 
             try
             {
-                using (SQLiteConnection m_dbConnection = new SQLiteConnection(connectionString))
+                using (var m_dbConnection = new SQLiteConnection(connectionString))
                 {
                     m_dbConnection.Open();
                     try
                     {
-                        using (SQLiteCommand command = new SQLiteCommand(sql, m_dbConnection))
+                        using (var command = new SQLiteCommand(sql, m_dbConnection))
                         {
-                            command.Parameters.AddWithValue("$row_id", row_id);
-                            using (SQLiteDataReader rdr = command.ExecuteReader())
+                            _ = command.Parameters.AddWithValue("$row_id", row_id);
+                            using (var rdr = command.ExecuteReader())
                             {
                                 while (rdr.Read())
                                 {
@@ -395,58 +389,46 @@ namespace WorkloadTools.Listener.File
             }
         }
 
-
-        private void ReadWaits(Int64 row_id, WaitStatsWorkloadEvent wev)
+        private string GetFilterClause()
         {
-            string sql = "SELECT * FROM Waits WHERE row_id = $row_id";
+            // Push Down EventFilters
+            var filters = string.Empty;
 
-            try
+            var appFilter = Filter.ApplicationFilter.PushDown();
+            var dbFilter = Filter.DatabaseFilter.PushDown();
+            var hostFilter = Filter.HostFilter.PushDown();
+            var loginFilter = Filter.LoginFilter.PushDown();
+
+            if (appFilter != string.Empty)
             {
-                using (SQLiteConnection m_dbConnection = new SQLiteConnection(connectionString))
-                {
-                    m_dbConnection.Open();
-                    try
-                    {
-                        DataTable waits = null;
-
-                        using (SQLiteCommand command = new SQLiteCommand(sql, m_dbConnection))
-                        {
-                            command.Parameters.AddWithValue("$row_id", row_id);
-
-                            using (SQLiteDataAdapter adapter = new SQLiteDataAdapter(command))
-                            {
-                                using (DataSet ds = new DataSet())
-                                {
-                                    adapter.Fill(ds);
-                                    waits = ds.Tables[0];
-                                }
-                            }
-                        }
-
-                        var results = from table1 in waits.AsEnumerable()
-                              select new
-                              {
-                                  wait_type = Convert.ToString(table1["wait_type"]),
-                                  wait_sec = Convert.ToDouble(table1["wait_sec"]),
-                                  resource_sec = Convert.ToDouble(table1["resource_sec"]),
-                                  signal_sec = Convert.ToDouble(table1["signal_sec"]),
-                                  wait_count = Convert.ToDouble(table1["wait_count"])
-                              };
-
-                        wev.Waits = DataUtils.ToDataTable(results);
-
-                    }
-                    catch (Exception e)
-                    {
-                        logger.Error(e, $"Unable to query Waits for row_id {row_id}");
-                        throw;
-                    }
-                }
+                filters += ((filters == string.Empty) ? string.Empty : " AND ") + appFilter;
             }
-            catch (Exception e)
+            if (dbFilter != string.Empty)
             {
-                logger.Error(e, "Unable to query Waits from the source file");
+                filters += ((filters == string.Empty) ? string.Empty : " AND ") + dbFilter;
             }
+            if (hostFilter != string.Empty)
+            {
+                filters += ((filters == string.Empty) ? string.Empty : " AND ") + hostFilter;
+            }
+            if (loginFilter != string.Empty)
+            {
+                filters += ((filters == string.Empty) ? string.Empty : " AND ") + loginFilter;
+            }
+
+            if (filters != string.Empty)
+            {
+                filters = "WHERE (" + filters + ") ";
+
+                // these events should not be filtered out
+                // 4 - PerformanceCounter
+                // 5 - Timeout
+                // 6 - WaitStats
+                // 7 - Error
+                filters += "OR event_type IN (4,5,6,7)";
+            }
+
+            return filters;
         }
     }
 }

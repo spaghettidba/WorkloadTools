@@ -19,11 +19,30 @@ namespace WorkloadTools.Util
         TLeft defaultLeft = default(TLeft),
         TRight defaultRight = default(TRight))
         {
-            if (left == null) throw new ArgumentNullException("left");
-            if (right == null) throw new ArgumentNullException("right");
-            if (leftKeySelector == null) throw new ArgumentNullException("leftKeySelector");
-            if (rightKeySelector == null) throw new ArgumentNullException("rightKeySelector");
-            if (resultSelector == null) throw new ArgumentNullException("resultSelector");
+            if (left == null)
+            {
+                throw new ArgumentNullException("left");
+            }
+
+            if (right == null)
+            {
+                throw new ArgumentNullException("right");
+            }
+
+            if (leftKeySelector == null)
+            {
+                throw new ArgumentNullException("leftKeySelector");
+            }
+
+            if (rightKeySelector == null)
+            {
+                throw new ArgumentNullException("rightKeySelector");
+            }
+
+            if (resultSelector == null)
+            {
+                throw new ArgumentNullException("resultSelector");
+            }
 
             comparator = comparator ?? EqualityComparer<TKey>.Default;
             return FullOuterJoinIterator(left, right, leftKeySelector, rightKeySelector, resultSelector, comparator, defaultLeft, defaultRight);
@@ -44,9 +63,15 @@ namespace WorkloadTools.Util
             var keys = leftLookup.Select(g => g.Key).Union(rightLookup.Select(g => g.Key), comparator);
 
             foreach (var key in keys)
+            {
                 foreach (var leftValue in leftLookup[key].DefaultIfEmpty(defaultLeft))
+                {
                     foreach (var rightValue in rightLookup[key].DefaultIfEmpty(defaultRight))
+                    {
                         yield return resultSelector(leftValue, rightValue, key);
+                    }
+                }
+            }
         }
     }
 }

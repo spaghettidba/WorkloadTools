@@ -13,23 +13,29 @@ namespace WorkloadTools.Listener.File
         public override string PushDown()
         {
             if (!IsPredicateSet)
-                return String.Empty;
-
-            IsPushedDown = true;
-            string result = "(";
-
-            bool hasPositives = false;
-            bool hasNegatives = false;
-
-            for (int i = 0; i < ComparisonOperator.Length; i++)
             {
-                if (ComparisonOperator[i] == FilterComparisonOperator.Not_Equal)
-                    hasNegatives = true;
-                else
-                    hasPositives = true;
+                return String.Empty;
             }
 
-            for (int i = 0; i < PredicateValue.Length; i++)
+            IsPushedDown = true;
+            var result = "(";
+
+            var hasPositives = false;
+            var hasNegatives = false;
+
+            for (var i = 0; i < ComparisonOperator.Length; i++)
+            {
+                if (ComparisonOperator[i] == FilterComparisonOperator.Not_Equal)
+                {
+                    hasNegatives = true;
+                }
+                else
+                {
+                    hasPositives = true;
+                }
+            }
+
+            for (var i = 0; i < PredicateValue.Length; i++)
             {
                 if (hasNegatives && hasPositives && ComparisonOperator[i] == FilterComparisonOperator.Not_Equal)
                 {
@@ -39,8 +45,14 @@ namespace WorkloadTools.Listener.File
 
                 if (i > 0)
                 {
-                    if (hasNegatives && !hasPositives) result += " AND ";
-                    else result += " OR ";
+                    if (hasNegatives && !hasPositives)
+                    {
+                        result += " AND ";
+                    }
+                    else
+                    {
+                        result += " OR ";
+                    }
                 }
 
                 result += ColumnName.ToString();

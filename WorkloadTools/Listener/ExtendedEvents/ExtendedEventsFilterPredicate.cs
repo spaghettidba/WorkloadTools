@@ -13,10 +13,12 @@ namespace WorkloadTools.Listener.ExtendedEvents
         public override string PushDown()
         {
             if (!IsPredicateSet)
+            {
                 return String.Empty;
+            }
 
             IsPushedDown = true;
-            string result = "(";
+            var result = "(";
 
             // Implementing multivalued filters with negative values
             // requires analyzing the syntax of the filters
@@ -28,18 +30,22 @@ namespace WorkloadTools.Listener.ExtendedEvents
             // In this case, it means that I want master, model and tempdb
             // But if I only had negative filters, it would mean anything but those databases.
 
-            bool hasPositives = false;
-            bool hasNegatives = false;
+            var hasPositives = false;
+            var hasNegatives = false;
 
-            for (int i = 0; i < ComparisonOperator.Length; i++)
+            for (var i = 0; i < ComparisonOperator.Length; i++)
             {
                 if (ComparisonOperator[i] == FilterComparisonOperator.Not_Equal)
+                {
                     hasNegatives = true;
+                }
                 else
+                {
                     hasPositives = true;
+                }
             }
 
-            for (int i = 0; i < PredicateValue.Length; i++)
+            for (var i = 0; i < PredicateValue.Length; i++)
             {
                 if (hasNegatives && hasPositives && ComparisonOperator[i] == FilterComparisonOperator.Not_Equal)
                 {
@@ -49,8 +55,14 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                 if (i > 0)
                 {
-                    if (hasNegatives && !hasPositives) result += " AND ";
-                    else result += " OR ";
+                    if (hasNegatives && !hasPositives)
+                    {
+                        result += " AND ";
+                    }
+                    else
+                    {
+                        result += " OR ";
+                    }
                 }
 
                 switch (ColumnName)

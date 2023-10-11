@@ -23,7 +23,9 @@ namespace WorkloadTools.Util
         {
             // validate capacity
             if (capacity <= 0)
+            {
                 throw new ArgumentException("Must be greater than zero", "capacity");
+            }
             // set capacity and init the cache
             Capacity = capacity;
             _buffer = new T[capacity];
@@ -32,7 +34,7 @@ namespace WorkloadTools.Util
         /// <summary>
         /// the internal buffer
         /// </summary>
-        T[] _buffer;
+        readonly T[] _buffer;
         /// <summary>
         /// The all-over position within the ring buffer. The position 
         /// increases continously by adding new items to the buffer. This 
@@ -59,14 +61,15 @@ namespace WorkloadTools.Util
             {
                 // validate the index
                 if (index < 0 || index >= Count)
+                {
                     throw new IndexOutOfRangeException();
+                }
                 // calculate the relative position within the rolling base array
-                int index2 = (_position - Count + index) % Capacity;
+                var index2 = (_position - Count + index) % Capacity;
                 return _buffer[index2];
             }
             set { Insert(index, value); }
         }
-
 
         public T Last()
         {
@@ -90,12 +93,17 @@ namespace WorkloadTools.Util
         {
             // avoid an arithmetic overflow
             if (_position == int.MaxValue)
+            {
                 _position = _position % Capacity;
+            }
             // add a new item to the current relative position within the
             // buffer and increase the position
             _buffer[_position++ % Capacity] = item;
             // increase the count if capacity is not yet reached
-            if (Count < Capacity) Count++;
+            if (Count < Capacity)
+            {
+                Count++;
+            }
             // buffer changed; next version
             _version++;
         }
@@ -106,8 +114,11 @@ namespace WorkloadTools.Util
         /// </summary>
         public void Clear()
         {
-            for (int i = 0; i < Count; i++)
+            for (var i = 0; i < Count; i++)
+            {
                 _buffer[i] = default(T);
+            }
+
             _position = 0;
             Count = 0;
             _version++;
@@ -123,7 +134,7 @@ namespace WorkloadTools.Util
         /// the buffer; otherwise false.</returns>
         public bool Contains(T item)
         {
-            int index = IndexOf(item);
+            var index = IndexOf(item);
             return index != -1;
         }
 
@@ -136,7 +147,7 @@ namespace WorkloadTools.Util
         /// array to start copying.</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
-            for (int i = 0; i < Count; i++)
+            for (var i = 0; i < Count; i++)
             {
                 array[i + arrayIndex] = _buffer[(_position - Count + i) % Capacity];
             }
@@ -149,11 +160,14 @@ namespace WorkloadTools.Util
         /// </returns>
         public IEnumerator<T> GetEnumerator()
         {
-            long version = _version;
-            for (int i = 0; i < Count; i++)
+            var version = _version;
+            for (var i = 0; i < Count; i++)
             {
                 if (version != _version)
+                {
                     throw new InvalidOperationException("Collection changed");
+                }
+
                 yield return this[i];
             }
         }
@@ -168,16 +182,20 @@ namespace WorkloadTools.Util
         public int IndexOf(T item)
         {
             // loop over the current count of items
-            for (int i = 0; i < Count; i++)
+            for (var i = 0; i < Count; i++)
             {
                 // get the item at the relative position within the internal array
-                T item2 = _buffer[(_position - Count + i) % Capacity];
+                var item2 = _buffer[(_position - Count + i) % Capacity];
                 // if both items are null, return true
                 if (null == item && null == item2)
+                {
                     return i;
+                }
                 // if equal return the position
                 if (item != null && item.Equals(item2))
+                {
                     return i;
+                }
             }
             // nothing found
             return -1;
@@ -204,7 +222,9 @@ namespace WorkloadTools.Util
         {
             // validate index
             if (index < 0 || index > Count)
+            {
                 throw new IndexOutOfRangeException();
+            }
             // add if index equals to count
             if (index == Count)
             {
@@ -213,15 +233,15 @@ namespace WorkloadTools.Util
             }
 
             // get the maximal count of items to be moved
-            int count = Math.Min(Count, Capacity - 1) - index;
+            var count = Math.Min(Count, Capacity - 1) - index;
             // get the relative position of the new item within the buffer
-            int index2 = (_position - Count + index) % Capacity;
+            var index2 = (_position - Count + index) % Capacity;
 
             // move all items below the specified position
-            for (int i = index2 + count; i > index2; i--)
+            for (var i = index2 + count; i > index2; i--)
             {
-                int to = i % Capacity;
-                int from = (i - 1) % Capacity;
+                var to = i % Capacity;
+                var from = (i - 1) % Capacity;
                 _buffer[to] = _buffer[from];
             }
 
@@ -255,10 +275,12 @@ namespace WorkloadTools.Util
         public bool Remove(T item)
         {
             // find the position of the specified item
-            int index = IndexOf(item);
+            var index = IndexOf(item);
             // item was not found; return false
             if (index == -1)
+            {
                 return false;
+            }
             // remove the item at the specified position
             RemoveAt(index);
             return true;
@@ -279,21 +301,23 @@ namespace WorkloadTools.Util
         {
             // validate the index
             if (index < 0 || index >= Count)
+            {
                 throw new IndexOutOfRangeException();
+            }
             // move all items above the specified position one step
             // closer to zeri
-            for (int i = index; i < Count - 1; i++)
+            for (var i = index; i < Count - 1; i++)
             {
                 // get the next relative target position of the item
-                int to = (_position - Count + i) % Capacity;
+                var to = (_position - Count + i) % Capacity;
                 // get the next relative source position of the item
-                int from = (_position - Count + i + 1) % Capacity;
+                var from = (_position - Count + i + 1) % Capacity;
                 // move the item
                 _buffer[to] = _buffer[from];
             }
             // get the relative position of the last item, which becomes empty
             // after deletion and set the item as empty
-            int last = (_position - 1) % Capacity;
+            var last = (_position - 1) % Capacity;
             _buffer[last] = default(T);
             // adjust storage information
             _position--;
@@ -314,7 +338,7 @@ namespace WorkloadTools.Util
         /// </returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.GetEnumerator();
+            return GetEnumerator();
         }
     }
 

@@ -12,7 +12,6 @@ namespace WorkloadTools
         public FilterPredicate HostFilter { get; set; }
         public FilterPredicate LoginFilter { get; set; }
 
-
         public WorkloadEventFilter()
         {
         }
@@ -21,9 +20,11 @@ namespace WorkloadTools
         {
             // don't filter events that are not supposed to be filtered
             if (!(evnt is ExecutionWorkloadEvent))
+            {
                 return true;
+            }
 
-            ExecutionWorkloadEvent evt = (ExecutionWorkloadEvent)evnt;
+            var evt = (ExecutionWorkloadEvent)evnt;
 
             if (evt.Type != WorkloadEvent.EventType.BatchStarting 
                 && 
@@ -32,15 +33,19 @@ namespace WorkloadTools
                 evt.Type != WorkloadEvent.EventType.BatchCompleted
                 &&
                 evt.Type != WorkloadEvent.EventType.RPCCompleted)
+            {
                 return false;
+            }
 
             if (!(DatabaseFilter.IsPredicateSet || LoginFilter.IsPredicateSet || HostFilter.IsPredicateSet || ApplicationFilter.IsPredicateSet))
+            {
                 return true;
+            }
 
-            bool applicationFilterResults = !ApplicationFilter.IsPredicateSet || ApplicationFilter.IsPushedDown;
-            bool databaseFilterResults = !DatabaseFilter.IsPredicateSet || DatabaseFilter.IsPushedDown;
-            bool loginFilterResults = !LoginFilter.IsPredicateSet || LoginFilter.IsPushedDown;
-            bool hostFilterResults = !HostFilter.IsPredicateSet || HostFilter.IsPushedDown;
+            var applicationFilterResults = !ApplicationFilter.IsPredicateSet || ApplicationFilter.IsPushedDown;
+            var databaseFilterResults = !DatabaseFilter.IsPredicateSet || DatabaseFilter.IsPushedDown;
+            var loginFilterResults = !LoginFilter.IsPredicateSet || LoginFilter.IsPushedDown;
+            var hostFilterResults = !HostFilter.IsPredicateSet || HostFilter.IsPushedDown;
 
             if (ApplicationFilter.IsPredicateSet && !ApplicationFilter.IsPushedDown)
             {
@@ -67,7 +72,7 @@ namespace WorkloadTools
 
         public void PushDown(FilterPredicate predicate)
         {
-            predicate.PushDown();
+            _ = predicate.PushDown();
         }
 
     }

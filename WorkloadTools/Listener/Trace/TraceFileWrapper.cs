@@ -9,10 +9,10 @@ namespace WorkloadTools.Listener.Trace
 {
     public class TraceFileWrapper : IDisposable
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static Assembly _baseAssembly;
-        private static Type _baseType;
+        private static readonly Assembly _baseAssembly;
+        private static readonly Type _baseType;
 
         static TraceFileWrapper()
         {
@@ -39,13 +39,11 @@ namespace WorkloadTools.Listener.Trace
             TraceFile = _baseType.InvokeMember((string)null, BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance, (Binder)null, (object)null, (object[])null);
         }
 
-
-
         public object this[string name]
         {
             get
             {
-                PropertyInfo indexer = _baseType
+                var indexer = _baseType
                     .GetProperties()
                     .Single(p => p.GetIndexParameters().Length == 1 && p.GetIndexParameters()[0].ParameterType == typeof(string));
                 return indexer.GetValue(TraceFile, new object[] { name });
@@ -56,7 +54,7 @@ namespace WorkloadTools.Listener.Trace
         {
             get
             {
-                PropertyInfo indexer = _baseType
+                var indexer = _baseType
                     .GetProperties()
                     .Single(p => p.GetIndexParameters().Length == 1 && p.GetIndexParameters()[0].ParameterType == typeof(int));
                 return indexer.GetValue(TraceFile, new object[] { index });
@@ -72,7 +70,7 @@ namespace WorkloadTools.Listener.Trace
         {
             try
             {
-                GetValue(Name);
+                _ = GetValue(Name);
                 return true;
             }
             catch (Exception)
@@ -81,13 +79,12 @@ namespace WorkloadTools.Listener.Trace
             }
         }
 
-
         public void InitializeAsReader(string fileName)
         {
             try
             {
-                object[] args = new object[1] { fileName };
-                _baseType.InvokeMember("InitializeAsReader", BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod, (Binder)null, TraceFile, args);
+                var args = new object[1] { fileName };
+                _ = _baseType.InvokeMember("InitializeAsReader", BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod, (Binder)null, TraceFile, args);
             }
             catch (Exception)
             {
@@ -99,7 +96,6 @@ namespace WorkloadTools.Listener.Trace
         {
             return (bool)_baseType.InvokeMember("Read", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod, (Binder)null, TraceFile, (object[])null);
         }
-
 
         public void Dispose()
         {

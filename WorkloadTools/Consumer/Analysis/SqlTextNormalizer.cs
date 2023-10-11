@@ -15,45 +15,45 @@ namespace WorkloadTools.Consumer.Analysis
 {
     public class SqlTextNormalizer
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private static Hashtable prepSql = new Hashtable();
+        private static readonly Hashtable prepSql = new Hashtable();
 
-        private static ConcurrentDictionary<long, NormalizedSqlText> cachedQueries = new ConcurrentDictionary<long, NormalizedSqlText>();
+        private static readonly ConcurrentDictionary<long, NormalizedSqlText> cachedQueries = new ConcurrentDictionary<long, NormalizedSqlText>();
 
-        private static Regex _doubleApostrophe = new Regex("('')(?<string>.*?)('')", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
-        private static Regex _delimiterStart = new Regex("(--)|(/\\*)|'", RegexOptions.Compiled);
-        private static Regex _spreadCsv = new Regex(",(?=\\S)", RegexOptions.Compiled);
-        private static Regex _spaces = new Regex("\\s+", RegexOptions.Compiled);
-        private static Regex _blockComment = new Regex("/\\*.*?\\*/", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
-        private static Regex _blockCommentDelimiters = new Regex("/\\*|\\*/", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
-        private static Regex _inlineComment = new Regex("--.*$", RegexOptions.Multiline | RegexOptions.Compiled);
-        private static Regex _prepareSql = new Regex("EXEC\\s+(?<preptype>SP_PREP(ARE|EXEC))\\s+@P1\\s+OUTPUT,\\s*(NULL|(N\\'.+?\\')),\\s*N(?<remaining>.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _prepExecRpc = new Regex("SET\\s+@P1=(?<stmtnum>\\d+)\\s+EXEC\\s+SP_PREPEXECRPC\\s+@P1\\s+OUTPUT,\\s*N\\'(?<statement>.+?)'", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _preppedSqlStatement = new Regex("^(')(?<statement>((?!\\1).|\\1{2})*)\\1", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _execPrepped = new Regex("^EXEC\\s+SP_EXECUTE\\s+(?<stmtnum>\\d+)", RegexOptions.Compiled);
-        private static Regex _execUnprep = new Regex("EXEC\\s+SP_UNPREPARE\\s+(?<stmtnum>\\d+)", RegexOptions.Compiled);
-        private static Regex _cursor = new Regex("EXEC\\s+SP_CURSOROPEN\\s+(@CURSOR\\s*=\\s*)?\\@P1\\s+OUTPUT\\,\\s*(@STMT\\s*=\\s*)?(N)?(?<tick>')  (?<statement>      ((  (?!\\k<tick>)  .|\\k<tick>{2})*)   )    \\k<tick>", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
-        private static Regex _cursorPrepExec = new Regex("EXEC\r\n\\s+     # any spaces\r\nsp_cursorprepexec\r\n.+       # any characters up to the string\r\nN  \r\n(?<tick>')   # matches an apostraphe\r\n(?!@)    # but no @ following\r\n(?<statement>   ((  (?!\\k<tick>)  .|\\k<tick>{2})*)   )    # all the characters ...\r\n\\k<tick>   # until the next tick that isn't doubled.", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
-        private static Regex _spExecuteSql = new Regex("EXEC\\s+SP_EXECUTESQL\\s+N\\'(?<statement>.+?)\\'", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _spExecuteSqlWithStatement = new Regex("EXEC\\s+SP_EXECUTESQL\\s+@statement\\s*=\\s*N\\'(?<statement>.+?)\\'", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _objectName = new Regex("EXEC(UTE){0,1}\\s(?<schema>(\\w+\\.)*)(?<object>\\w+)", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _dbAndObjectName = new Regex("EXEC(UTE){0,1}\\s+(?<database>\\w+)\\.\\.(?<object>\\w+)", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _emptyString = new Regex("\\'\\'", RegexOptions.Compiled);
-        private static Regex _unicodeConstant = new Regex("N{STR}", RegexOptions.Compiled);
-        private static Regex _stringConstant = new Regex("(')(((?!\\1).|\\1{2})*)\\1", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _paramNameValueStr = new Regex(@"@(?<paramname>\w+)\s?=\s?[N]?['[""](?<paramvalue>([^'\]""])+('{2})?)?['\]""]", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _paramNameValueNum = new Regex(@"@(?<paramname>\w+)\s?=\s?(?<paramvalue>([0-9.])+)", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _binaryConstant = new Regex("0X([0-9ABCDEF])+", RegexOptions.Compiled);
-        private static Regex _numericConstant = new Regex("(?<prefix>[\\(\\s,=\\-><\\!\\&\\|\\+\\*\\/\\%\\~\\$])(?<digits>[\\-\\.\\d]+)", RegexOptions.Compiled);
-        private static Regex _inClause = new Regex("IN\\s*\\(\\s*\\{.*\\}\\s*\\)", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static Regex _brackets = new Regex("(\\[|\\])", RegexOptions.Compiled);
-        private static Regex _TVPExecute = new Regex(@"DECLARE\s*@(?<tablename>(\w+))\s*(AS)?\s*(?<tabletype>(\w+)).*EXEC(UTE)?\s*(?<object>(\S+)).*@\k<tablename>\sREADONLY", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        private static readonly Regex _doubleApostrophe = new Regex("('')(?<string>.*?)('')", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
+        private static readonly Regex _delimiterStart = new Regex("(--)|(/\\*)|'", RegexOptions.Compiled);
+        private static readonly Regex _spreadCsv = new Regex(",(?=\\S)", RegexOptions.Compiled);
+        private static readonly Regex _spaces = new Regex("\\s+", RegexOptions.Compiled);
+        private static readonly Regex _blockComment = new Regex("/\\*.*?\\*/", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
+        private static readonly Regex _blockCommentDelimiters = new Regex("/\\*|\\*/", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
+        private static readonly Regex _inlineComment = new Regex("--.*$", RegexOptions.Multiline | RegexOptions.Compiled);
+        private static readonly Regex _prepareSql = new Regex("EXEC\\s+(?<preptype>SP_PREP(ARE|EXEC))\\s+@P1\\s+OUTPUT,\\s*(NULL|(N\\'.+?\\')),\\s*N(?<remaining>.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _prepExecRpc = new Regex("SET\\s+@P1=(?<stmtnum>\\d+)\\s+EXEC\\s+SP_PREPEXECRPC\\s+@P1\\s+OUTPUT,\\s*N\\'(?<statement>.+?)'", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _preppedSqlStatement = new Regex("^(')(?<statement>((?!\\1).|\\1{2})*)\\1", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _execPrepped = new Regex("^EXEC\\s+SP_EXECUTE\\s+(?<stmtnum>\\d+)", RegexOptions.Compiled);
+        private static readonly Regex _execUnprep = new Regex("EXEC\\s+SP_UNPREPARE\\s+(?<stmtnum>\\d+)", RegexOptions.Compiled);
+        private static readonly Regex _cursor = new Regex("EXEC\\s+SP_CURSOROPEN\\s+(@CURSOR\\s*=\\s*)?\\@P1\\s+OUTPUT\\,\\s*(@STMT\\s*=\\s*)?(N)?(?<tick>')  (?<statement>      ((  (?!\\k<tick>)  .|\\k<tick>{2})*)   )    \\k<tick>", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+        private static readonly Regex _cursorPrepExec = new Regex("EXEC\r\n\\s+     # any spaces\r\nsp_cursorprepexec\r\n.+       # any characters up to the string\r\nN  \r\n(?<tick>')   # matches an apostraphe\r\n(?!@)    # but no @ following\r\n(?<statement>   ((  (?!\\k<tick>)  .|\\k<tick>{2})*)   )    # all the characters ...\r\n\\k<tick>   # until the next tick that isn't doubled.", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+        private static readonly Regex _spExecuteSql = new Regex("EXEC\\s+SP_EXECUTESQL\\s+N\\'(?<statement>.+?)\\'", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _spExecuteSqlWithStatement = new Regex("EXEC\\s+SP_EXECUTESQL\\s+@statement\\s*=\\s*N\\'(?<statement>.+?)\\'", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _objectName = new Regex("EXEC(UTE){0,1}\\s(?<schema>(\\w+\\.)*)(?<object>\\w+)", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _dbAndObjectName = new Regex("EXEC(UTE){0,1}\\s+(?<database>\\w+)\\.\\.(?<object>\\w+)", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _emptyString = new Regex("\\'\\'", RegexOptions.Compiled);
+        private static readonly Regex _unicodeConstant = new Regex("N{STR}", RegexOptions.Compiled);
+        private static readonly Regex _stringConstant = new Regex("(')(((?!\\1).|\\1{2})*)\\1", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _paramNameValueStr = new Regex(@"@(?<paramname>\w+)\s?=\s?[N]?['[""](?<paramvalue>([^'\]""])+('{2})?)?['\]""]", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _paramNameValueNum = new Regex(@"@(?<paramname>\w+)\s?=\s?(?<paramvalue>([0-9.])+)", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _binaryConstant = new Regex("0X([0-9ABCDEF])+", RegexOptions.Compiled);
+        private static readonly Regex _numericConstant = new Regex("(?<prefix>[\\(\\s,=\\-><\\!\\&\\|\\+\\*\\/\\%\\~\\$])(?<digits>[\\-\\.\\d]+)", RegexOptions.Compiled);
+        private static readonly Regex _inClause = new Regex("IN\\s*\\(\\s*\\{.*\\}\\s*\\)", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _brackets = new Regex("(\\[|\\])", RegexOptions.Compiled);
+        private static readonly Regex _TVPExecute = new Regex(@"DECLARE\s*@(?<tablename>(\w+))\s*(AS)?\s*(?<tabletype>(\w+)).*EXEC(UTE)?\s*(?<object>(\S+)).*@\k<tablename>\sREADONLY", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
         public bool TruncateTo4000 { get; set; }
         public bool TruncateTo1024 { get; set; }
 
-        static Thread Sweeper;
+        static readonly Thread Sweeper;
 
         static SqlTextNormalizer()
         {
@@ -67,7 +67,7 @@ namespace WorkloadTools.Consumer.Analysis
                         foreach(var el in toDelete)
                         {
                             NormalizedSqlText nst = null;
-                            cachedQueries.TryRemove(el.Key, out nst);
+                            _ = cachedQueries.TryRemove(el.Key, out nst);
                         }
                         Thread.Sleep(30000);
                     }
@@ -88,7 +88,7 @@ namespace WorkloadTools.Consumer.Analysis
             try
             {
                 NormalizedSqlText result = null;
-                int hashCode = sql.GetHashCode();
+                var hashCode = sql.GetHashCode();
                 if (cachedQueries.TryGetValue(hashCode, out result))
                 {
                     if (result != null && result.OriginalText == sql)
@@ -103,7 +103,7 @@ namespace WorkloadTools.Consumer.Analysis
                 { 
                     logger.Trace("NormalizeSqlText:[{0}]: {1}", spid, result.NormalizedText);
                     result.ReferenceCount = 1;
-                    cachedQueries.TryAdd(hashCode, result);
+                    _ = cachedQueries.TryAdd(hashCode, result);
                 }
                 return result;
             }
@@ -113,10 +113,9 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
-
         public NormalizedSqlText NormalizeSqlText(string sql, int spid, bool spreadCsv)
         {
-            NormalizedSqlText result = new NormalizedSqlText();
+            var result = new NormalizedSqlText();
             result.OriginalText = sql;
             result.NormalizedText = sql;
 
@@ -137,33 +136,36 @@ namespace WorkloadTools.Consumer.Analysis
                 return result;
             }
                 
-            bool flag1 = false;
-            bool flag2 = false;
-            int num = 0;
+            var flag1 = false;
+            var flag2 = false;
+            var num = 0;
 
             if ((sql == "sp_reset_connection") || (sql == "exec sp_reset_connection") || (sql == "exec sp_reset_connection /*Nonpooled*/"))
+            {
                 return null;
+            }
 
             sql = FixComments(sql);
             sql = _spaces.Replace(sql, " ").ToUpper(CultureInfo.InvariantCulture);
 
-
             sql = _doubleApostrophe.Replace(sql, "{STR}");
-            Match matchPrepExecRpc = _prepExecRpc.Match(sql);
+            var matchPrepExecRpc = _prepExecRpc.Match(sql);
             if (matchPrepExecRpc.Success)
             {
                 sql = matchPrepExecRpc.Groups["statement"].ToString();
                 result.Statement = sql;
                 result.NormalizedText = sql;
             }
-            Match matchPrepareSql = _prepareSql.Match(sql);
+            var matchPrepareSql = _prepareSql.Match(sql);
             if (matchPrepareSql.Success)
             {
                 if (matchPrepareSql.Groups["preptype"].ToString().ToLower() == "sp_prepare")
+                {
                     flag2 = true;
+                }
                 //num = !(match3.Groups["stmtnum"].ToString() == "NULL") ? Convert.ToInt32(match3.Groups["stmtnum"].ToString()) : 0;
                 sql = matchPrepareSql.Groups["remaining"].ToString();
-                Match matchPreppedSqlStatement = _preppedSqlStatement.Match(sql);
+                var matchPreppedSqlStatement = _preppedSqlStatement.Match(sql);
                 if (matchPreppedSqlStatement.Success)
                 {
                     sql = matchPreppedSqlStatement.Groups["statement"].ToString();
@@ -174,7 +176,7 @@ namespace WorkloadTools.Consumer.Analysis
                 flag1 = true;
             }
 
-            Match matchExecPrepped = _execPrepped.Match(sql);
+            var matchExecPrepped = _execPrepped.Match(sql);
             if (matchExecPrepped.Success)
             {
                 num = Convert.ToInt32(matchExecPrepped.Groups["stmtnum"].ToString());
@@ -185,11 +187,11 @@ namespace WorkloadTools.Consumer.Analysis
                 }
             }
 
-            Match matchExecUnprep = _execUnprep.Match(sql);
+            var matchExecUnprep = _execUnprep.Match(sql);
             if (matchExecUnprep.Success)
             {
                 num = Convert.ToInt32(matchExecUnprep.Groups["stmtnum"].ToString());
-                string str = spid.ToString() + "_" + num.ToString();
+                var str = spid.ToString() + "_" + num.ToString();
                 if (prepSql.ContainsKey((object)str))
                 {
                     sql = prepSql[(object)str].ToString();
@@ -202,7 +204,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             
            
-            Match matchCursor = _cursor.Match(sql);
+            var matchCursor = _cursor.Match(sql);
             if (matchCursor.Success)
             {
                 sql = matchCursor.Groups["statement"].ToString();
@@ -210,7 +212,7 @@ namespace WorkloadTools.Consumer.Analysis
                 result.Statement = sql;
                 result.NormalizedText =  "{CURSOR} " + sql;
             }
-            Match matchCursorPrepexec = _cursorPrepExec.Match(sql);
+            var matchCursorPrepexec = _cursorPrepExec.Match(sql);
             if (matchCursorPrepexec.Success)
             {
                 sql = matchCursorPrepexec.Groups["statement"].ToString();
@@ -218,7 +220,7 @@ namespace WorkloadTools.Consumer.Analysis
                 result.Statement = sql;
                 result.NormalizedText = "{CURSOR} " + sql;
             }
-            Match matchSpExecuteSql = _spExecuteSql.Match(sql);
+            var matchSpExecuteSql = _spExecuteSql.Match(sql);
             if (matchSpExecuteSql.Success)
             {
                 sql = matchSpExecuteSql.Groups["statement"].ToString();
@@ -226,7 +228,7 @@ namespace WorkloadTools.Consumer.Analysis
                 result.NormalizedText = sql;
             }
 
-            Match matchSpExecuteSqlWithStatement = _spExecuteSqlWithStatement.Match(sql);
+            var matchSpExecuteSqlWithStatement = _spExecuteSqlWithStatement.Match(sql);
             if (matchSpExecuteSqlWithStatement.Success)
             {
                 sql = matchSpExecuteSqlWithStatement.Groups["statement"].ToString();
@@ -236,18 +238,20 @@ namespace WorkloadTools.Consumer.Analysis
 
             if (!_brackets.Match(sql).Success)
             {
-                Match matchDbAndObjectName = _dbAndObjectName.Match(sql);
+                var matchDbAndObjectName = _dbAndObjectName.Match(sql);
                 if (matchDbAndObjectName.Success)
                 {
                     sql = matchDbAndObjectName.Groups["object"].ToString();
                 }
                 else
                 {
-                    Match matchObjectName = _objectName.Match(sql);
+                    var matchObjectName = _objectName.Match(sql);
                     if (matchObjectName.Success)
+                    {
                         sql = matchObjectName.Groups["object"].ToString();
+                    }
                 }
-                if (sql == "SP_CURSOR" || sql == "SP_CURSORFETCH" || (sql == "SP_CURSORCLOSE" || sql == "SP_RESET_CONNECTION"))
+                if (sql == "SP_CURSOR" || sql == "SP_CURSORFETCH" || sql == "SP_CURSORCLOSE" || sql == "SP_RESET_CONNECTION")
                 {
                     return null;
                 }
@@ -255,14 +259,13 @@ namespace WorkloadTools.Consumer.Analysis
 
             if (sql.Contains("EXEC") && sql.Contains("READONLY"))
             {
-                Match matchTVPExecute = _TVPExecute.Match(sql);
+                var matchTVPExecute = _TVPExecute.Match(sql);
                 if (matchTVPExecute.Success)
                 {
                     result.Statement = sql;
                     result.NormalizedText = "EXECUTE " + matchTVPExecute.Groups["object"].ToString();
                 }
             }
-
 
             result.NormalizedText = _paramNameValueStr.Replace(result.NormalizedText, "@${paramname} = {STR}");
             result.NormalizedText = _paramNameValueNum.Replace(result.NormalizedText, "@${paramname} = {NUM}");
@@ -273,16 +276,23 @@ namespace WorkloadTools.Consumer.Analysis
             result.NormalizedText = _numericConstant.Replace(result.NormalizedText, "${prefix}{##}");
             result.NormalizedText = _inClause.Replace(result.NormalizedText, "{IN}");
             if (spreadCsv)
+            {
                 result.NormalizedText = _spreadCsv.Replace(result.NormalizedText, ", ");
+            }
+
             result.NormalizedText = _spaces.Replace(result.NormalizedText, " ");
             result.NormalizedText = TruncateSql(result.NormalizedText);
             if (flag1 && num != 0)
             {
                 var theKey = (object)(spid.ToString() + "_" + num.ToString());
                 if (!prepSql.ContainsKey(theKey))
+                {
                     prepSql.Add(theKey, sql);
+                }
                 else
+                {
                     prepSql[theKey] = sql;
+                }
             }
 
             if (flag2)
@@ -299,28 +309,29 @@ namespace WorkloadTools.Consumer.Analysis
             return result;
         }
 
-
         private string TruncateSql(string sql)
         {
             sql = sql.Trim();
             if (TruncateTo4000 && sql.Length > 4000)
+            {
                 return sql.Substring(0, 4000);
+            }
+
             return sql;
         }
 
-
         private string FixComments(string sql)
         {
-            string str = sql;
-            int num = 0;
-            int startat = 0;
-            Match match1 = _delimiterStart.Match(sql, startat);
+            var str = sql;
+            var num = 0;
+            var startat = 0;
+            var match1 = _delimiterStart.Match(sql, startat);
             while (match1.Success)
             {
                 switch (match1.Value)
                 {
                     case "'":
-                        Match match2 = _stringConstant.Match(sql, match1.Index);
+                        var match2 = _stringConstant.Match(sql, match1.Index);
                         if (match2.Success)
                         {
                             startat = match1.Index + match2.Length;
@@ -338,7 +349,7 @@ namespace WorkloadTools.Consumer.Analysis
                         ++startat;
                         break;
                     case "/*":
-                        int index = match1.Index;
+                        var index = match1.Index;
                         sql = RemoveBlockComments(sql, index);
                         startat = index + 1;
                         break;
@@ -350,20 +361,24 @@ namespace WorkloadTools.Consumer.Analysis
                     match1 = _delimiterStart.Match(sql, startat);
                     ++num;
                     if (num > 1000000)
+                    {
                         throw new Exception("Infinite loop in FixComments (" + Assembly.GetExecutingAssembly().GetName().Version.ToString() + ")" + Environment.NewLine + Environment.NewLine + str);
+                    }
                 }
                 else
+                {
                     break;
+                }
             }
             return sql;
         }
 
         private string RemoveBlockComments(string sql, int position)
         {
-            StringBuilder stringBuilder = new StringBuilder(sql.Length);
-            stringBuilder.Append(sql.Substring(0, position));
-            int num = 0;
-            int startIndex = position;
+            var stringBuilder = new StringBuilder(sql.Length);
+            _ = stringBuilder.Append(sql.Substring(0, position));
+            var num = 0;
+            var startIndex = position;
             while (startIndex < sql.Length - 1)
             {
                 switch (sql.Substring(startIndex, 2))
@@ -383,7 +398,10 @@ namespace WorkloadTools.Consumer.Analysis
                 if (num == 0)
                 {
                     if (startIndex < sql.Length)
-                        stringBuilder.Append(sql.Substring(startIndex, sql.Length - startIndex));
+                    {
+                        _ = stringBuilder.Append(sql.Substring(startIndex, sql.Length - startIndex));
+                    }
+
                     return stringBuilder.ToString();
                 }
             }
@@ -393,7 +411,7 @@ namespace WorkloadTools.Consumer.Analysis
         public long GetHashCode(string text)
         {
             text = text == null ? "" : text;
-            int num = text.Length / 2;
+            var num = text.Length / 2;
             return (long)int.MaxValue * (long)text.Substring(0, num).GetHashCode() + (long)text.Substring(num, text.Length - num).GetHashCode();
         }
 
