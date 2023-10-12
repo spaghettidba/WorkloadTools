@@ -293,7 +293,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
                         forceFlush = false;
                     }
 
-                    logger.Info($"{_rowsInserted} events saved");
+                    logger.Info("{_rowsInserted} events saved", _rowsInserted);
                 }
             }
             catch (Exception e)
@@ -400,7 +400,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
         public void InitializeDatabase()
         {
-            logger.Info($"Writing event data to {OutputFile}");
+            logger.Info("Writing event data to {OutputFile}", OutputFile);
 
             if (!File.Exists(OutputFile))
             {

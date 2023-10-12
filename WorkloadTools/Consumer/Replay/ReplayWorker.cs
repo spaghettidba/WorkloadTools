@@ -21,8 +21,6 @@ namespace WorkloadTools.Consumer.Replay
     internal class ReplayWorker : IDisposable
     {
         private const int SkippedDelayCountThreshold = 100;
-        private const int ReplayOffsetSleepThresholdMs = 25;
-        private const int ThreadSpinIterations = 1000;
 
         // Unlike the other loggers this one is not static because we
         // need unique properties for each instance of ReplayWorker.
@@ -32,8 +30,8 @@ namespace WorkloadTools.Consumer.Replay
         public int QueryTimeoutSeconds { get; set; }
         public int WorkerStatsCommandCount { get; set; }
         public bool MimicApplicationName { get; set; }
-
-        public LogLevel CommandErrorLogLevel { get; set; } = LogLevel.Error;
+        public LogLevel CommandErrorLogLevel { get; set; }
+        public bool RelativeDelays { get; set; }
 
         public int FailRetryCount { get; set; }
         public int TimeoutRetryCount { get; set; }
@@ -55,6 +53,7 @@ namespace WorkloadTools.Consumer.Replay
 
         private Task runner = null;
         private CancellationTokenSource tokenSource;
+        private double lastCommandOffet = 0;
 
         public ReplayWorker(string name)
         {
@@ -107,6 +106,12 @@ namespace WorkloadTools.Consumer.Replay
         {
             tokenSource = new CancellationTokenSource();
             var token = tokenSource.Token;
+
+            if (runner != null && runner.IsCompleted)
+            {
+                runner.Dispose();
+                runner = null;
+            }
 
             if (runner == null)
             {
@@ -235,62 +240,52 @@ namespace WorkloadTools.Consumer.Replay
             // already come with the original timing
             if (command.ReplayOffset > 0)
             {
-                var delayMs = command.ReplayOffset - (DateTime.Now - StartTime).TotalMilliseconds;
-
-                // Delay execution only if necessary
-                if (delayMs > 0)
+                if (RelativeDelays && lastCommandOffet > 0)
                 {
-                    // We're not skipping this delay, so reset the counter.
-                    continiousSkippedDelays = 0;
+                    var relativeDelay = command.ReplayOffset - lastCommandOffet;
 
-                    // Each command has a requested offset from the beginning
-                    // of the workload and this class does its best to respect it.
-                    // If the previous commands take longer in the target environment
-                    // the offset cannot be respected and the command will execute
-                    // without further waits, but there is no way to recover 
-                    // the delay that has built up to that point.
-                    logger.Trace("Command start time is {startTime:yyyy-MM-ddTHH\\:mm\\:ss.fffffff} which is an offset of {ReplayOffset}ms from the start so waiting", command.StartTime, command.ReplayOffset);
+                    logger.Debug("Command start time is {startTime:yyyy-MM-ddTHH\\:mm\\:ss.fffffff} which is an offset of {relativeDelay} from the last command for this session", command.StartTime, relativeDelay);
 
-                    var stopwatch = Stopwatch.StartNew();
-
-                    // If we're outside of the ThreadSleepThresholdMs then sleep to give up cpu time while we wait
-                    while (stopwatch.Elapsed.TotalMilliseconds < delayMs - ReplayOffsetSleepThresholdMs)
-                    {
-                        Thread.Sleep(ReplayOffsetSleepThresholdMs);
-                    }
-
-                    // If we're getting close to the event time then spinwait because we need higher accuracy
-                    while (stopwatch.Elapsed.TotalMilliseconds < delayMs)
-                    {
-                        Thread.SpinWait(ThreadSpinIterations);
-                    }
-
-                    stopwatch.Stop();
-
-                    // Highlight if the delays are inaccurate (with 100ms error margin)
-                    // If there are a lot of these warnings then it may suggest either
-                    // the above ReplayOffsetSleepThresholdMs/ThreadSpinIterations are
-                    // too high or the replay host does not have enough CPU capacity to
-                    // replay the source workload.
-                    if (stopwatch.Elapsed.TotalMilliseconds > delayMs + 100)
-                    {
-                        logger.Warn("Requested delay was {requestedDelay}ms but actual delay was {actualDelay}ms", delayMs, stopwatch.Elapsed.TotalMilliseconds);
-                    }
+                    PreciseDelay(relativeDelay);
                 }
-                else if (delayMs < -10000)
+                else
                 {
-                    // If we're more than 10s behind then 
-                    logger.Trace("Command start time is {startTime:yyyy-MM-ddTHH\\:mm\\:ss.fffffff} which is an offset of {ReplayOffset}ms from the start but replay is behind so it should have executed {delayMs}ms ago", command.StartTime, command.ReplayOffset, delayMs);
-                    continiousSkippedDelays++;
+                    var delayMs = command.ReplayOffset - (DateTime.Now - StartTime).TotalMilliseconds;
 
-                    if (continiousSkippedDelays % SkippedDelayCountThreshold == 0)
+                    // Delay execution only if necessary
+                    if (delayMs > 0)
                     {
-                        // If we are consistently behind and the configuration has
-                        // requested SynchronizationMode we're actually doing a stress test.
-                        logger.Warn("The last {skippedDelays} Commands requested a delay but replay is > 10s behind so were processed immediately which may indicate that either this tool or the target system cannot keep up with the workload", continiousSkippedDelays);
+                        // We're not skipping this delay, so reset the counter.
+                        continiousSkippedDelays = 0;
+
+                        // Each command has a requested offset from the beginning
+                        // of the workload and this class does its best to respect it.
+                        // If the previous commands take longer in the target environment
+                        // the offset cannot be respected and the command will execute
+                        // without further waits, but there is no way to recover 
+                        // the delay that has built up to that point.
+                        logger.Debug("Command start time is {startTime:yyyy-MM-ddTHH\\:mm\\:ss.fffffff} which is an offset of {ReplayOffset}ms from the start so waiting", command.StartTime, command.ReplayOffset);
+
+                        PreciseDelay(delayMs);
+                    }
+                    else if (delayMs < -10000)
+                    {
+                        // If we're more than 10s behind then 
+                        logger.Debug("Command start time is {startTime:yyyy-MM-ddTHH\\:mm\\:ss.fffffff} which is an offset of {ReplayOffset}ms from the start but replay is behind so it should have executed {delayMs}ms ago", command.StartTime, command.ReplayOffset, delayMs);
+                        continiousSkippedDelays++;
+
+                        if (continiousSkippedDelays % SkippedDelayCountThreshold == 0)
+                        {
+                            // If we are consistently behind and the configuration has
+                            // requested SynchronizationMode we're actually doing a stress test.
+                            logger.Warn("The last {skippedDelays} Commands requested a delay but replay is > 10s behind so were processed immediately which may indicate that either this tool or the target system cannot keep up with the workload. You could try switching to relative delays with the RelativeDelays parameter", continiousSkippedDelays);
+                        }
                     }
                 }
             }
+
+            // Record the requested and actual command start time in case we're doing relative sleeps
+            lastCommandOffet = command.ReplayOffset;
 
             if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_RESET_CONNECTION)
             {
@@ -541,6 +536,58 @@ MESSAGE:
             Commands.Enqueue(cmd);
         }
 
+        private void PreciseDelay(double delayMs)
+        {
+            if (delayMs < 1)
+            {
+                // Sub-ms delays are too small to accurately sleep for using either Thread.Sleep or Thread.SpinWait
+                logger.Debug("Requested delay was {requestedDelay}ms and actual delay was {actualDelay}ms", delayMs, 0);
+
+                return;
+            }
+            var startingTimestamp = Stopwatch.GetTimestamp();
+            var targetTicks = TimeSpan.TicksPerMillisecond * delayMs;
+            long elapsedMs;
+
+            while (Stopwatch.GetTimestamp() - startingTimestamp < targetTicks)
+            {
+                elapsedMs = (Stopwatch.GetTimestamp() - startingTimestamp) / TimeSpan.TicksPerMillisecond;
+
+                // Thread.Sleep is less accurate than Thread.SpinWait, but consumes less CPU while idle.
+                // So to balance accuracy vs CPU impact use a hybrid approach.
+                if (delayMs - elapsedMs > 1000)
+                {
+                    logger.Debug("Sleeping for {threadSleepMs}ms - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 1000, delayMs, elapsedMs);
+                    Thread.Sleep(1000);
+                }
+                else if (delayMs - elapsedMs > 100)
+                {
+                    logger.Debug("Sleeping for {threadSleepMs}ms - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 100, delayMs, elapsedMs);
+                    Thread.Sleep(100);
+                }
+                else
+                {
+                    logger.Debug("Spinning for {spinIterations} iterations - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 1, delayMs, elapsedMs);
+                    Thread.SpinWait(1);
+                }
+            }
+
+            // Highlight if the delays are inaccurate (with 100ms error margin)
+            // If there are a lot of these warnings then it may suggest either
+            // the above ReplayOffsetSleepThresholdMs/ThreadSpinIterations are
+            // too high or the replay host does not have enough CPU capacity to
+            // replay the source workload.
+            elapsedMs = (Stopwatch.GetTimestamp() - startingTimestamp) / TimeSpan.TicksPerMillisecond;
+            if (elapsedMs > delayMs + 100)
+            {
+                logger.Warn("Requested delay was {requestedDelay}ms but actual delay was {actualDelay}ms which may indicate that this tool cannot keep up with the source workload, possibly due to insufficient CPU Cores for parallel processing", delayMs, elapsedMs);
+            }
+            else
+            {
+                logger.Debug("Requested delay was {requestedDelay}ms and actual delay was {actualDelay}ms", delayMs, elapsedMs);
+            }
+        }
+
         public void Dispose()
         {
             Dispose(true);
@@ -596,7 +643,6 @@ MESSAGE:
                 {
                     logger.Warn(ex);
                 }
-                logger.Trace($"Disposed");
             }
         }
     }
