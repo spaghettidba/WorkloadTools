@@ -13,7 +13,7 @@ namespace WorkloadTools
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        public static String BaseLocation = new Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().CodeBase)).LocalPath;
+        public static string BaseLocation = new Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().CodeBase)).LocalPath;
 
         public WorkloadListener Listener { get; set; }
         public List<WorkloadConsumer> Consumers { get; set; } = new List<WorkloadConsumer>();
@@ -116,16 +116,10 @@ namespace WorkloadTools
                 disposed = true;
                 foreach (var cons in Consumers)
                 {
-                    if (cons != null)
-                    {
-                        cons.Dispose();
-                    }
+                    cons?.Dispose();
                 }
 
-                if (Listener != null)
-                {
-                    Listener.Dispose();
-                }
+                Listener?.Dispose();
             }
         }
 

@@ -85,31 +85,31 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     sessionSql = System.IO.File.ReadAllText(Source);
 
                     // Push Down EventFilters
-                    var filters = String.Empty;
+                    var filters = string.Empty;
 
                     var appFilter = Filter.ApplicationFilter.PushDown();
                     var dbFilter = Filter.DatabaseFilter.PushDown();
                     var hostFilter = Filter.HostFilter.PushDown();
                     var loginFilter = Filter.LoginFilter.PushDown();
 
-                    if (appFilter != String.Empty)
+                    if (appFilter != string.Empty)
                     {
-                        filters += ((filters == String.Empty) ? String.Empty : " AND ") + appFilter;
+                        filters += ((filters == string.Empty) ? string.Empty : " AND ") + appFilter;
                     }
-                    if (dbFilter != String.Empty)
+                    if (dbFilter != string.Empty)
                     {
-                        filters += ((filters == String.Empty) ? String.Empty : " AND ") + dbFilter;
+                        filters += ((filters == string.Empty) ? string.Empty : " AND ") + dbFilter;
                     }
-                    if (hostFilter != String.Empty)
+                    if (hostFilter != string.Empty)
                     {
-                        filters += ((filters == String.Empty) ? String.Empty : " AND ") + hostFilter;
+                        filters += ((filters == string.Empty) ? string.Empty : " AND ") + hostFilter;
                     }
-                    if (loginFilter != String.Empty)
+                    if (loginFilter != string.Empty)
                     {
-                        filters += ((filters == String.Empty) ? String.Empty : " AND ") + loginFilter;
+                        filters += ((filters == string.Empty) ? string.Empty : " AND ") + loginFilter;
                     }
 
-                    if (filters != String.Empty)
+                    if (filters != string.Empty)
                     {
                         filters = "WHERE " + filters;
                     }
@@ -117,7 +117,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     var sessionType = serverType == ServerType.AzureSqlDatabase ? "DATABASE" : "SERVER";
                     var principalName = serverType == ServerType.AzureSqlDatabase ? "username" : "server_principal_name";
 
-                    sessionSql = String.Format(sessionSql, filters, sessionType, principalName);
+                    sessionSql = string.Format(sessionSql, filters, sessionType, principalName);
 
                 }
                 catch (Exception e)
@@ -141,7 +141,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                         ADD TARGET package0.event_file(SET filename=N'{1}',max_file_size=(100))
                     ";
 
-                        sql = String.Format(sql, serverType == ServerType.FullInstance ? "SERVER" : "DATABASE", FileTargetPath, SessionName);
+                        sql = string.Format(sql, serverType == ServerType.FullInstance ? "SERVER" : "DATABASE", FileTargetPath, SessionName);
 
                         using (var cmd = conn.CreateCommand())
                         {
@@ -264,7 +264,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
 	                END CATCH
                 END
             ";
-            sql = String.Format(sql, serverType == ServerType.AzureSqlDatabase ? "DATABASE" : "SERVER", SessionName);
+            sql = string.Format(sql, serverType == ServerType.AzureSqlDatabase ? "DATABASE" : "SERVER", SessionName);
             using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = sql;

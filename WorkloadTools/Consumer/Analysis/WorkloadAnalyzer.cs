@@ -67,14 +67,7 @@ namespace WorkloadTools.Consumer.Analysis
 			};
 		}
 
-        public bool HasEventsQueued
-        {
-            get
-            {
-                return _internalQueue.Count > 0;
-            }
-        }
-        
+        public bool HasEventsQueued => _internalQueue.Count > 0;
 
         private void CloseInterval()
         {
@@ -114,7 +107,7 @@ namespace WorkloadTools.Consumer.Analysis
                     }
                     catch
                     {
-                        Console.WriteLine(String.Format("Unable to write to the database: {0}.", e.Message));
+                        Console.WriteLine(string.Format("Unable to write to the database: {0}.", e.Message));
                     }
                 }
                 finally
@@ -140,14 +133,14 @@ namespace WorkloadTools.Consumer.Analysis
                     }
                 
                     var data = _internalQueue.Dequeue();
-                    _internalAdd(data);
+                    InternalAdd(data);
                 }
             }
         }
 
         public void Add(WorkloadEvent evt)
         {
-            if (evt is ExecutionWorkloadEvent && String.IsNullOrEmpty(((ExecutionWorkloadEvent)evt).Text))
+            if (evt is ExecutionWorkloadEvent executionEvent && string.IsNullOrEmpty(executionEvent.Text))
             {
                 return;
             }
@@ -158,7 +151,7 @@ namespace WorkloadTools.Consumer.Analysis
             }
             catch (Exception e)
             {
-                logger.Error("Unable to start the worker thread for WorkloadAnalyzer", e.Message);
+                logger.Error(e, "Unable to start the worker thread for WorkloadAnalyzer");
             }
             
 
@@ -204,39 +197,41 @@ namespace WorkloadTools.Consumer.Analysis
                         logger.Error(e.Message);
                         logger.Error(e.StackTrace);
                     }
-                });
-                Worker.IsBackground = true;
-                Worker.Name = "RealtimeWorkloadAnalyzer.Worker";
+                })
+                {
+                    IsBackground = true,
+                    Name = "RealtimeWorkloadAnalyzer.Worker"
+                };
                 Worker.Start();
 
                 Thread.Sleep(100);
             }
         }
 
-        private void _internalAdd(WorkloadEvent evt)
+        private void InternalAdd(WorkloadEvent evt)
         {
-            if (evt is ExecutionWorkloadEvent)
+            if (evt is ExecutionWorkloadEvent executionEvent)
             {
-                _internalAdd((ExecutionWorkloadEvent)evt);
+                InternalAdd(executionEvent);
             }
 
-            if (evt is ErrorWorkloadEvent)
+            if (evt is ErrorWorkloadEvent errorEvent)
             {
-                _internalAdd((ErrorWorkloadEvent)evt);
+                InternalAdd(errorEvent);
             }
 
-            if (evt is CounterWorkloadEvent)
+            if (evt is CounterWorkloadEvent counterEvent)
             {
-                _internalAdd((CounterWorkloadEvent)evt);
+                InternalAdd(counterEvent);
             }
 
-            if (evt is WaitStatsWorkloadEvent)
+            if (evt is WaitStatsWorkloadEvent waitStatsEvent)
             {
-                _internalAdd((WaitStatsWorkloadEvent)evt);
+                InternalAdd(waitStatsEvent);
             }
         }
 
-		private void _internalAdd(ErrorWorkloadEvent evt)
+		private void InternalAdd(ErrorWorkloadEvent evt)
 		{
 			var row = errorData.NewRow();
 			row.SetField("message", evt.Text);
@@ -244,7 +239,7 @@ namespace WorkloadTools.Consumer.Analysis
             errorData.Rows.Add(row);
 		}
 
-		private void _internalAdd(WaitStatsWorkloadEvent evt)
+		private void InternalAdd(WaitStatsWorkloadEvent evt)
         {
             if (waitsData == null)
             {
@@ -256,7 +251,7 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
-        private void _internalAdd(CounterWorkloadEvent evt)
+        private void InternalAdd(CounterWorkloadEvent evt)
         {
             if (counterData == null)
             {
@@ -280,7 +275,7 @@ namespace WorkloadTools.Consumer.Analysis
             
         }
 
-        private void _internalAdd(ExecutionWorkloadEvent evt)
+        private void InternalAdd(ExecutionWorkloadEvent evt)
         {
             if (rawData == null)
             {
@@ -288,9 +283,9 @@ namespace WorkloadTools.Consumer.Analysis
                 PrepareDictionaries();
             }
 
-            string normSql = null;
             var norm = normalizer.NormalizeSqlText(evt.Text, (int)evt.SPID);
 
+            string normSql;
             if (norm != null)
             {
                 normSql = norm.NormalizedText;
@@ -336,27 +331,27 @@ namespace WorkloadTools.Consumer.Analysis
                 logins.Add(evt.LoginName, loginId = logins.Count);
             }
 
-            // Look up execution detail 
-            List<ExecutionDetailValue> theList = null;
             var theKey = new ExecutionDetailKey()
             {
-                sql_hash = hash,
-                application_id = appId,
-                database_id = dbId,
-                host_id = hostId,
-                login_id = loginId
+                Sql_hash = hash,
+                Application_id = appId,
+                Database_id = dbId,
+                Host_id = hostId,
+                Login_id = loginId
             };
             var theValue = new ExecutionDetailValue()
             {
-                event_time = evt.StartTime,
-                cpu_us = evt.CPU,
-                reads = evt.Reads,
-                writes = evt.Writes,
-                duration_us = evt.Duration
+                Event_time = evt.StartTime,
+                Cpu_us = evt.CPU,
+                Reads = evt.Reads,
+                Writes = evt.Writes,
+                Duration_us = evt.Duration
             };
-            if (rawData.TryGetValue(theKey, out theList))
+
+            // Look up execution detail 
+            if (rawData.TryGetValue(theKey, out var theList))
             {
-                if(theList == null)
+                if (theList == null)
                 {
                     theList = new List<ExecutionDetailValue>();
                 }
@@ -364,11 +359,14 @@ namespace WorkloadTools.Consumer.Analysis
             }
             else
             {
-                theList = new List<ExecutionDetailValue>();
-                theList.Add(theValue);
-                if(!rawData.TryAdd(theKey, theList))
+                theList = new List<ExecutionDetailValue>
                 {
-                    throw new InvalidOperationException("Unable to add an event to the queue");
+                    theValue
+                };
+
+                if (!rawData.TryAdd(theKey, theList))
+                {
+                    throw new InvalidOperationException("Unable to add an executionEvent to the queue");
                 }
             }
         }
@@ -596,18 +594,18 @@ namespace WorkloadTools.Consumer.Analysis
                             from v in rawData[t]
                             group new
                             {
-                                v.cpu_us,
-                                v.duration_us,
-                                v.event_time,
-                                v.reads,
-                                v.writes
+                                v.Cpu_us,
+                                v.Duration_us,
+                                v.Event_time,
+                                v.Reads,
+                                v.Writes
                             }
                             by new
                             {
-                                application_id = t.application_id,
-                                database_id = t.database_id,
-                                host_id = t.host_id,
-                                login_id = t.login_id
+                                application_id = t.Application_id,
+                                database_id = t.Database_id,
+                                host_id = t.Host_id,
+                                login_id = t.Login_id
                             }
                             into grp
                             select new
@@ -617,24 +615,24 @@ namespace WorkloadTools.Consumer.Analysis
                                 grp.Key.host_id,
                                 grp.Key.login_id,
 
-                                min_cpu_us = grp.Min(v => v.cpu_us),
-                                max_cpu_us = grp.Max(v => v.cpu_us),
-                                sum_cpu_us = grp.Sum(v => v.cpu_us),
+                                min_cpu_us = grp.Min(v => v.Cpu_us),
+                                max_cpu_us = grp.Max(v => v.Cpu_us),
+                                sum_cpu_us = grp.Sum(v => v.Cpu_us),
 
-                                min_reads = grp.Min(v => v.reads),
-                                max_reads = grp.Max(v => v.reads),
-                                sum_reads = grp.Sum(v => v.reads),
+                                min_reads = grp.Min(v => v.Reads),
+                                max_reads = grp.Max(v => v.Reads),
+                                sum_reads = grp.Sum(v => v.Reads),
 
-                                min_writes = grp.Min(v => v.writes),
-                                max_writes = grp.Max(v => v.writes),
-                                sum_writes = grp.Sum(v => v.writes),
+                                min_writes = grp.Min(v => v.Writes),
+                                max_writes = grp.Max(v => v.Writes),
+                                sum_writes = grp.Sum(v => v.Writes),
 
-                                min_duration_us = grp.Min(v => v.duration_us),
-                                max_duration_us = grp.Max(v => v.duration_us),
-                                sum_duration_us = grp.Sum(v => v.duration_us),
+                                min_duration_us = grp.Min(v => v.Duration_us),
+                                max_duration_us = grp.Max(v => v.Duration_us),
+                                sum_duration_us = grp.Sum(v => v.Duration_us),
 
-                                min_execution_date = grp.Min(v => v.event_time),
-                                max_execution_date = grp.Max(v => v.event_time),
+                                min_execution_date = grp.Min(v => v.Event_time),
+                                max_execution_date = grp.Max(v => v.Event_time),
 
                                 execution_count = grp.Count()
                             };
@@ -723,19 +721,19 @@ namespace WorkloadTools.Consumer.Analysis
                             from v in rawData[t]
                             group new
                             {
-                                v.cpu_us,
-                                v.duration_us,
-                                v.event_time,
-                                v.reads,
-                                v.writes
+                                v.Cpu_us,
+                                v.Duration_us,
+                                v.Event_time,
+                                v.Reads,
+                                v.Writes
                             }
                             by new
                             {
-                                sql_hash = t.sql_hash,
-                                application_id = t.application_id,
-                                database_id = t.database_id,
-                                host_id = t.host_id,
-                                login_id = t.login_id
+                                sql_hash = t.Sql_hash,
+                                application_id = t.Application_id,
+                                database_id = t.Database_id,
+                                host_id = t.Host_id,
+                                login_id = t.Login_id
                             }
                             into grp
                             select new
@@ -748,25 +746,25 @@ namespace WorkloadTools.Consumer.Analysis
                                 grp.Key.host_id,
                                 grp.Key.login_id,
 
-                                avg_cpu_us = grp.Average(v => v.cpu_us),
-                                min_cpu_us = grp.Min(v => v.cpu_us),
-                                max_cpu_us = grp.Max(v => v.cpu_us),
-                                sum_cpu_us = grp.Sum(v => v.cpu_us),
+                                avg_cpu_us = grp.Average(v => v.Cpu_us),
+                                min_cpu_us = grp.Min(v => v.Cpu_us),
+                                max_cpu_us = grp.Max(v => v.Cpu_us),
+                                sum_cpu_us = grp.Sum(v => v.Cpu_us),
 
-                                avg_reads = grp.Average(v => v.reads),
-                                min_reads = grp.Min(v => v.reads),
-                                max_reads = grp.Max(v => v.reads),
-                                sum_reads = grp.Sum(v => v.reads),
+                                avg_reads = grp.Average(v => v.Reads),
+                                min_reads = grp.Min(v => v.Reads),
+                                max_reads = grp.Max(v => v.Reads),
+                                sum_reads = grp.Sum(v => v.Reads),
 
-                                avg_writes = grp.Average(v => v.writes),
-                                min_writes = grp.Min(v => v.writes),
-                                max_writes = grp.Max(v => v.writes),
-                                sum_writes = grp.Sum(v => v.writes),
+                                avg_writes = grp.Average(v => v.Writes),
+                                min_writes = grp.Min(v => v.Writes),
+                                max_writes = grp.Max(v => v.Writes),
+                                sum_writes = grp.Sum(v => v.Writes),
 
-                                avg_duration_us = grp.Average(v => v.duration_us),
-                                min_duration_us = grp.Min(v => v.duration_us),
-                                max_duration_us = grp.Max(v => v.duration_us),
-                                sum_duration_us = grp.Sum(v => v.duration_us),
+                                avg_duration_us = grp.Average(v => v.Duration_us),
+                                min_duration_us = grp.Min(v => v.Duration_us),
+                                max_duration_us = grp.Max(v => v.Duration_us),
+                                sum_duration_us = grp.Sum(v => v.Duration_us),
 
                                 execution_count = grp.Count()
                             };
@@ -835,7 +833,7 @@ namespace WorkloadTools.Consumer.Analysis
                 INTO #{0}
                 FROM [{1}].[{0}];
             ";
-            sql = String.Format(sql, name, ConnectionInfo.SchemaName);
+            sql = string.Format(sql, name, ConnectionInfo.SchemaName);
 
             using (var cmd = conn.CreateCommand())
             {
@@ -872,7 +870,7 @@ namespace WorkloadTools.Consumer.Analysis
                     WHERE dst.[{0}_id] = src.[{0}_id]
                 );
             ";
-            sql = String.Format(sql, name.Substring(0, name.Length - 1), ConnectionInfo.SchemaName);
+            sql = string.Format(sql, name.Substring(0, name.Length - 1), ConnectionInfo.SchemaName);
 
             using (var cmd = conn.CreateCommand())
             {
@@ -891,7 +889,7 @@ namespace WorkloadTools.Consumer.Analysis
                 INTO #NormalizedQueries
                 FROM [{0}].[NormalizedQueries];
             ";
-            sql = String.Format(sql, ConnectionInfo.SchemaName);
+            sql = string.Format(sql, ConnectionInfo.SchemaName);
 
             using (var cmd = conn.CreateCommand())
             {
@@ -928,7 +926,7 @@ namespace WorkloadTools.Consumer.Analysis
                     WHERE dst.[sql_hash] = src.[sql_hash]
                 );
             ";
-            sql = String.Format(sql, ConnectionInfo.SchemaName);
+            sql = string.Format(sql, ConnectionInfo.SchemaName);
 
             using (var cmd = conn.CreateCommand())
             {
@@ -966,7 +964,7 @@ namespace WorkloadTools.Consumer.Analysis
                     INSERT INTO [{0}].[Intervals] (interval_id, end_time, duration_minutes) 
                     VALUES (@interval_id, @end_time, @duration_minutes); 
             ";
-            sql = String.Format(sql, ConnectionInfo.SchemaName);
+            sql = string.Format(sql, ConnectionInfo.SchemaName);
 
             // interval id is the number of seconds since 01/01/2000
             var interval_id = (int)intervalTime.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
@@ -1017,16 +1015,16 @@ namespace WorkloadTools.Consumer.Analysis
                 conn.ConnectionString = ConnectionInfo.ConnectionString;
                 conn.Open();
 
-                var sql = String.Format(@"SELECT * FROM [{0}].[Applications]",ConnectionInfo.SchemaName);
+                var sql = string.Format(@"SELECT * FROM [{0}].[Applications]",ConnectionInfo.SchemaName);
                 AddAllRows(conn, sql, applications);
 
-                sql = String.Format(@"SELECT * FROM [{0}].[Databases]", ConnectionInfo.SchemaName);
+                sql = string.Format(@"SELECT * FROM [{0}].[Databases]", ConnectionInfo.SchemaName);
                 AddAllRows(conn, sql, databases);
 
-                sql = String.Format(@"SELECT * FROM [{0}].[Hosts]", ConnectionInfo.SchemaName);
+                sql = string.Format(@"SELECT * FROM [{0}].[Hosts]", ConnectionInfo.SchemaName);
                 AddAllRows(conn, sql, hosts);
 
-                sql = String.Format(@"SELECT * FROM [{0}].[Logins]", ConnectionInfo.SchemaName);
+                sql = string.Format(@"SELECT * FROM [{0}].[Logins]", ConnectionInfo.SchemaName);
                 AddAllRows(conn, sql, logins);
             }
         }
@@ -1161,50 +1159,35 @@ namespace WorkloadTools.Consumer.Analysis
 
         public void Dispose()
         {
-            if (rawData != null)
-            {
-                rawData.Clear();
-            }
-
-            if (errorData != null)
-            {
-                errorData.Dispose();
-            }
-
-            if (counterData != null)
-            {
-                counterData.Dispose();
-            }
-
-            if (waitsData != null)
-            {
-                waitsData.Dispose();
-            }
+            rawData?.Clear();
+            errorData?.Dispose();
+            counterData?.Dispose();
+            waitsData?.Dispose();
         }
 
         internal class ExecutionDetailKey : IEquatable<ExecutionDetailKey>
         {
-            public long sql_hash { get; set; }
-            public int application_id { get; set; }
-            public int database_id { get; set; }
-            public int host_id { get; set; }
-            public int login_id { get; set; }
+            public long Sql_hash { get; set; }
+            public int Application_id { get; set; }
+            public int Database_id { get; set; }
+            public int Host_id { get; set; }
+            public int Login_id { get; set; }
 
             public override int GetHashCode()
             {
                 var hash = 497;
                 unchecked
                 {
-                    hash = hash * 17 + sql_hash.GetHashCode();
-                    hash = hash * 17 + application_id.GetHashCode();
-                    hash = hash * 17 + database_id.GetHashCode();
-                    hash = hash * 17 + host_id.GetHashCode();
-                    hash = hash * 17 + login_id.GetHashCode();
+                    hash = (hash * 17) + Sql_hash.GetHashCode();
+                    hash = (hash * 17) + Application_id.GetHashCode();
+                    hash = (hash * 17) + Database_id.GetHashCode();
+                    hash = (hash * 17) + Host_id.GetHashCode();
+                    hash = (hash * 17) + Login_id.GetHashCode();
                 }
                 return hash;
             }
 
-            public override bool Equals(Object other)
+            public override bool Equals(object other)
             {
                 return Equals(other as ExecutionDetailKey);
             }
@@ -1212,21 +1195,21 @@ namespace WorkloadTools.Consumer.Analysis
             public bool Equals(ExecutionDetailKey other)
             {
                 return other != null
-                    && sql_hash.Equals(other.sql_hash)
-                    && application_id.Equals(other.application_id)
-                    && database_id.Equals(other.database_id)
-                    && host_id.Equals(other.host_id)
-                    && login_id.Equals(other.login_id);
+                    && Sql_hash.Equals(other.Sql_hash)
+                    && Application_id.Equals(other.Application_id)
+                    && Database_id.Equals(other.Database_id)
+                    && Host_id.Equals(other.Host_id)
+                    && Login_id.Equals(other.Login_id);
             }
         }
 
         internal class ExecutionDetailValue
         {
-            public DateTime event_time { get; set; }
-            public long? cpu_us { get; set; }
-            public long? reads { get; set; }
-            public long? writes { get; set; }
-            public long? duration_us { get; set; }
+            public DateTime Event_time { get; set; }
+            public long? Cpu_us { get; set; }
+            public long? Reads { get; set; }
+            public long? Writes { get; set; }
+            public long? Duration_us { get; set; }
         }
     }
 }

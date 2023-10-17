@@ -9,20 +9,17 @@ namespace WorkloadTools.Consumer.Analysis
 {
     public class AnalysisConsumer : BufferedWorkloadConsumer
     {
-        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private WorkloadAnalyzer analyzer;
 
         private int _uploadIntervalSeconds;
 
         public SqlConnectionInfo ConnectionInfo { get; set; }
-        public int UploadIntervalSeconds {
-            get
-            {
-                return _uploadIntervalSeconds;
-            }
+        public int UploadIntervalSeconds
+        {
+            get => _uploadIntervalSeconds;
             set
             {
-                if(value % 60 != 0)
+                if (value % 60 != 0)
                 {
                     throw new ArgumentOutOfRangeException("UploadIntervalSeconds must be an exact multiple of 60");
                 }
@@ -32,11 +29,11 @@ namespace WorkloadTools.Consumer.Analysis
 
         public int UploadIntervalMinutes
         {
-            get { return _uploadIntervalSeconds / 60; }
-            set { _uploadIntervalSeconds = value * 60; }
+            get => _uploadIntervalSeconds / 60;
+            set => _uploadIntervalSeconds = value * 60;
         }
 
-		public int MaximumWriteRetries { get; set; } = 5;
+        public int MaximumWriteRetries { get; set; } = 5;
 
 		public bool SqlNormalizerTruncateTo4000 { get; set; }
 		public bool SqlNormalizerTruncateTo1024 { get; set; }

@@ -66,7 +66,7 @@ namespace WorkloadTools.Listener.Trace
                     filters += Environment.NewLine + Filter.LoginFilter.PushDown();
 
                     tracePath = utils.GetSqlDefaultLogPath(conn);
-                    traceSql = String.Format(traceSql, TraceSizeMB, TraceRolloverCount, Path.Combine(tracePath  ,"sqlworkload"), filters);
+                    traceSql = string.Format(traceSql, TraceSizeMB, TraceRolloverCount, Path.Combine(tracePath  ,"sqlworkload"), filters);
                 }
                 catch (Exception e)
                 {
@@ -257,7 +257,7 @@ namespace WorkloadTools.Listener.Trace
         private void StopTrace(SqlConnection conn, int id)
         {
                 var cmd = conn.CreateCommand();
-                cmd.CommandText = String.Format(@"
+                cmd.CommandText = string.Format(@"
                     IF EXISTS (
                         SELECT *
                         FROM sys.traces

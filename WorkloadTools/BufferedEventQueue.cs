@@ -15,7 +15,7 @@ namespace WorkloadTools
 
         public int BufferSize
         {
-            get { return _bufferSize; }
+            get => _bufferSize;
             set { _bufferSize = value; initialize(); }
         }
 
@@ -178,7 +178,7 @@ namespace WorkloadTools
                         {
                             // if we have events in the overflow array (but not on disk)
                             // and enough space in the queue (at least 75% free), put them back
-                            if (_overflowSize > 0 && _size <= _array.Length - (_overflowBufferSize + _overflowBufferSize / 2))
+                            if (_overflowSize > 0 && _size <= _array.Length - (_overflowBufferSize + (_overflowBufferSize / 2)))
                             {
                                 EnqueueAll(_overflowArray, _overflowSize);
                                 _overflowSize = 0;

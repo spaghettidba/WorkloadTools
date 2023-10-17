@@ -14,7 +14,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
         {
             if (!IsPredicateSet)
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             IsPushedDown = true;
