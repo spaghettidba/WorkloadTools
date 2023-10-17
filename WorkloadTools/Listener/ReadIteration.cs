@@ -32,8 +32,7 @@ namespace WorkloadTools.Listener
 
             // new values? ok, let's add them
             // one more check doesn't hurt though
-            SortedSet<long> offsets = null;
-            if (recordedOffsets.TryGetValue(filename, out offsets))
+            if (recordedOffsets.TryGetValue(filename, out var offsets))
             {
                 if (!offsets.Contains(offset))
                 {
@@ -55,8 +54,7 @@ namespace WorkloadTools.Listener
         public static long GetLastOffset(string filename)
         {
             long result = -1;
-            SortedSet<long> offsets = null;
-            if (recordedOffsets.TryGetValue(filename, out offsets))
+            if (recordedOffsets.TryGetValue(filename, out var offsets))
             {
                 result = offsets.Max();
             }
@@ -66,8 +64,7 @@ namespace WorkloadTools.Listener
         public static long GetSecondLastOffset(string filename)
         {
             long result = -1;
-            SortedSet<long> offsets = null;
-            if (recordedOffsets.TryGetValue(filename, out offsets))
+            if (recordedOffsets.TryGetValue(filename, out var offsets))
             {
                 if (offsets.Count >= 2)
                 {
@@ -85,10 +82,7 @@ namespace WorkloadTools.Listener
         private long _endOffset = -1;
         public long EndOffset
         {
-            get
-            {
-                return _endOffset;
-            }
+            get => _endOffset;
             set
             {
                 // add current offset

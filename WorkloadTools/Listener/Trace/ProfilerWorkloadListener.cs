@@ -32,7 +32,7 @@ namespace WorkloadTools.Listener.Trace
                 DatabaseName = "master"
             };
 
-            if (String.IsNullOrEmpty(ConnectionInfo.UserName))
+            if (string.IsNullOrEmpty(ConnectionInfo.UserName))
             {
                 conn.UseIntegratedSecurity = true;
             }

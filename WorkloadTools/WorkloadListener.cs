@@ -25,10 +25,11 @@ namespace WorkloadTools
 
         public string[] ApplicationFilter
         {
-            get { return _applicationFilter; }
-            set {
+            get => _applicationFilter;
+            set
+            {
                 _applicationFilter = value;
-                if(_filter != null)
+                if (_filter != null)
                 {
                     _filter.ApplicationFilter.PredicateValue = _applicationFilter;
                 }
@@ -36,7 +37,7 @@ namespace WorkloadTools
         }
         public string[] DatabaseFilter
         {
-            get { return _databaseFilter; }
+            get => _databaseFilter;
             set
             {
                 _databaseFilter = value;
@@ -48,7 +49,7 @@ namespace WorkloadTools
         }
         public string[] HostFilter
         {
-            get { return _hostFilter; }
+            get => _hostFilter;
             set
             {
                 _hostFilter = value;
@@ -57,10 +58,10 @@ namespace WorkloadTools
                     _filter.HostFilter.PredicateValue = _hostFilter;
                 }
             }
-        } 
+        }
         public string[] LoginFilter
         {
-            get { return _loginFilter; }
+            get => _loginFilter;
             set
             {
                 _loginFilter = value;
@@ -77,10 +78,11 @@ namespace WorkloadTools
 
         private WorkloadEventFilter _filter;
 
-        protected WorkloadEventFilter Filter {
+        protected WorkloadEventFilter Filter
+        {
             get
             {
-                if(_filter != null)
+                if (_filter != null)
                 {
                     return _filter;
                 }
@@ -89,10 +91,7 @@ namespace WorkloadTools
                     return null;
                 }
             }
-            set
-            {
-                _filter = value;
-            }
+            set => _filter = value;
         }
 
         protected IEventQueue Events;
@@ -264,7 +263,7 @@ namespace WorkloadTools
                     END
                 ";
 
-                sql = String.Format(sql,StatsCollectionIntervalSeconds / 60);
+                sql = string.Format(sql,StatsCollectionIntervalSeconds / 60);
 
                 var avg_CPU_percent = -1;
 

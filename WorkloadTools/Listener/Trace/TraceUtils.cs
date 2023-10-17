@@ -22,7 +22,7 @@ namespace WorkloadTools.Listener.Trace
             ";
 
             var cmd = conn.CreateCommand();
-            cmd.CommandText = String.Format(sql, path);
+            cmd.CommandText = string.Format(sql, path);
             return (int)cmd.ExecuteScalar();
         }
 

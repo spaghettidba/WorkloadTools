@@ -88,7 +88,7 @@ namespace WorkloadTools.Listener
 
         public bool Skip(string command)
         {
-            if (String.IsNullOrEmpty(command))
+            if (string.IsNullOrEmpty(command))
             {
                 return true;
             }
@@ -170,7 +170,7 @@ namespace WorkloadTools.Listener
                 idx += 8; // move past "set @p1="
 
                 // replace numeric chars with 0s
-                while (Char.IsNumber(sb[idx]))
+                while (char.IsNumber(sb[idx]))
                 {
                     originalP1 += sb[idx];
                     sb[idx] = '0';
@@ -194,7 +194,7 @@ namespace WorkloadTools.Listener
                 // replace numeric chars with §
                 var iter = 0;
                 var initialIdx = idx;
-                while (idx < sb.Length && Char.IsNumber(sb[idx]))
+                while (idx < sb.Length && char.IsNumber(sb[idx]))
                 {
                     originalStmtNum += sb[idx];
                     if(iter == 0)
@@ -254,9 +254,8 @@ namespace WorkloadTools.Listener
                         sql = match4.Groups["statement"].ToString();
                         sql = _doubleApostrophe.Replace(sql, "'${string}'");
                         result.Statement = sql;
-                        string originalHandle;
-                        result.NormalizedText = RemoveFirstP1(result.OriginalText, out originalHandle);
-                        if(int.TryParse(originalHandle, out var n))
+                        result.NormalizedText = RemoveFirstP1(result.OriginalText, out var originalHandle);
+                        if (int.TryParse(originalHandle, out var n))
                         {
                             result.Handle = n;
                         }

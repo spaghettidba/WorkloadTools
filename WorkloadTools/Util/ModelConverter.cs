@@ -60,9 +60,9 @@ namespace WorkloadTools.Util
                 {
                     if (prop.Name.EndsWith("Filter"))
                     {
-                        if (dictionary[key] is string)
+                        if (dictionary[key] is string stringValue)
                         {
-                            prop.SetValue(p, new string[] { (string)dictionary[key] }, null);
+                            prop.SetValue(p, new string[] { stringValue }, null);
                         }
                         else
                         {
@@ -71,11 +71,11 @@ namespace WorkloadTools.Util
                     }
                     else
                     {
-                        if (dictionary[key] is Dictionary<string, object>)
+                        if (dictionary[key] is Dictionary<string, object> dictionaryValue)
                         {
                             if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                             {
-                                var rawDic = (Dictionary<string, object>)dictionary[key];
+                                var rawDic = dictionaryValue;
 
                                 var obj = Activator.CreateInstance(prop.PropertyType);
                                 foreach (var itm in rawDic.Keys)
@@ -86,7 +86,7 @@ namespace WorkloadTools.Util
                             }
                             else
                             {
-                                prop.SetValue(p, Deserialize((Dictionary<string, object>)dictionary[key], prop.PropertyType, serializer), null);
+                                prop.SetValue(p, Deserialize(dictionaryValue, prop.PropertyType, serializer), null);
                             }
                         }
                         else
@@ -119,15 +119,15 @@ namespace WorkloadTools.Util
             {
                 return (string)v;
             }
-            else if (propertyType == typeof(Boolean))
+            else if (propertyType == typeof(bool))
             {
                 return Convert.ToBoolean(v);
             }
-            else if (propertyType == typeof(Int32))
+            else if (propertyType == typeof(int))
             {
                 return Convert.ToInt32(v);
             }
-            else if (propertyType == typeof(Int64))
+            else if (propertyType == typeof(long))
             {
                 return Convert.ToInt64(v);
             }

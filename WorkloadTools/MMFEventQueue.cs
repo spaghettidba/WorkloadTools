@@ -27,8 +27,7 @@ namespace WorkloadTools
         {
             try
             {
-                PilePointer pp;
-                if (!pointers.TryDequeue(out pp))
+                if (!pointers.TryDequeue(out var pp))
                 {
                     result = null;
                     return false;

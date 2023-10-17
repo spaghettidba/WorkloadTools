@@ -15,7 +15,7 @@ namespace WorkloadTools.Listener.Trace
         {
             if (!IsPredicateSet)
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             IsPushedDown = true;

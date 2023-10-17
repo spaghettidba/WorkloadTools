@@ -170,7 +170,7 @@ namespace WorkloadTools.Listener.Trace
             if (textData != DBNull.Value)
             {
                 var description = (string)textData;
-                var durationAsString = new String(description.Where(Char.IsDigit).ToArray());
+                var durationAsString = new string(description.Where(char.IsDigit).ToArray());
                 result = Convert.ToInt64(durationAsString);
             }
             return result * 1000 * 1000;

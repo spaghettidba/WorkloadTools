@@ -301,7 +301,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 }
                 else
                 {
-                    cmdPath.CommandText = String.Format(sqlPath, databaseSuffix);
+                    cmdPath.CommandText = string.Format(sqlPath, databaseSuffix);
                     var paramSessionName = cmdPath.Parameters.Add("@sessionName", System.Data.SqlDbType.NVarChar, 260);
                     paramSessionName.Value = SessionName;
                 }

@@ -48,7 +48,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                     try
                     {
                         workloadEvent.EventSequence = Convert.ToInt64(TryGetValue(evt, FieldType.Action, "event_sequence"));
-                        var commandText = String.Empty;
+                        var commandText = string.Empty;
                         if (evt.Name == "rpc_starting")
                         {
                             commandText = (string)TryGetValue(evt, FieldType.Field, "statement");
@@ -98,13 +98,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                             try
                             {
-                                if (value is string)
+                                if (value is string stringValue)
                                 {
-                                    commandText = (string)value;
+                                    commandText = stringValue;
                                 }
-                                else if (value is byte[])
+                                else if (value is byte[] byteValue)
                                 {
-                                    commandText = Encoding.Unicode.GetString((byte[])value);
+                                    commandText = Encoding.Unicode.GetString(byteValue);
                                 }
                                 else
                                 {
@@ -248,16 +248,14 @@ namespace WorkloadTools.Listener.ExtendedEvents
             object result = null;
             if (t == FieldType.Action)
             {
-                PublishedAction act;
-                if (evt.Actions.TryGetValue(name, out act))
+                if (evt.Actions.TryGetValue(name, out var act))
                 {
                     result = act.Value;
                 }
             }
             else
             {
-                PublishedEventField fld;
-                if (evt.Fields.TryGetValue(name, out fld))
+                if (evt.Fields.TryGetValue(name, out var fld))
                 {
                     result = fld.Value;
                 }
@@ -266,11 +264,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
             // check whether last char is a null char (\0)
             // because this breaks writing this string to the sqlite database
             // which considers it as a BLOB
-            if(result is string)
+            if(result is string stringValue)
             {
-                while (((string)result).EndsWith("\0"))
+                while (stringValue.EndsWith("\0"))
                 {
-                    result = ((string)result).Remove(((string)result).Length - 1);
+                    result = stringValue.Remove(stringValue.Length - 1);
                 }
             }
             return result;
@@ -281,13 +279,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
             var tmp = TryGetValue(evt, t, name);
             if(tmp != null && tmp.GetType() != typeof(DBNull))
             {
-                if (tmp is string)
+                if (tmp is string strinValue)
                 {
-                    return (string)tmp;
+                    return strinValue;
                 }
-                else if (tmp is byte[])
+                else if (tmp is byte[] byteValue)
                 {
-                    return Encoding.Unicode.GetString((byte[])tmp);
+                    return Encoding.Unicode.GetString(byteValue);
                 }
                 else
                 {
