@@ -40,7 +40,7 @@ namespace WorkloadTools.Consumer.Replay
         public SqlConnectionInfo ConnectionInfo { get; set; }
         public ThreadingModeEnum ThreadingMode { get; set; } = ThreadingModeEnum.WorkerTask;
 
-        private readonly ConcurrentDictionary<int, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<int, ReplayWorker>();
+        private readonly ConcurrentDictionary<string, ReplayWorker> ReplayWorkers = new ConcurrentDictionary<string, ReplayWorker>();
 
         private Thread sweeper;
 
@@ -63,6 +63,24 @@ namespace WorkloadTools.Consumer.Replay
         public ReplayConsumer()
         {
             WorkLimiter = new Semaphore(ThreadLimit, ThreadLimit);
+        }
+
+        private string WorkerKey(ExecutionWorkloadEvent evnt)
+        {
+            // In SQL the SPID is only unqiue while the session is in use.
+            // When the SPID is reused it may be for a different database.
+
+            var result = $"{evnt.SPID}_{evnt.DatabaseName}";
+
+            if (MimicApplicationName)
+            {
+                // When the SPID is reused it may be for a different Host, User or Application
+                // but this application can only mimic the Application Name so if we're doing
+                // that include that in the key.
+                result += $"_{evnt.ApplicationName}";
+            }
+
+            return result;
         }
 
         public override void ConsumeBuffered(WorkloadEvent evnt)
@@ -131,10 +149,9 @@ namespace WorkloadTools.Consumer.Replay
                 EventSequence = evt.EventSequence
             };
 
-            var session_id = -1;
-            session_id = (int)evt.SPID;
+            var workerKey = WorkerKey(evt);
 
-            if (ReplayWorkers.TryGetValue(session_id, out var rw))
+            if (ReplayWorkers.TryGetValue(workerKey, out var rw))
             {
                 // Ensure that the buffer does not get too big
                 while (rw.QueueLength >= (BufferSize * .9))
@@ -145,9 +162,9 @@ namespace WorkloadTools.Consumer.Replay
             }
             else
             {
-                logger.Debug("Creating Worker {Worker}", session_id);
+                logger.Debug("Creating Worker {Worker}", workerKey);
 
-                rw = new ReplayWorker(session_id.ToString())
+                rw = new ReplayWorker(workerKey)
                 {
                     ConnectionInfo = ConnectionInfo,
                     ReplayIntervalSeconds = 0,
@@ -166,7 +183,7 @@ namespace WorkloadTools.Consumer.Replay
                     RelativeDelays = RelativeDelays
                 };
 
-                _ = ReplayWorkers.TryAdd(session_id, rw);
+                _ = ReplayWorkers.TryAdd(workerKey, rw);
                 rw.AppendCommand(command);
             }
 
@@ -221,7 +238,7 @@ namespace WorkloadTools.Consumer.Replay
                     // Use .ToList() to materialise the list so that ReplayWorkers.TryRemove does not cause an exception that the list has changed during the iteration
                     foreach (var wrk in ReplayWorkers.Values.Where(x => x.LastCommandTime < DateTime.Now.AddSeconds(-InactiveWorkerTerminationTimeoutSeconds) && !x.HasCommands).ToList())
                     {
-                        logger.Debug("Removing worker {ReplayWorkers.Count} which has not executed a command since {lastCommand}", wrk.Name, wrk.LastCommandTime);
+                        logger.Debug("Removing worker {Worker} which has not executed a command since {lastCommand}", wrk.Name, wrk.LastCommandTime);
 
                         RemoveWorker(wrk.Name);
                     }
@@ -237,7 +254,7 @@ namespace WorkloadTools.Consumer.Replay
 
         private void RemoveWorker(string name)
         {
-            _ = ReplayWorkers.TryRemove(int.Parse(name), out var outWrk);
+            _ = ReplayWorkers.TryRemove(name, out var outWrk);
 
             if (outWrk != null)
             {
