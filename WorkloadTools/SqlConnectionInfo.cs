@@ -25,7 +25,7 @@ namespace WorkloadTools
             {
                 var connectionString = "Data Source=" + ServerName + "; ";
                 connectionString += "Max Pool Size = " + MaxPoolSize + "; ";
-                if (String.IsNullOrEmpty(DatabaseName))
+                if (string.IsNullOrEmpty(DatabaseName))
                 {
                     connectionString += "Initial Catalog = master; ";
                 }
@@ -40,7 +40,7 @@ namespace WorkloadTools
                     }
                     connectionString += "Initial Catalog = " + effectiveDatabaseName + "; ";
                 }
-                if (String.IsNullOrEmpty(UserName))
+                if (string.IsNullOrEmpty(UserName))
                 {
                     connectionString += "Integrated Security = SSPI; ";
                 }
@@ -49,7 +49,7 @@ namespace WorkloadTools
                     connectionString += "User Id = " + UserName + "; ";
                     connectionString += "Password = " + Password + "; ";
                 }
-                if (!String.IsNullOrEmpty(ApplicationName))
+                if (!string.IsNullOrEmpty(ApplicationName))
                 {
                     connectionString += "Application Name = "+ ApplicationName +"; ";
                 }

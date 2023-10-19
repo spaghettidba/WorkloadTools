@@ -18,7 +18,7 @@ namespace WorkloadViewer
     /// </summary>
     public partial class App : Application
     {
-        private static Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public Options Options { get; private set; }
 
@@ -31,7 +31,7 @@ namespace WorkloadViewer
 
             if (!optionsAreGood)
             {
-                MessageBox.Show(Options.GetUsage());
+                _ = MessageBox.Show(Options.GetUsage());
                 Shutdown();
             }
 
@@ -42,11 +42,7 @@ namespace WorkloadViewer
                 var target = (FileTarget)LogManager.Configuration.FindTargetByName("logfile");
                 if (target != null)
                 {
-                    var pathToLog = Options.LogFile;
-                    if (pathToLog == null)
-                    {
-                        pathToLog = Path.Combine(Environment.CurrentDirectory, "WorkloadViewer.log");
-                    }
+                    var pathToLog = Options.LogFile ?? Path.Combine(Environment.CurrentDirectory, "WorkloadViewer.log");
                     if (!Path.IsPathRooted(pathToLog))
                     {
                         pathToLog = Path.Combine(Environment.CurrentDirectory, pathToLog);

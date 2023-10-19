@@ -41,7 +41,7 @@ namespace WorkloadTools
                     for (var i = 0; i < value.Length; i++)
                     {
                         var thisValue = value[i];
-                        if (!String.IsNullOrEmpty(thisValue) && thisValue.StartsWith("^"))
+                        if (!string.IsNullOrEmpty(thisValue) && thisValue.StartsWith("^"))
                         {
                             _predicateValue[i] = thisValue.Substring(1);
                             ComparisonOperator[i] = FilterComparisonOperator.Not_Equal;
@@ -72,7 +72,7 @@ namespace WorkloadTools
 
         public static string ComparisonOperatorAsString(FilterComparisonOperator op)
         {
-            var result = String.Empty;
+            var result = string.Empty;
             switch (op)
             {
                 case FilterComparisonOperator.Equal:

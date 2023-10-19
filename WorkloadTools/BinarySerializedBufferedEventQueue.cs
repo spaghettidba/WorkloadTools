@@ -22,7 +22,7 @@ namespace WorkloadTools
 
         public BinarySerializedBufferedEventQueue() : base()
         {
-            file_name_uniquifier = DateTime.Now.ToString("yyyyMMddHHmm") + "_" + ("000000000" + (Environment.TickCount & Int32.MaxValue)).Right(9) + "_";
+            file_name_uniquifier = DateTime.Now.ToString("yyyyMMddHHmm") + "_" + ("000000000" + (Environment.TickCount & int.MaxValue)).Right(9) + "_";
             baseFolder = Path.Combine(Path.Combine(System.IO.Path.GetTempPath(), "WorkloadTools"), "SerializedEventQueue");
             _ = System.IO.Directory.CreateDirectory(baseFolder);
             _minFile = 0;

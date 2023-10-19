@@ -25,8 +25,6 @@ namespace WorkloadTools.Consumer.Analysis
         private static readonly Regex _delimiterStart = new Regex("(--)|(/\\*)|'", RegexOptions.Compiled);
         private static readonly Regex _spreadCsv = new Regex(",(?=\\S)", RegexOptions.Compiled);
         private static readonly Regex _spaces = new Regex("\\s+", RegexOptions.Compiled);
-        private static readonly Regex _blockComment = new Regex("/\\*.*?\\*/", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
-        private static readonly Regex _blockCommentDelimiters = new Regex("/\\*|\\*/", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
         private static readonly Regex _inlineComment = new Regex("--.*$", RegexOptions.Multiline | RegexOptions.Compiled);
         private static readonly Regex _prepareSql = new Regex("EXEC\\s+(?<preptype>SP_PREP(ARE|EXEC))\\s+@P1\\s+OUTPUT,\\s*(NULL|(N\\'.+?\\')),\\s*N(?<remaining>.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex _prepExecRpc = new Regex("SET\\s+@P1=(?<stmtnum>\\d+)\\s+EXEC\\s+SP_PREPEXECRPC\\s+@P1\\s+OUTPUT,\\s*N\\'(?<statement>.+?)'", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
@@ -53,7 +51,7 @@ namespace WorkloadTools.Consumer.Analysis
         public bool TruncateTo4000 { get; set; }
         public bool TruncateTo1024 { get; set; }
 
-        static readonly Thread Sweeper;
+        private static readonly Thread Sweeper;
 
         static SqlTextNormalizer()
         {
@@ -64,10 +62,9 @@ namespace WorkloadTools.Consumer.Analysis
                     while (true)
                     {
                         var toDelete = cachedQueries.Where(t => t.Value.ReferenceCount < 10).ToList();
-                        foreach(var el in toDelete)
+                        foreach (var el in toDelete)
                         {
-                            NormalizedSqlText nst = null;
-                            _ = cachedQueries.TryRemove(el.Key, out nst);
+                            _ = cachedQueries.TryRemove(el.Key, out var nst);
                         }
                         Thread.Sleep(30000);
                     }
@@ -77,9 +74,11 @@ namespace WorkloadTools.Consumer.Analysis
                     logger.Error(e.Message);
                     logger.Error(e.StackTrace);
                 }
-            });
-            Sweeper.IsBackground = true;
-            Sweeper.Name = "SqlTextNormalizer.CacheSweeper";
+            })
+            {
+                IsBackground = true,
+                Name = "SqlTextNormalizer.CacheSweeper"
+            };
             Sweeper.Start();
         }
 
@@ -87,9 +86,8 @@ namespace WorkloadTools.Consumer.Analysis
         {
             try
             {
-                NormalizedSqlText result = null;
                 var hashCode = sql.GetHashCode();
-                if (cachedQueries.TryGetValue(hashCode, out result))
+                if (cachedQueries.TryGetValue(hashCode, out var result))
                 {
                     if (result != null && result.OriginalText == sql)
                     {
@@ -115,9 +113,12 @@ namespace WorkloadTools.Consumer.Analysis
 
         public NormalizedSqlText NormalizeSqlText(string sql, int spid, bool spreadCsv)
         {
-            var result = new NormalizedSqlText();
-            result.OriginalText = sql;
-            result.NormalizedText = sql;
+            var normalizedSqlText = new NormalizedSqlText
+            {
+                OriginalText = sql,
+                NormalizedText = sql
+            };
+            var result = normalizedSqlText;
 
             if (sql == null)
             {
@@ -410,9 +411,9 @@ namespace WorkloadTools.Consumer.Analysis
 
         public long GetHashCode(string text)
         {
-            text = text == null ? "" : text;
+            text = text ?? "";
             var num = text.Length / 2;
-            return (long)int.MaxValue * (long)text.Substring(0, num).GetHashCode() + (long)text.Substring(num, text.Length - num).GetHashCode();
+            return (int.MaxValue * (long)text.Substring(0, num).GetHashCode()) + text.Substring(num, text.Length - num).GetHashCode();
         }
 
     }

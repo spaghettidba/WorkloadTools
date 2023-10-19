@@ -14,7 +14,7 @@ namespace WorkloadTools.Listener.Trace
         public override string PushDown()
         {
             IsPushedDown = false;
-            return String.Empty;
+            return string.Empty;
         }
     }
 }

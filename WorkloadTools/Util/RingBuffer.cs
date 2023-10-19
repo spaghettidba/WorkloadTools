@@ -68,7 +68,7 @@ namespace WorkloadTools.Util
                 var index2 = (_position - Count + index) % Capacity;
                 return _buffer[index2];
             }
-            set { Insert(index, value); }
+            set => Insert(index, value);
         }
 
         public T Last()
