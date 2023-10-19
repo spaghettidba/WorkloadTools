@@ -26,6 +26,7 @@ namespace WorkloadTools.Consumer.Replay
         public int FailRetryCount { get; set; } = 0;
         public int TimeoutRetryCount { get; set; } = 0;
         public bool RaiseErrorsToSqlEventTracing { get; private set; } = true;
+        public bool RelativeDelays { get; set; } = false;
 
         private LogLevel _CommandErrorLogLevel = LogLevel.Error;
         public string CommandErrorLogLevel
@@ -161,7 +162,8 @@ namespace WorkloadTools.Consumer.Replay
                     FailRetryCount = FailRetryCount,
                     TimeoutRetryCount = TimeoutRetryCount,
                     CommandErrorLogLevel = _CommandErrorLogLevel,
-                    RaiseErrorsToSqlEventTracing = RaiseErrorsToSqlEventTracing
+                    RaiseErrorsToSqlEventTracing = RaiseErrorsToSqlEventTracing,
+                    RelativeDelays = RelativeDelays
                 };
 
                 _ = ReplayWorkers.TryAdd(session_id, rw);
@@ -212,40 +214,31 @@ namespace WorkloadTools.Consumer.Replay
         {
             while (!stopped)
             {
+                logger.Debug("Looking for workers that have been idle for {InactiveWorkerTerminationTimeoutSeconds}s", InactiveWorkerTerminationTimeoutSeconds);
+
                 try
                 {
-                    if (ReplayWorkers.IsEmpty)
+                    // Use .ToList() to materialise the list so that ReplayWorkers.TryRemove does not cause an exception that the list has changed during the iteration
+                    foreach (var wrk in ReplayWorkers.Values.Where(x => x.LastCommandTime < DateTime.Now.AddSeconds(-InactiveWorkerTerminationTimeoutSeconds) && !x.HasCommands).ToList())
                     {
-                        Thread.Sleep(100);
-                        continue;
-                    }
+                        logger.Debug("Removing worker {ReplayWorkers.Count} which has not executed a command since {lastCommand}", wrk.Name, wrk.LastCommandTime);
 
-                    foreach (var wrk in ReplayWorkers.Values)
-                    {
-                        if (wrk.LastCommandTime < DateTime.Now.AddSeconds(-InactiveWorkerTerminationTimeoutSeconds) && !wrk.HasCommands)
-                        {
-                            RemoveWorker(wrk.Name);
-                        }
+                        RemoveWorker(wrk.Name);
                     }
-
-                    logger.Trace($"{ReplayWorkers.Count} registered active workers");
-                    logger.Trace($"{ReplayWorkers.Min(x => x.Value.LastCommandTime)} oldest command date");
                 }
                 catch (Exception e)
                 {
-                    logger.Warn(e.Message);
+                    logger.Warn(e, "Error when removing idle workers");
                 }
 
                 Thread.Sleep(InactiveWorkerTerminationTimeoutSeconds * 1000); // sleep some seconds
             }
-            logger.Trace("Sweeper thread stopped");
         }
 
         private void RemoveWorker(string name)
         {
             _ = ReplayWorkers.TryRemove(int.Parse(name), out var outWrk);
 
-            logger.Trace("Disposing worker [{Worker}]", name);
             if (outWrk != null)
             {
                 outWrk.Stop();
