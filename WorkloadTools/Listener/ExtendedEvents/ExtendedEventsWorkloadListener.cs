@@ -54,7 +54,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 {
                     throw new ArgumentNullException("You need to provide ConnectionInfo to inizialize an ExtendedEventsWorkloadListener");
                 }
-                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
 
                 LoadServerType(conn);
@@ -207,7 +207,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 {
                     using (var conn = new SqlConnection())
                     {
-                        conn.ConnectionString = ConnectionInfo.ConnectionString;
+                        conn.ConnectionString = ConnectionInfo.ConnectionString();
                         conn.Open();
                         StopSession(conn);
                     }
@@ -279,11 +279,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                 if (serverType != ServerType.AzureSqlDatabase && FileTargetPath == null)
                 {
-                    reader = new StreamXEventDataReader(ConnectionInfo.ConnectionString, SessionName, Events);
+                    reader = new StreamXEventDataReader(ConnectionInfo.ConnectionString(), SessionName, Events);
                 }
                 else
                 {
-                    reader = new FileTargetXEventDataReader(ConnectionInfo.ConnectionString, SessionName, Events, serverType);
+                    reader = new FileTargetXEventDataReader(ConnectionInfo.ConnectionString(), SessionName, Events, serverType);
                 }
 
                 reader.ReadEvents();
