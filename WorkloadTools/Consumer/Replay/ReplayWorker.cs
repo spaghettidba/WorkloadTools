@@ -54,6 +54,7 @@ namespace WorkloadTools.Consumer.Replay
         private Task runner = null;
         private CancellationTokenSource tokenSource;
         private double lastCommandOffet = 0;
+        private bool skipNextDelay = false;
 
         public ReplayWorker(string name)
         {
@@ -113,7 +114,7 @@ namespace WorkloadTools.Consumer.Replay
                 runner = null;
             }
 
-            if (runner == null)
+            if (runner == null && !IsStopped)
             {
                 // Given the potential for lots of Workers we need to allow over-subscription of threads using the LongRunning option.
                 // "
@@ -217,7 +218,7 @@ namespace WorkloadTools.Consumer.Replay
                 {
                     if (IsStopped)
                     {
-                        break;
+                        return;
                     }
 
                     logger.Debug("Connection is in connecting state. Sleeping for 5ms");
@@ -238,7 +239,7 @@ namespace WorkloadTools.Consumer.Replay
             // The offset in milliseconds is set in FileWorkloadListener.
             // The other listeners do not set this value, as they
             // already come with the original timing
-            if (command.ReplayOffset > 0)
+            if (command.ReplayOffset > 0 && !skipNextDelay)
             {
                 if (RelativeDelays && lastCommandOffet > 0)
                 {
@@ -284,16 +285,33 @@ namespace WorkloadTools.Consumer.Replay
                 }
             }
 
+            if (IsStopped)
+            {
+                return;
+            }
+
             // Record the requested and actual command start time in case we're doing relative sleeps
             lastCommandOffet = command.ReplayOffset;
 
             if (nst.CommandType == NormalizedSqlText.CommandTypeEnum.SP_RESET_CONNECTION)
             {
-                //If event is a sp_reset_connection, call a connection close and open to
-                //force connection to get back to connection pool and reset it so that
-                //it's clean for the next event
+                // If event is a sp_reset_connection, call a connection close and open to
+                // force connection to get back to connection pool and reset it so that
+                // it's clean for the next event
                 Conn.Close();
                 Conn.Open();
+
+                // Generally appliations that (correctly) close their connection
+                // regularly and rely on the SQL Client Connection Pool, they will do
+                // so after a command.
+                // This results in the opening of the next connection getting a connection
+                // from the pool and triggering SP_Reset_Connection.
+                // As such captured traces show that the gap between SP_Reset_Connection
+                // and the next command is a few ms only.
+                // Given we struggle to do super-accurate delays, and given the original
+                // application likely had 0 delay in this scenario, skip the delay for the
+                // next command.
+                skipNextDelay = true;
 
                 return;
             }
@@ -302,6 +320,18 @@ namespace WorkloadTools.Consumer.Replay
                 // If event is a nonpooled sp_reset_connection, call a ClearPool(conn)
                 // to force a new connection.
                 ClearPool(Conn);
+
+                // Generally appliations that (correctly) close their connection
+                // regularly and rely on the SQL Client Connection Pool, they will do
+                // so after a command.
+                // This results in the opening of the next connection getting a connection
+                // from the pool and triggering SP_Reset_Connection.
+                // As such captured traces show that the gap between SP_Reset_Connection
+                // and the next command is a few ms only.
+                // Given we struggle to do super-accurate delays, and given the original
+                // application likely had 0 delay in this scenario, skip the delay for the
+                // next command.
+                skipNextDelay = true;
 
                 return;
             }
@@ -328,6 +358,9 @@ namespace WorkloadTools.Consumer.Replay
                     return; // statement not found: better return
                 }
             }
+
+            // If we get here it isn't a connection reset event, so ensure the next command delays correctly.
+            skipNextDelay = false;
 
             try
             {
@@ -388,7 +421,7 @@ namespace WorkloadTools.Consumer.Replay
                     }
                 }
 
-                logger.Trace("SUCCES - \n{commandText}", command.CommandText);
+                logger.Trace("SUCCESS - \n{commandText}", command.CommandText);
                 if (commandCount > 0 && commandCount % WorkerStatsCommandCount == 0)
                 {
                     var seconds = (DateTime.Now - previousCPSComputeTime).TotalSeconds;
@@ -538,37 +571,55 @@ MESSAGE:
 
         private void PreciseDelay(double delayMs)
         {
-            if (delayMs < 1)
-            {
-                // Sub-ms delays are too small to accurately sleep for using either Thread.Sleep or Thread.SpinWait
-                logger.Debug("Requested delay was {requestedDelay}ms and actual delay was {actualDelay}ms", delayMs, 0);
-
-                return;
-            }
             var startingTimestamp = Stopwatch.GetTimestamp();
             var targetTicks = TimeSpan.TicksPerMillisecond * delayMs;
             long elapsedMs;
 
             while (Stopwatch.GetTimestamp() - startingTimestamp < targetTicks)
             {
+                if (IsStopped)
+                {
+                    return;
+                }
+
                 elapsedMs = (Stopwatch.GetTimestamp() - startingTimestamp) / TimeSpan.TicksPerMillisecond;
 
                 // Thread.Sleep is less accurate than Thread.SpinWait, but consumes less CPU while idle.
                 // So to balance accuracy vs CPU impact use a hybrid approach.
-                if (delayMs - elapsedMs > 1000)
+                if (delayMs - elapsedMs > 10000)
                 {
-                    logger.Debug("Sleeping for {threadSleepMs}ms - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 1000, delayMs, elapsedMs);
-                    Thread.Sleep(1000);
+                    logger.Debug("Sleeping for {threadSleepMs}ms - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 8000, delayMs, elapsedMs);
+                    Thread.Sleep(8000);
                 }
-                else if (delayMs - elapsedMs > 100)
+                else if (delayMs - elapsedMs > 1000)
                 {
-                    logger.Debug("Sleeping for {threadSleepMs}ms - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 100, delayMs, elapsedMs);
-                    Thread.Sleep(100);
+                    logger.Debug("Sleeping for {threadSleepMs}ms - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 800, delayMs, elapsedMs);
+                    Thread.Sleep(800);
+                }
+                else if (delayMs - elapsedMs > 500)
+                {
+                    logger.Debug("Sleeping for {threadSleepMs}ms - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 300, delayMs, elapsedMs);
+                    Thread.Sleep(300);
+                }
+                else if (delayMs - elapsedMs > 20)
+                {
+                    logger.Debug("Sleeping for {threadSleepMs}ms - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 5, delayMs, elapsedMs);
+                    Thread.Sleep(5);
+                }
+                else if (delayMs - elapsedMs > 5)
+                {
+                    logger.Debug("Spinning for {spinIterations} iterations - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 100, delayMs, elapsedMs);
+                    Thread.SpinWait(100);
+                }
+                else if (delayMs - elapsedMs > 1)
+                {
+                    logger.Debug("Spinning for {spinIterations} iterations - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 50, delayMs, elapsedMs);
+                    Thread.SpinWait(50);
                 }
                 else
                 {
-                    logger.Debug("Spinning for {spinIterations} iterations - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 1, delayMs, elapsedMs);
-                    Thread.SpinWait(1);
+                    logger.Debug("Spinning for {spinIterations} iterations - delay is {delayMs}ms - elapsed is {elapsedMs}ms", 10, delayMs, elapsedMs);
+                    Thread.SpinWait(10);
                 }
             }
 
@@ -598,6 +649,8 @@ MESSAGE:
         {
             if (disposing)
             {
+                logger.Info("Disposing ReplayWorker");
+
                 Stop();
                 try
                 {
