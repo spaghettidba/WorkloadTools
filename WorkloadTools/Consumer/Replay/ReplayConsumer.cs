@@ -118,7 +118,7 @@ namespace WorkloadTools.Consumer.Replay
             {
                 if (eventCount % (totalEventCount / 1000) == 0)
                 {
-                    var percentInfo = eventCount / totalEventCount;
+                    var percentInfo = (double)eventCount / (double)totalEventCount;
                     logger.Info("{eventCount} ({percentInfo:P}) events replayed - {bufferedEventCount} events buffered", eventCount, percentInfo, Buffer.Count);
                 }
             }
@@ -139,6 +139,8 @@ namespace WorkloadTools.Consumer.Replay
 
             var evt = (ExecutionWorkloadEvent)evnt;
 
+            if (stopped) { return; }
+
             var command = new ReplayCommand()
             {
                 CommandText = evt.Text,
@@ -158,6 +160,9 @@ namespace WorkloadTools.Consumer.Replay
                 {
                     spin.SpinOnce();
                 }
+
+                if (stopped) { return; }
+
                 rw.AppendCommand(command);
             }
             else
@@ -183,8 +188,10 @@ namespace WorkloadTools.Consumer.Replay
                     RelativeDelays = RelativeDelays
                 };
 
-                _ = ReplayWorkers.TryAdd(workerKey, rw);
                 rw.AppendCommand(command);
+
+                if (stopped) { return; }
+                _ = ReplayWorkers.TryAdd(workerKey, rw);
             }
 
             // Ensure the worker is running.
@@ -217,12 +224,14 @@ namespace WorkloadTools.Consumer.Replay
 
         protected override void Dispose(bool disposing)
         {
+            logger.Info("Disposing ReplayConsumer");
+            stopped = true;
+
             foreach (var r in ReplayWorkers.Values)
             {
                 r.Dispose();
             }
             WorkLimiter.Dispose();
-            stopped = true;
         }
 
         // Sweeper thread: removes from the workers list all the workers
@@ -236,8 +245,10 @@ namespace WorkloadTools.Consumer.Replay
                 try
                 {
                     // Use .ToList() to materialise the list so that ReplayWorkers.TryRemove does not cause an exception that the list has changed during the iteration
-                    foreach (var wrk in ReplayWorkers.Values.Where(x => x.LastCommandTime < DateTime.Now.AddSeconds(-InactiveWorkerTerminationTimeoutSeconds) && !x.HasCommands).ToList())
+                    foreach (var wrk in ReplayWorkers.Values.Where(x => x.LastCommandTime > DateTime.MinValue && x.LastCommandTime < DateTime.Now.AddSeconds(-InactiveWorkerTerminationTimeoutSeconds) && !x.HasCommands).ToList())
                     {
+                        if(stopped) { return; }
+
                         logger.Debug("Removing worker {Worker} which has not executed a command since {lastCommand}", wrk.Name, wrk.LastCommandTime);
 
                         RemoveWorker(wrk.Name);
@@ -352,7 +363,7 @@ namespace WorkloadTools.Consumer.Replay
                     }
                     else if (ThreadingMode == ThreadingModeEnum.WorkerTask)
                     {
-                        if (!wrk.IsRunning)
+                        if (!wrk.IsRunning && !stopped)
                         {
                             wrk.Start();
                         }
