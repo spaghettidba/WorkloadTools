@@ -50,7 +50,7 @@ namespace WorkloadTools.Listener.Trace
         {
             using (var conn = new SqlConnection())
             {
-                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
 
                 string traceSql = null;
@@ -135,7 +135,7 @@ namespace WorkloadTools.Listener.Trace
 
         private void ReadEventsFromTDS()
         {
-            using (var reader = new FileTraceEventDataReader(ConnectionInfo.ConnectionString, Filter, Events))
+            using (var reader = new FileTraceEventDataReader(ConnectionInfo.ConnectionString(), Filter, Events))
             {
                 reader.ReadEvents();
             }
@@ -247,7 +247,7 @@ namespace WorkloadTools.Listener.Trace
             stopped = true;
             using (var conn = new SqlConnection())
             {
-                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
                 StopTrace(conn, traceId);
             }

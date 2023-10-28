@@ -90,12 +90,12 @@ namespace WorkloadTools.Consumer.Replay
             Error = 83
         }
 
-        private void InitializeConnection()
+        private void InitializeConnection(string applicationName)
         {
             logger.Debug("Connecting to server {serverName}", ConnectionInfo.ServerName);
 
             ConnectionInfo.DatabaseMap = DatabaseMap;
-            var connString = ConnectionInfo.ConnectionString;
+            var connString = ConnectionInfo.ConnectionString(applicationName);
 
             Conn = new SqlConnection(connString);
             Conn.Open();
@@ -189,20 +189,21 @@ namespace WorkloadTools.Consumer.Replay
         {
             LastCommandTime = DateTime.Now;
 
+            var applicationName = "WorkloadTools-ReplayWorker";
+            if (MimicApplicationName)
+            {
+                applicationName = command.ApplicationName;
+                if (string.IsNullOrEmpty(applicationName))
+                {
+                    ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
+                }
+            }
+
             if (Conn == null)
             {
                 try
                 {
-                    ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
-                    if (MimicApplicationName)
-                    {
-                        ConnectionInfo.ApplicationName = command.ApplicationName;
-                        if (string.IsNullOrEmpty(ConnectionInfo.ApplicationName))
-                        {
-                            ConnectionInfo.ApplicationName = "WorkloadTools-ReplayWorker";
-                        }
-                    }
-                    InitializeConnection();
+                    InitializeConnection(applicationName);
                 }
                 catch (SqlException se)
                 {
@@ -229,7 +230,7 @@ namespace WorkloadTools.Consumer.Replay
 
             if (Conn == null || (Conn.State == ConnectionState.Closed) || (Conn.State == ConnectionState.Broken))
             {
-                InitializeConnection();
+                InitializeConnection(applicationName);
             }
 
             // Extract the handle from the prepared statement
@@ -545,7 +546,7 @@ MESSAGE:
                     // with existing connection as a reset(close the connection) now would cause a 
                     // next event call to fail in case it has dependencies of objects or 
                     // user settings used in the connection
-                    var connString = ConnectionInfo.ConnectionString;
+                    var connString = ConnectionInfo.ConnectionString();
                     var connErrorEvent = new SqlConnection(connString);
                     connErrorEvent.Open();
 

@@ -172,7 +172,7 @@ namespace WorkloadTools
 
             using (var conn = new SqlConnection())
             {
-                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
                 // Calculate CPU usage during the last minute interval
                 var sql = @"
@@ -369,7 +369,7 @@ namespace WorkloadTools
 
             using (var conn = new SqlConnection())
             {
-                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
                 // Calculate waits since instance restart
                 var sql = @"
@@ -460,7 +460,7 @@ namespace WorkloadTools
 
             using (var conn = new SqlConnection())
             {
-                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
                 // Create Marked Transaction
                 var sql = @"

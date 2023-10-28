@@ -398,7 +398,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             using (var conn = new SqlConnection())
             {
-                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
 
                 if (!TargetTableCreated)
@@ -1012,7 +1012,7 @@ namespace WorkloadTools.Consumer.Analysis
 
 			using (var conn = new SqlConnection())
             {
-                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
 
                 var sql = string.Format(@"SELECT * FROM [{0}].[Applications]",ConnectionInfo.SchemaName);
@@ -1069,7 +1069,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             using (var conn = new SqlConnection())
             {
-                conn.ConnectionString = ConnectionInfo.ConnectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
                 conn.ChangeDatabase(ConnectionInfo.DatabaseName);
 
@@ -1130,7 +1130,7 @@ namespace WorkloadTools.Consumer.Analysis
 			{
 				using (var conn = new SqlConnection())
 				{
-					conn.ConnectionString = ConnectionInfo.ConnectionString;
+					conn.ConnectionString = ConnectionInfo.ConnectionString();
 					conn.Open();
 					conn.ChangeDatabase(ConnectionInfo.DatabaseName);
 					using (var cmd = conn.CreateCommand())
