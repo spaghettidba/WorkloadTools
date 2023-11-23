@@ -15,11 +15,11 @@
 
   <?define ProductName="WorkloadTools" ?>
   <?define CompanyName="sqlconsulting.it" ?>
-  <!-- <?define ProductVersion="$(var.BuildVersion)" ?> -->
+  <?define ProductVersion="$(var.BuildVersion)" ?>
 
 
 
-  <Bundle Name="$(var.ProductName)" Version="!(bind.packageVersion.WorkloadToolsMsi)" Manufacturer="$(var.CompanyName)" UpgradeCode="cad976c4-d0c6-4313-b605-ec3749a23b5f">
+  <Bundle Name="$(var.ProductName)" Version="$(var.ProductVersion)" Manufacturer="$(var.CompanyName)" UpgradeCode="cad976c4-d0c6-4313-b605-ec3749a23b5f">
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
       <bal:WixStandardBootstrapperApplication
             LicenseFile="License\License.rtf"

@@ -259,8 +259,9 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
-Setup/harvest\.wxs
-/Setup/harvest2.wxs
-/Setup/harvest3.wxs
+harvest.wxs
+harvest2.wxs
+harvest3.wxs
 Setup/SignParams.ps1
 SetupBootstrapper/SignParams.ps1
+*.wixobj

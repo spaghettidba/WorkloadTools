@@ -30,8 +30,24 @@
   <xsl:key name="commandline-search" match="wix:Component[contains(wix:File/@Source, 'CommandLine.')]" use="@Id" />
   <xsl:template match="wix:Component[key('commandline-search', @Id)]" />
   <xsl:template match="wix:ComponentRef[key('commandline-search', @Id)]" />
-
+  
   <xsl:key name="nlog-search" match="wix:Component[contains(wix:File/@Source, 'NLog.')]" use="@Id" />
   <xsl:template match="wix:Component[key('nlog-search', @Id)]" />
   <xsl:template match="wix:ComponentRef[key('nlog-search', @Id)]" />
+
+  <xsl:key name="config-search" match="wix:Directory[@Name='Config']" use="@Id" />
+  <xsl:template match="wix:Directory[key('config-search', @Id)]" />
+  <xsl:template match="wix:DirectoryRef[key('config-search', @Id)]" />
+
+  <xsl:key name="consumer-search" match="wix:Directory[@Name='Consumer']" use="@Id" />
+  <xsl:template match="wix:Directory[key('consumer-search', @Id)]" />
+  <xsl:template match="wix:DirectoryRef[key('consumer-search', @Id)]" />
+
+  <xsl:key name="listener-search" match="wix:Directory[@Name='Listener']" use="@Id" />
+  <xsl:template match="wix:Directory[key('listener-search', @Id)]" />
+  <xsl:template match="wix:DirectoryRef[key('listener-search', @Id)]" />
+
+  <xsl:key name="sql-search" match="wix:Component[contains(wix:File/@Source, '.sql')]" use="@Id" />
+  <xsl:template match="wix:Component[key('sql-search', @Id)]" />
+  <xsl:template match="wix:ComponentRef[key('sql-search', @Id)]" />
 </xsl:stylesheet>

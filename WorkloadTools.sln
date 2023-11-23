@@ -76,9 +76,7 @@ Global
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Debug|x86.ActiveCfg = Debug|x86
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|Any CPU.ActiveCfg = Release|x86
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|x64.ActiveCfg = Release|x64
-		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|x64.Build.0 = Release|x64
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|x86.ActiveCfg = Release|x86
-		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|x86.Build.0 = Release|x86
 		{62E37C03-BA08-46CE-A583-D71FB7A8825B}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{62E37C03-BA08-46CE-A583-D71FB7A8825B}.Debug|Any CPU.Build.0 = Debug|x86
 		{62E37C03-BA08-46CE-A583-D71FB7A8825B}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -120,9 +118,7 @@ Global
 		{CAD976C4-D0C6-4313-B605-EC3749A23B5F}.Debug|x86.ActiveCfg = Debug|x86
 		{CAD976C4-D0C6-4313-B605-EC3749A23B5F}.Release|Any CPU.ActiveCfg = Release|x86
 		{CAD976C4-D0C6-4313-B605-EC3749A23B5F}.Release|x64.ActiveCfg = Release|x64
-		{CAD976C4-D0C6-4313-B605-EC3749A23B5F}.Release|x64.Build.0 = Release|x64
 		{CAD976C4-D0C6-4313-B605-EC3749A23B5F}.Release|x86.ActiveCfg = Release|x86
-		{CAD976C4-D0C6-4313-B605-EC3749A23B5F}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
