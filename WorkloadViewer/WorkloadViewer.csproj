@@ -131,6 +131,7 @@
     <Compile Include="..\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Comparer\QueryResultEqualityComparer.cs" />
     <Compile Include="Model\NormalizedQuery.cs" />
     <Compile Include="Model\SqlConnectionInfo.cs" />
     <Compile Include="Model\WorkloadAnalysis.cs" />
@@ -142,6 +143,7 @@
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="Model\QueryDetails.cs" />
     <Compile Include="ViewModel\Message.cs" />
+    <Compile Include="ViewModel\QueryResult.cs" />
     <Compile Include="ViewModel\SortColMessage.cs" />
     <Compile Include="ViewModel\ViewModelLocator.cs" />
     <Page Include="View\ConnectionInfoDialog.xaml">

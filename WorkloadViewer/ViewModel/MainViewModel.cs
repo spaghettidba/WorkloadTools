@@ -322,18 +322,18 @@ namespace WorkloadViewer.ViewModel
                     on b.query.Hash equals k.query.Hash
                     into joinedData
                 from j in joinedData.DefaultIfEmpty()
-                select new
+                select new QueryResult
                 {
                     query_hash = b.query.Hash,
                     query_text = b.query.ExampleText,
                     query_normalized = b.query.NormalizedText,
-                    b.sum_duration_us,
-                    b.avg_duration_us,
-                    b.sum_cpu_us,
-                    b.avg_cpu_us,
-                    b.sum_reads,
-                    b.avg_reads,
-                    b.execution_count,
+                    sum_duration_us = b.sum_duration_us,
+                    avg_duration_us = b.avg_duration_us,
+                    sum_cpu_us = b.sum_cpu_us,
+                    avg_cpu_us = b.avg_cpu_us,
+                    sum_reads = b.sum_reads,
+                    avg_reads = b.avg_reads,
+                    execution_count = b.execution_count,
                     sum_duration_us2 = j == null ? 0 : j.sum_duration_us,
                     diff_sum_duration_us = j == null ? 0 : j.sum_duration_us - b.sum_duration_us,
                     avg_duration_us2 = j == null ? 0 : j.avg_duration_us,
@@ -358,19 +358,19 @@ namespace WorkloadViewer.ViewModel
                     on b.query.Hash equals k.query.Hash
                     into joinedData
                 from j in joinedData.DefaultIfEmpty()
-                select new
+                select new QueryResult
                 {
                     query_hash = b.query.Hash,
                     query_text = b.query.ExampleText,
                     query_normalized = b.query.NormalizedText,
-                    b.sum_duration_us,
-                    b.avg_duration_us,
-                    b.sum_cpu_us,
-                    b.avg_cpu_us,
-                    b.sum_reads,
-                    b.avg_reads,
-                    b.execution_count,
-                    sum_duration_us2     = j == null ? 0 : j.sum_duration_us,
+                    sum_duration_us = b.sum_duration_us,
+                    avg_duration_us = b.avg_duration_us,
+                    sum_cpu_us = b.sum_cpu_us,
+                    avg_cpu_us = b.avg_cpu_us,
+                    sum_reads = b.sum_reads,
+                    avg_reads = b.avg_reads,
+                    execution_count = b.execution_count,
+                    sum_duration_us2 = j == null ? 0 : j.sum_duration_us,
                     diff_sum_duration_us = j == null ? 0 : j.sum_duration_us - b.sum_duration_us,
                     avg_duration_us2 = j == null ? 0 : j.avg_duration_us,
                     diff_avg_duration_us = j == null ? 0 : j.avg_duration_us - b.avg_duration_us,
@@ -388,7 +388,9 @@ namespace WorkloadViewer.ViewModel
                     document = new ICSharpCode.AvalonEdit.Document.TextDocument() { Text = b.query.ExampleText }
                 };
 
-            var merged = leftOuterJoin.Union(rightOuterJoin);
+            var merged = leftOuterJoin
+                .Union(rightOuterJoin, new QueryResultEqualityComparer())
+                .ToList();
 
             Queries = merged;
 
