@@ -81,9 +81,11 @@ namespace WorkloadTools
 
                 // even when the listener has finished, wait until all buffered consumers are finished
                 // unless the controller has been explicitly stopped by invoking Stop()
+                // give max 1 minute grace time
                 if (!forceStopped)
                 {
-                    while (Consumers.Where(c => c is BufferedWorkloadConsumer).Any(c => c.HasMoreEvents()))
+                    var beginWait = DateTime.Now;
+                    while (Consumers.Where(c => c is BufferedWorkloadConsumer).Any(c => c.HasMoreEvents()) && beginWait > DateTime.Now.AddMinutes(-1))
                     {
                         Thread.Sleep(10);
                     }

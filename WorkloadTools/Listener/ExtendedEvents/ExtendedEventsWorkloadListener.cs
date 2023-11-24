@@ -202,7 +202,10 @@ namespace WorkloadTools.Listener.ExtendedEvents
                 logger.Info($"Disposing ExtendedEventsWorkloadListener.");
                 logger.Debug($"[{eventCount}] events read.");
                 logger.Debug($"Events in the queue? [{Events.HasMoreElements()}]");
-                reader.Stop();
+                if(reader != null)
+                {
+                    reader.Stop();
+                }
                 if (!ReuseExistingSession)
                 {
                     using (var conn = new SqlConnection())
