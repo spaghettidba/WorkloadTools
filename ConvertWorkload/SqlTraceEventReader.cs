@@ -53,7 +53,7 @@ namespace ConvertWorkload
                 
                 using(var conn = new SqlConnection())
                 {
-                    conn.ConnectionString = info.ConnectionString;
+                    conn.ConnectionString = info.ConnectionString();
                     conn.Open();
                     using(var cmd = conn.CreateCommand())
                     {
@@ -70,7 +70,7 @@ namespace ConvertWorkload
                     }
                 }
 
-                reader = new FileTraceEventDataReader(info.ConnectionString, Filter, Events);
+                reader = new FileTraceEventDataReader(info.ConnectionString(), Filter, Events);
                 reader.ReadEvents();
                 finished = true;
             }

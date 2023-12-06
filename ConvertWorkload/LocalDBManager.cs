@@ -67,7 +67,7 @@ namespace ConvertWorkload
                 var info = new SqlConnectionInfo();
                 info.ServerName = @"(localdb)\MSSQLLocalDB";
                 info.UseIntegratedSecurity = true;
-                using (var conn = new SqlConnection(info.ConnectionString + ";Connect Timeout=30;"))
+                using (var conn = new SqlConnection(info.ConnectionString() + ";Connect Timeout=30;"))
                 {
                     conn.Open();
                 }

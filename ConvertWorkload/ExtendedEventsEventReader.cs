@@ -55,7 +55,7 @@ namespace ConvertWorkload
 
                 using (var conn = new SqlConnection())
                 {
-                    conn.ConnectionString = info.ConnectionString;
+                    conn.ConnectionString = info.ConnectionString();
                     conn.Open();
                     using (var cmd = conn.CreateCommand())
                     {
@@ -72,7 +72,7 @@ namespace ConvertWorkload
                     }
                 }
 
-                reader = new FileTargetXEventDataReader(info.ConnectionString, null, Events, ExtendedEventsWorkloadListener.ServerType.LocalDB);
+                reader = new FileTargetXEventDataReader(info.ConnectionString(), null, Events, ExtendedEventsWorkloadListener.ServerType.LocalDB);
                 reader.ReadEvents();
                 finished = true;
                     
