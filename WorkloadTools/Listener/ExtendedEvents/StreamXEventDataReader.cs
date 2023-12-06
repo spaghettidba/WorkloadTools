@@ -267,12 +267,13 @@ namespace WorkloadTools.Listener.ExtendedEvents
             // check whether last char is a null char (\0)
             // because this breaks writing this string to the sqlite database
             // which considers it as a BLOB
-            if(result is string stringValue)
+            if (result is string stringValue)
             {
                 while (stringValue.EndsWith("\0"))
                 {
-                    result = stringValue.Remove(stringValue.Length - 1);
+                    stringValue = stringValue.Remove(stringValue.Length - 1);
                 }
+                result = stringValue;
             }
             return result;
         }
