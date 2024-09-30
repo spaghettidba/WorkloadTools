@@ -50,7 +50,7 @@ namespace WorkloadTools
                 {
                     try
                     {
-                        if ((!Listener.IsRunning) || (endTime < DateTime.Now))
+                        if ((!Listener.IsRunning && Consumers.All(c => !c.HasMoreEvents())) || (endTime < DateTime.Now))
                         {
                             stopped = true;
                         }
