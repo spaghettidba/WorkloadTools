@@ -1123,8 +1123,6 @@ namespace WorkloadTools.Consumer.Analysis
 
 		protected void CreateTargetDatabase()
 		{
-			var databaseName = ConnectionInfo.DatabaseName;
-			ConnectionInfo.DatabaseName = "master";
 
 			try
 			{
@@ -1132,11 +1130,11 @@ namespace WorkloadTools.Consumer.Analysis
 				{
 					conn.ConnectionString = ConnectionInfo.ConnectionString();
 					conn.Open();
-					conn.ChangeDatabase(ConnectionInfo.DatabaseName);
+
 					using (var cmd = conn.CreateCommand())
 					{
 						var createDb = @"
-						IF NOT EXISTS(SELECT * FROM sys.databases WHERE name = @name)
+						IF DB_ID(@name) IS NULL
 						BEGIN
 						    DECLARE @sql nvarchar(max); 
 							SET @sql = N'CREATE DATABASE ' + QUOTENAME(@name);
