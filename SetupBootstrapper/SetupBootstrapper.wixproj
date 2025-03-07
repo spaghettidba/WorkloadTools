@@ -66,12 +66,16 @@
   <PropertyGroup>
     <PostBuildEvent>call $(ProjectDir)postbuild.bat "!(TargetPath)" "$(TargetDir)$(SolutionName)_$(Platform)$(TargetExt)"</PostBuildEvent>
   </PropertyGroup>
-  <!--
-	To modify your build process, add your task inside one of the targets below and uncomment it.
-	Other similar extension points exist, see Wix.targets.
+
 	<Target Name="BeforeBuild">
+    <GetAssemblyIdentity AssemblyFiles="..\SqlWorkload\bin\$(Platform)\$(Configuration)\SqlWorkload.exe">
+      <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
+    </GetAssemblyIdentity>
+    <PropertyGroup>
+      <DefineConstants>BuildVersion=%(AssemblyVersion.Version)</DefineConstants>
+    </PropertyGroup>
 	</Target>
 	<Target Name="AfterBuild">
 	</Target>
-	-->
+
 </Project>
