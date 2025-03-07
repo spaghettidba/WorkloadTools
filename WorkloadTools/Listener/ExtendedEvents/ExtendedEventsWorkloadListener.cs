@@ -61,10 +61,6 @@ namespace WorkloadTools.Listener.ExtendedEvents
 
                 if (serverType == ServerType.AzureSqlDatabase)
                 {
-                    if (FileTargetPath == null)
-                    {
-                        throw new ArgumentException("Azure SqlDatabase does not support Extended Events streaming. Please specify a path for the FileTarget");
-                    }
                     if (ConnectionInfo.DatabaseName == null)
                     {
                         throw new ArgumentException("Azure SqlDatabase does not support starting Extended Events sessions on the master database. Please specify a database name.");
@@ -280,7 +276,7 @@ namespace WorkloadTools.Listener.ExtendedEvents
             try
             {
 
-                if (serverType != ServerType.AzureSqlDatabase && FileTargetPath == null)
+                if (FileTargetPath == null)
                 {
                     reader = new StreamXEventDataReader(ConnectionInfo.ConnectionString(), SessionName, Events);
                 }

@@ -19,6 +19,24 @@ namespace WorkloadTools
         public int MaxPoolSize { get; set; } = 500;
         public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();
 
+
+        public SqlConnectionInfo() { }
+
+        public SqlConnectionInfo(SqlConnectionInfo info)
+        {
+            this.ServerName = info.ServerName;
+            this.DatabaseName = info.DatabaseName;
+            this.SchemaName = info.SchemaName;
+            this.UseIntegratedSecurity = info.UseIntegratedSecurity;
+            this.UserName = info.UserName;
+            this.Password = info.Password;
+            this.Encrypt = info.Encrypt;
+            this.TrustServerCertificate = info.TrustServerCertificate;
+            this.ApplicationName = info.ApplicationName;
+            this.MaxPoolSize = info.MaxPoolSize;
+            this.DatabaseMap = info.DatabaseMap;
+        }
+
         public string ConnectionString()
         {
             return ConnectionString(ApplicationName);

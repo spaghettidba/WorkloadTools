@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using WorkloadTools.Util;
 using System.Collections.Concurrent;
 using FastMember;
+using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 
 namespace WorkloadTools.Consumer.Analysis
 {
@@ -1126,8 +1127,14 @@ namespace WorkloadTools.Consumer.Analysis
 
 			try
 			{
-				using (var conn = new SqlConnection())
+                var databaseName = ConnectionInfo.DatabaseName;
+                using (var conn = new SqlConnection())
 				{
+                    // create a new connection to the target server 
+                    // for the analysis database, on the master db
+                    // then create the target database if not available
+                    var ci = new SqlConnectionInfo(ConnectionInfo);
+                    ci.DatabaseName = "master";
 					conn.ConnectionString = ConnectionInfo.ConnectionString();
 					conn.Open();
 
@@ -1147,11 +1154,9 @@ namespace WorkloadTools.Consumer.Analysis
 					}
 				}
 			}
-			finally
-			{
-				// restore original database name
-				ConnectionInfo.DatabaseName = databaseName;
-			}
+            catch(Exception e) {
+                logger.Warn("Unable to create the target database for the analysisy", e.Message);
+            }
 
 		}
 
