@@ -2,21 +2,10 @@
 using CommandLine.Text;
 using NLog;
 using NLog.Targets;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Runtime;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using WorkloadTools;
 using WorkloadTools.Config;
-using WorkloadTools.Consumer;
-using WorkloadTools.Listener;
-using WorkloadTools.Listener.ExtendedEvents;
-using WorkloadTools.Listener.Trace;
 
 namespace SqlWorkload
 {
@@ -40,11 +29,24 @@ namespace SqlWorkload
             try
             {
                 var options = new Options();
-                if (!CommandLine.Parser.Default.ParseArguments(args, options))
-                {
-                    return;
-                }
-                Run(options);
+                var result = Parser.Default.ParseArguments<Options>(args);
+                result
+                  .WithParsed(parsedOptions => options = parsedOptions)
+                  .WithNotParsed(errors =>
+                  {
+                      foreach (var error in errors)
+                      {
+                          logger.Error(error.ToString());
+                      }
+                      var helpText = HelpText.AutoBuild(result, h =>
+                      {
+                          h.AdditionalNewLineAfterOption = false;
+                          return h;
+                      }, e => e);
+                      Console.WriteLine(helpText);
+                      Environment.Exit(1);
+                  });
+                Run(options, result);
             }
             catch(Exception e)
             {
@@ -53,7 +55,7 @@ namespace SqlWorkload
 
         }
 
-        static void Run(Options options)
+        static void Run(Options options, ParserResult<Options> parseResult)
         {
             // reconfigure loggers to use a file in the current directory
             // or the file specified by the "Log" commandline parameter
@@ -89,18 +91,18 @@ namespace SqlWorkload
                 }
             }
 
-            options.ConfigurationFile = System.IO.Path.GetFullPath(options.ConfigurationFile);
+            options.ConfigurationFile = Path.GetFullPath(options.ConfigurationFile);
             logger.Info(String.Format("Reading configuration from '{0}'", options.ConfigurationFile));
 
             if (!File.Exists(options.ConfigurationFile))
             {
                 logger.Error("File not found!");
-                Console.WriteLine(options.GetUsage());
+                Console.WriteLine(options.GetUsage(parseResult));
                 return;
             }
 
             var config = SqlWorkloadConfig.LoadFromFile(options.ConfigurationFile);
-            config.Controller.Listener.Source = System.IO.Path.GetFullPath(config.Controller.Listener.Source);
+            config.Controller.Listener.Source = Path.GetFullPath(config.Controller.Listener.Source);
 
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
                 e.Cancel = true;
@@ -155,7 +157,7 @@ namespace SqlWorkload
 
     class Options
     {
-        [Option('F', "File", DefaultValue = "SqlWorkload.json", HelpText = "Configuration file")]
+        [Option('F', "File", Default = "SqlWorkload.json", HelpText = "Configuration file")]
         public string ConfigurationFile { get; set; }
 
         [Option('L', "Log", HelpText = "Log file")]
@@ -164,16 +166,15 @@ namespace SqlWorkload
         [Option('E', "LogLevel", HelpText = "Log level")]
         public string LogLevel { get; set; }
 
-        [ParserState]
-        public IParserState LastParserState { get; set; }
-
-        [HelpOption]
-        public string GetUsage()
+        public string GetUsage(ParserResult<Options> parseResult)
         {
-            return HelpText.AutoBuild(this,
-              (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
+            var help = HelpText.AutoBuild(parseResult, h =>
+            {
+                h.AdditionalNewLineAfterOption = false;
+                return h;
+            }, e => e);
+            return help;
         }
-    
-    }
 
+    }
 }
