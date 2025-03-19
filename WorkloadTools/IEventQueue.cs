@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace WorkloadTools
+﻿namespace WorkloadTools
 {
 
     public enum EventQueueType

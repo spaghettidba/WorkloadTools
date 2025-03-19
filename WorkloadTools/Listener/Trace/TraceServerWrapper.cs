@@ -1,12 +1,5 @@
 ﻿using NLog;
-using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
 
 namespace WorkloadTools.Listener.Trace
 {

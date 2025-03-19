@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace WorkloadTools.Listener.File
+﻿namespace WorkloadTools.Listener.File
 {
     public class FileFilterPredicate : FilterPredicate
     {

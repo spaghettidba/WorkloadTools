@@ -1,19 +1,10 @@
 ﻿using NLog;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
-using System.Reflection;
+using Microsoft.Data.SqlClient;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using WorkloadTools.Util;
 using System.Collections.Concurrent;
 using FastMember;
-using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 
 namespace WorkloadTools.Consumer.Analysis
 {
@@ -471,7 +462,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             lock (waitsData)
             {
-                using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+                using (var bulkCopy = new SqlBulkCopy(conn,
                                                 SqlBulkCopyOptions.KeepIdentity |
                                                 SqlBulkCopyOptions.FireTriggers |
                                                 SqlBulkCopyOptions.CheckConstraints |
@@ -522,7 +513,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             lock (counterData)
             {
-                using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+                using (var bulkCopy = new SqlBulkCopy(conn,
                                                 SqlBulkCopyOptions.KeepIdentity |
                                                 SqlBulkCopyOptions.FireTriggers |
                                                 SqlBulkCopyOptions.CheckConstraints |
@@ -579,7 +570,7 @@ namespace WorkloadTools.Consumer.Analysis
             }
 
             // bulk copy data to temp table
-            using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+            using (var bulkCopy = new SqlBulkCopy(conn,
                                             SqlBulkCopyOptions.KeepIdentity |
                                             SqlBulkCopyOptions.FireTriggers |
                                             SqlBulkCopyOptions.CheckConstraints |
@@ -706,7 +697,7 @@ namespace WorkloadTools.Consumer.Analysis
         {
             int numRows;
 
-            using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+            using (var bulkCopy = new SqlBulkCopy(conn,
                                             SqlBulkCopyOptions.KeepIdentity |
                                             SqlBulkCopyOptions.FireTriggers |
                                             SqlBulkCopyOptions.CheckConstraints |
@@ -791,7 +782,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             lock (errorData)
 			{
-				using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+				using (var bulkCopy = new SqlBulkCopy(conn,
 												SqlBulkCopyOptions.KeepIdentity |
 												SqlBulkCopyOptions.FireTriggers |
 												SqlBulkCopyOptions.CheckConstraints |
@@ -844,7 +835,7 @@ namespace WorkloadTools.Consumer.Analysis
             }
 
             // bulk insert into temporary
-            using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+            using (var bulkCopy = new SqlBulkCopy(conn,
                                                                 SqlBulkCopyOptions.KeepIdentity |
                                                                 SqlBulkCopyOptions.FireTriggers |
                                                                 SqlBulkCopyOptions.CheckConstraints |
@@ -900,7 +891,7 @@ namespace WorkloadTools.Consumer.Analysis
             }
 
             // bulk insert into temporary
-            using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
+            using (var bulkCopy = new SqlBulkCopy(conn,
                                                                 SqlBulkCopyOptions.KeepIdentity |
                                                                 SqlBulkCopyOptions.FireTriggers |
                                                                 SqlBulkCopyOptions.CheckConstraints |

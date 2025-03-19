@@ -1,11 +1,4 @@
-﻿using Microsoft.SqlServer.XEvent.Linq;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace WorkloadTools.Listener.ExtendedEvents
+﻿namespace WorkloadTools.Listener.ExtendedEvents
 {
     public abstract class XEventDataReader 
     {

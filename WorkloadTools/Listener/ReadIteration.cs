@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace WorkloadTools.Listener
+﻿namespace WorkloadTools.Listener
 {
     // This class is used internally to keep track
     // of the files, offsets and event_sequences

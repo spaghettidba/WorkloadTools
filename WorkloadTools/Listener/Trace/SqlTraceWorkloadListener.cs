@@ -1,16 +1,5 @@
 ﻿using NLog;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using WorkloadTools.Listener.Trace;
-using WorkloadTools.Util;
+using Microsoft.Data.SqlClient;
 
 namespace WorkloadTools.Listener.Trace
 {

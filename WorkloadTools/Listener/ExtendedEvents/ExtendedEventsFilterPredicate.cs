@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace WorkloadTools.Listener.ExtendedEvents
+﻿namespace WorkloadTools.Listener.ExtendedEvents
 {
     public class ExtendedEventsFilterPredicate : FilterPredicate
     {

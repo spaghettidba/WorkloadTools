@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NFX.ApplicationModel.Pile;
+﻿using System.Collections.Concurrent;
+
+using Azos;
+using Azos.Pile;
 
 namespace WorkloadTools
 {
@@ -15,9 +13,9 @@ namespace WorkloadTools
         // this has no effect on a memory mapped file...
         public int BufferSize { get; set; }
 
-        public MMFEventQueue()
+        public MMFEventQueue(IApplication app)
         {
-            pile = new MMFPile("workloadevents");
+            pile = new MMFPile(app, "workloadevents");
             pile.DataDirectoryRoot = System.IO.Path.GetTempPath();
             pointers = new ConcurrentQueue<PilePointer>();
             pile.Start();

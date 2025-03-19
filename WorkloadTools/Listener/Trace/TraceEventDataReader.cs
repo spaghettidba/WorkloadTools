@@ -1,11 +1,4 @@
-﻿using Microsoft.SqlServer.XEvent.Linq;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace WorkloadTools.Listener.Trace
+﻿namespace WorkloadTools.Listener.Trace
 {
     public abstract class TraceEventDataReader : IDisposable
     {

@@ -1,12 +1,6 @@
 ﻿using NLog;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading;
+using Microsoft.Data.SqlClient;
 using WorkloadTools.Util;
 
 namespace WorkloadTools
@@ -102,10 +96,12 @@ namespace WorkloadTools
 
         public WorkloadListener()
         {
+            var app = new Azos.Apps.AzosApplication(null);
+
             switch (QueueType)
             {
                 case EventQueueType.MMF:
-                    Events = new MMFEventQueue();
+                    Events = new MMFEventQueue(app);
                     break;
                 case EventQueueType.LiteDB:
                     throw new NotImplementedException();
