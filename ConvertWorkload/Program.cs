@@ -2,16 +2,8 @@
 using CommandLine.Text;
 using NLog;
 using NLog.Targets;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Runtime;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using WorkloadTools.Listener.Trace;
 
 namespace ConvertWorkload
 {
@@ -36,11 +28,23 @@ namespace ConvertWorkload
             try
             {
                 var options = new Options();
-                if (!CommandLine.Parser.Default.ParseArguments(args, options))
-                {
-                    
-                    return;
-                }
+                var result = Parser.Default.ParseArguments<Options>(args);
+                result
+                  .WithParsed(parsedOptions => options = parsedOptions)
+                  .WithNotParsed(errors =>
+                  {
+                      foreach (var error in errors)
+                      {
+                          logger.Error(error.ToString());
+                      }
+                      var helpText = HelpText.AutoBuild(result, h =>
+                      {
+                          h.AdditionalNewLineAfterOption = false;
+                          return h;
+                      }, e => e);
+                      Console.WriteLine(helpText);
+                      Environment.Exit(1);
+                  });
                 Run(options);
             }
             catch (Exception e)
@@ -184,16 +188,5 @@ namespace ConvertWorkload
 
         [Option('U', "LoginFilter", HelpText = "Login Filter")]
         public string LoginFilter { get; set; }
-
-        [ParserState]
-        public IParserState LastParserState { get; set; }
-
-        [HelpOption]
-        public string GetUsage()
-        {
-            return HelpText.AutoBuild(this,
-              (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
-        }
-
     }
 }

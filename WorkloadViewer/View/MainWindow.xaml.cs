@@ -1,4 +1,5 @@
-﻿using GalaSoft.MvvmLight.Messaging;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+
 using ICSharpCode.AvalonEdit;
 using MahApps.Metro.Controls;
 using System;

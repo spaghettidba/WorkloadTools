@@ -1,5 +1,4 @@
-﻿using System;
-using WorkloadTools;
+﻿using WorkloadTools;
 
 namespace ConvertWorkload
 {
