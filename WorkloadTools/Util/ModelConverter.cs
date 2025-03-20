@@ -7,7 +7,7 @@ using System.Collections;
 using System.Reflection;
 using System.Runtime.Serialization;
 
-namespace XESmartTarget.Core.Utils
+namespace WorkloadTools.Utils
 {
     public class ModelConverter
     {
@@ -65,24 +65,8 @@ namespace XESmartTarget.Core.Utils
                 if (rawValue == null)
                     continue;
 
-                if (prop.Name == "OutputColumns" && prop.PropertyType == typeof(List<string>))
-                {
-                    var propValue = new List<string>();
-
-                    if (rawValue is IList listVal)
-                        propValue = listVal.Cast<object>().Select(x => x?.ToString()).ToList();
-                    else
-                        propValue = new List<string> { rawValue.ToString() };
-
-                    prop.SetValue(instance, propValue);
-                    continue;
-                }
-                else if (prop.Name == "OutputMeasurement" && prop.PropertyType == typeof(string))
-                {
-                    prop.SetValue(instance, rawValue.ToString());
-                    continue;
-                }
-                else if (prop.Name == "ServerName")
+               
+                if (prop.Name == "ServerName")
                 {
                     if (prop.PropertyType == typeof(string))
                     {
@@ -94,28 +78,7 @@ namespace XESmartTarget.Core.Utils
                     }
                     continue;
                 }
-                else if (prop.Name == "Target")
-                {
-                    if (rawValue is IList listVal)
-                    {
-                        var deserializedList = new List<Target>();
-                        foreach (var el in listVal)
-                        {
-                            if (ConvertJTokenIfNeeded(el) is IDictionary<string, object> dic)
-                            {
-                                var targetObj = Deserialize(dic, typeof(Target));
-                                deserializedList.Add((Target)targetObj);
-                            }
-                        }
-                        prop.SetValue(instance, deserializedList.ToArray());
-                    }
-                    else if (rawValue is IDictionary<string, object> singleDict)
-                    {
-                        var targetObj = Deserialize(singleDict, typeof(Target));
-                        prop.SetValue(instance, new Target[] { (Target)targetObj });
-                    }
-                    continue;
-                }
+                
 
                 if (rawValue is IDictionary<string, object> subDict)
                 {
@@ -147,7 +110,6 @@ namespace XESmartTarget.Core.Utils
             }
             return instance;
         }
-
         private object CreateInstance(IDictionary<string, object> dictionary, Type type)
         {
             try
@@ -155,13 +117,24 @@ namespace XESmartTarget.Core.Utils
                 if (type.IsAbstract && dictionary.TryGetValue("__type", out var subTypeObj) && subTypeObj != null)
                 {
                     var subTypeName = subTypeObj.ToString();
-                    string fullTypeName = subTypeName.Contains(".")
-                        ? subTypeName
-                        : $"XESmartTarget.Core.Responses.{subTypeName}";
-                    var realType = Assembly.GetExecutingAssembly().GetType(fullTypeName) ?? Type.GetType(fullTypeName);
+
+                    var realType = Assembly.GetExecutingAssembly().GetType(subTypeName)
+                                ?? Type.GetType(subTypeName);
+
+                    if (realType == null)
+                    {
+                        realType = SupportedTypes
+                            .FirstOrDefault(t =>
+                                t.FullName.EndsWith("." + subTypeName, StringComparison.OrdinalIgnoreCase)
+                                || t.Name.Equals(subTypeName, StringComparison.OrdinalIgnoreCase));
+                    }
+
                     if (realType != null && !realType.IsAbstract)
+                    {
                         return Activator.CreateInstance(realType);
+                    }
                 }
+
                 return Activator.CreateInstance(type);
             }
             catch (Exception ex)
@@ -170,6 +143,8 @@ namespace XESmartTarget.Core.Utils
                 return FormatterServices.GetUninitializedObject(type);
             }
         }
+
+
 
         private object ConvertJTokenIfNeeded(object value)
         {

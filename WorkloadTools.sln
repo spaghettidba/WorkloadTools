@@ -13,8 +13,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		SharedAssemblyInfo.cs = SharedAssemblyInfo.cs
 	EndProjectSection
 EndProject
-Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "SetupBootstrapper", "SetupBootstrapper\SetupBootstrapper.wixproj", "{CAD976C4-D0C6-4313-B605-EC3749A23B5F}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkloadTools", "WorkloadTools\WorkloadTools.csproj", "{0373E657-8D1C-83A9-88E4-D45A6E6D65BA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlWorkload", "SqlWorkload\SqlWorkload.csproj", "{7B1AA7E5-3833-43D3-AC96-B3F8BA6CF47D}"
@@ -29,8 +27,6 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{BBF5FDA0-C08F-48C9-9B98-E017DD8ABB5D}.Release|Any CPU.ActiveCfg = Release|x86
-		{CAD976C4-D0C6-4313-B605-EC3749A23B5F}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{CAD976C4-D0C6-4313-B605-EC3749A23B5F}.Release|Any CPU.ActiveCfg = Release|x86
 		{0373E657-8D1C-83A9-88E4-D45A6E6D65BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0373E657-8D1C-83A9-88E4-D45A6E6D65BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0373E657-8D1C-83A9-88E4-D45A6E6D65BA}.Release|Any CPU.ActiveCfg = Release|Any CPU

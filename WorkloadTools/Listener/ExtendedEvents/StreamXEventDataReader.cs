@@ -268,10 +268,11 @@ namespace WorkloadTools.Listener.ExtendedEvents
             // which considers it as a BLOB
             if (result is string stringValue)
             {
-                while (stringValue.EndsWith("\0"))
-                {
-                    stringValue = stringValue.Remove(stringValue.Length - 1);
-                }
+                int pos = stringValue.IndexOf('\0');
+                if (pos >= 0)
+                    stringValue = stringValue.Substring(0, pos);
+                //stringValue = stringValue.Remove(stringValue.Length - 1);
+                
                 result = stringValue;
             }
             return result;

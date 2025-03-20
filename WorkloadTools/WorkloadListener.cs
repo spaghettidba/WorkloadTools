@@ -96,12 +96,10 @@ namespace WorkloadTools
 
         public WorkloadListener()
         {
-            var app = new Azos.Apps.AzosApplication(null);
-
             switch (QueueType)
             {
                 case EventQueueType.MMF:
-                    Events = new MMFEventQueue(app);
+                    Events = new MMFEventQueue();
                     break;
                 case EventQueueType.LiteDB:
                     throw new NotImplementedException();

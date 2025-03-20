@@ -13,8 +13,9 @@ namespace WorkloadTools
         // this has no effect on a memory mapped file...
         public int BufferSize { get; set; }
 
-        public MMFEventQueue(IApplication app)
+        public MMFEventQueue()
         {
+            var app = new Azos.Apps.AzosApplication(null);
             pile = new MMFPile(app, "workloadevents");
             pile.DataDirectoryRoot = System.IO.Path.GetTempPath();
             pointers = new ConcurrentQueue<PilePointer>();

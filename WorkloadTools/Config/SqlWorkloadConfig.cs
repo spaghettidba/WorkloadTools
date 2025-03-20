@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using NLog;
 using WorkloadTools.Listener.ExtendedEvents;
 using WorkloadTools.Consumer.Replay;
-using XESmartTarget.Core.Utils;
+using WorkloadTools.Utils;
 
 namespace WorkloadTools.Config
 {
@@ -33,7 +33,6 @@ namespace WorkloadTools.Config
                                               "The file contains syntax errors.", e);
                 }
 
-                // Deserializza in un dizionario generico
                 Dictionary<string, object> dictionary;
                 try
                 {
