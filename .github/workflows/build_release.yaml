@@ -34,7 +34,6 @@ jobs:
         run: |
           powershell Setup\buildmsi_giuthubaction.ps1 `
             -BuildVersion "${{ steps.extract_version.outputs.version }}" `
-            -Platform "x64" `
             -WixBinPath "C:\wix"
 
       - name: Create GitHub Release
