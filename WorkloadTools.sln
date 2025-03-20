@@ -19,8 +19,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkloadTools", "WorkloadTo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlWorkload", "SqlWorkload\SqlWorkload.csproj", "{7B1AA7E5-3833-43D3-AC96-B3F8BA6CF47D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkloadViewer", "WorkloadViewer\WorkloadViewer.csproj", "{6E10E31F-D04D-4CB7-8BB9-71ABD4B6B973}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConvertWorkload", "ConvertWorkload\ConvertWorkload.csproj", "{1226451B-99B4-4BD1-94E8-7F41BB2E40BD}"
 EndProject
 Global
@@ -41,10 +39,6 @@ Global
 		{7B1AA7E5-3833-43D3-AC96-B3F8BA6CF47D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7B1AA7E5-3833-43D3-AC96-B3F8BA6CF47D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7B1AA7E5-3833-43D3-AC96-B3F8BA6CF47D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6E10E31F-D04D-4CB7-8BB9-71ABD4B6B973}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6E10E31F-D04D-4CB7-8BB9-71ABD4B6B973}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6E10E31F-D04D-4CB7-8BB9-71ABD4B6B973}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6E10E31F-D04D-4CB7-8BB9-71ABD4B6B973}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1226451B-99B4-4BD1-94E8-7F41BB2E40BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1226451B-99B4-4BD1-94E8-7F41BB2E40BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1226451B-99B4-4BD1-94E8-7F41BB2E40BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
