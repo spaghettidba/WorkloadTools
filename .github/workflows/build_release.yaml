@@ -53,6 +53,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: "${{ github.workspace }}/Setup/bin/x64/Release/WorkloadTools_x64.msi"
-          asset_name: "WorkloadTools_${{ steps.extract_version.outputs.version }}_x64.msi"
+          asset_path: "C:/temp/WorkloadTools-${{ steps.extract_version.outputs.version }}.msi"
+          asset_name: "WorkloadTools-${{ steps.extract_version.outputs.version }}.msi"
           asset_content_type: application/octet-stream
