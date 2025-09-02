@@ -1,13 +1,6 @@
 ﻿using NLog;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading;
+using Microsoft.Data.SqlClient;
 using System.Xml;
-using System.Xml.Linq;
 using WorkloadTools.Util;
 
 namespace WorkloadTools.Listener.ExtendedEvents

@@ -1,28 +1,25 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web.Script.Serialization;
-using WorkloadTools;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
-namespace WorkloadTools.Util
+using NLog.Targets;
+
+using System.Collections;
+using System.Reflection;
+using System.Runtime.Serialization;
+
+namespace WorkloadTools.Utils
 {
-    public class ModelConverter : JavaScriptConverter
+    public class ModelConverter
     {
-        public override IEnumerable<Type> SupportedTypes
+        public IEnumerable<Type> SupportedTypes
         {
             get
             {
-                var result = new List<Type>();
-                var currentAssembly = Assembly.GetExecutingAssembly();
-                var nameSpace = "WorkloadTools";
-                var types = currentAssembly.GetTypes().Where(t => t != null && t.FullName.StartsWith(nameSpace) & !t.FullName.Contains("+")).ToArray();
-                foreach (var t in types)
+                List<Type> result = new List<Type>();
+                Assembly currentAssembly = Assembly.GetExecutingAssembly();
+                string nameSpace = "WorkloadTools";
+                Type[] types = currentAssembly.GetTypes().Where(t => t != null && t.FullName.StartsWith(nameSpace) & !t.FullName.Contains("+")).ToArray();
+                foreach (Type t in types)
                 {
                     try
                     {
@@ -37,114 +34,182 @@ namespace WorkloadTools.Util
             }
         }
 
-        public override object Deserialize(IDictionary<string, object> dictionary, Type type, JavaScriptSerializer serializer)
+        public T Deserialize<T>(string json)
         {
-            object p;
-            try
-            {
-                // try to create the object using its parameterless constructor
-                p = Activator.CreateInstance(type);
-            }
-            catch {
-                // try to create the object using this scary initializer that 
-                // doesn't need the parameterless constructor
-                p = System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
-            }
+            return (T)Deserialize(json, typeof(T));
+        }
 
-            var props = type.GetProperties();
+        public object Deserialize(string json, Type type)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return null;
 
-            foreach (var key in dictionary.Keys)
+            JToken token = JsonConvert.DeserializeObject<JToken>(json);
+            var dictionary = token.ToObject<Dictionary<string, object>>();
+            return Deserialize(dictionary, type);
+        }
+
+        public object Deserialize(IDictionary<string, object> dictionary, Type type)
+        {
+            object instance = CreateInstance(dictionary, type);
+            var props = instance.GetType().GetProperties();
+
+            foreach (var kvp in dictionary)
             {
-                var prop = props.Where(t => t.Name == key).FirstOrDefault();
-                if (prop != null)
+                string key = kvp.Key;
+                var prop = props.FirstOrDefault(p => string.Equals(p.Name, key, StringComparison.OrdinalIgnoreCase));
+                if (prop == null)
+                    continue;
+
+                object rawValue = ConvertJTokenIfNeeded(kvp.Value);
+                if (rawValue == null)
+                    continue;
+
+               
+                if (prop.Name == "ServerName")
                 {
-                    if (prop.Name.EndsWith("Filter"))
+                    if (prop.PropertyType == typeof(string))
                     {
-                        if (dictionary[key] is string stringValue)
-                        {
-                            prop.SetValue(p, new string[] { stringValue }, null);
-                        }
-                        else
-                        {
-                            prop.SetValue(p, (string[])((ArrayList)dictionary[key]).ToArray(typeof(string)), null);
-                        }
+                        prop.SetValue(instance, rawValue.ToString());
                     }
                     else
                     {
-                        if (dictionary[key] is Dictionary<string, object> dictionaryValue)
-                        {
-                            if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
-                            {
-                                var rawDic = dictionaryValue;
-
-                                var obj = Activator.CreateInstance(prop.PropertyType);
-                                foreach (var itm in rawDic.Keys)
-                                {
-                                    ((Dictionary<string, string>)obj).Add(itm, rawDic[itm].ToString());
-                                }
-                                prop.SetValue(p, obj, null);
-                            }
-                            else
-                            {
-                                prop.SetValue(p, Deserialize(dictionaryValue, prop.PropertyType, serializer), null);
-                            }
-                        }
-                        else
-                        {
-                            if (dictionary[key] is IList && prop.PropertyType.IsGenericType)
-                            {
-                                var obj = Activator.CreateInstance(prop.PropertyType);
-                                foreach (var itm in (IEnumerable)dictionary[key])
-                                {
-                                    _ = ((IList)obj).Add(itm);
-                                }
-                                prop.SetValue(p, obj, null);
-                            }
-                            else 
-                            { 
-                                prop.SetValue(p, GetValueOfType(dictionary[key], prop.PropertyType), null);
-                            }
-                        }
-                           
+                        prop.SetValue(instance, ConvertToStringArray(rawValue));
                     }
+                    continue;
+                }
+                
+
+                if (rawValue is IDictionary<string, object> subDict)
+                {
+                    prop.SetValue(instance, Deserialize(subDict, prop.PropertyType));
+                }
+                else if (rawValue is IList list && prop.PropertyType.IsGenericType)
+                {
+                    var listInstance = (IList)Activator.CreateInstance(prop.PropertyType);
+                    Type elementType = prop.PropertyType.GetGenericArguments()[0];
+                    foreach (var item in list)
+                    {
+                        object convertedItem = ConvertJTokenIfNeeded(item);
+                        if (convertedItem is IDictionary<string, object> dictItem)
+                        {
+                            convertedItem = Deserialize(dictItem, elementType);
+                        }
+                        listInstance.Add(convertedItem);
+                    }
+                    prop.SetValue(instance, listInstance);
+                }
+                else if (prop.PropertyType.IsEnum)
+                {
+                    prop.SetValue(instance, Enum.Parse(prop.PropertyType, rawValue.ToString()));
+                }
+                else
+                {
+                    prop.SetValue(instance, GetValueOfType(rawValue, prop.PropertyType));
                 }
             }
+            return instance;
+        }
+        private object CreateInstance(IDictionary<string, object> dictionary, Type type)
+        {
+            try
+            {
+                if (type.IsAbstract && dictionary.TryGetValue("__type", out var subTypeObj) && subTypeObj != null)
+                {
+                    var subTypeName = subTypeObj.ToString();
 
-            return p;
+                    var realType = Assembly.GetExecutingAssembly().GetType(subTypeName)
+                                ?? Type.GetType(subTypeName);
+
+                    if (realType == null)
+                    {
+                        realType = SupportedTypes
+                            .FirstOrDefault(t =>
+                                t.FullName.EndsWith("." + subTypeName, StringComparison.OrdinalIgnoreCase)
+                                || t.Name.Equals(subTypeName, StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    if (realType != null && !realType.IsAbstract)
+                    {
+                        return Activator.CreateInstance(realType);
+                    }
+                }
+
+                return Activator.CreateInstance(type);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Exception during instance creation: " + ex.Message);
+                return FormatterServices.GetUninitializedObject(type);
+            }
+        }
+
+
+
+        private object ConvertJTokenIfNeeded(object value)
+        {
+            if (value is JObject jObj)
+            {
+                var dict = new Dictionary<string, object>();
+                foreach (var prop in jObj.Properties())
+                {
+                    dict[prop.Name] = ConvertJTokenIfNeeded(prop.Value);
+                }
+                return dict;
+            }
+            else if (value is JArray jArr)
+            {
+                var list = new List<object>();
+                foreach (var item in jArr)
+                {
+                    list.Add(ConvertJTokenIfNeeded(item));
+                }
+                return list;
+            }
+            else if (value is JValue jVal)
+            {
+                return jVal.Value;
+            }
+            return value;
+        }
+
+        private string[] ConvertToStringArray(object val)
+        {
+            if (val == null)
+                return null;
+            if (val is IEnumerable enumerable && !(val is string))
+            {
+                var strList = new List<string>();
+                foreach (var item in enumerable)
+                {
+                    strList.Add(item?.ToString());
+                }
+                return strList.ToArray();
+            }
+            return new string[] { val.ToString() };
         }
 
         private object GetValueOfType(object v, Type propertyType)
         {
             if (propertyType == typeof(string))
-            {
-                return (string)v;
-            }
+                return v?.ToString();
             else if (propertyType == typeof(bool))
-            {
                 return Convert.ToBoolean(v);
-            }
             else if (propertyType == typeof(int))
-            {
                 return Convert.ToInt32(v);
-            }
             else if (propertyType == typeof(long))
-            {
                 return Convert.ToInt64(v);
-            }
-            else if (propertyType == typeof(DateTime))
-            {
-                return Convert.ToDateTime(v);
-            }
+            else if (propertyType == typeof(int?))
+                return v == null ? (int?)null : Convert.ToInt32(v);
+            else if (propertyType == typeof(long?))
+                return v == null ? (long?)null : Convert.ToInt64(v);
             else
-            {
                 return v;
-            }
         }
 
-        public override IDictionary<string, object> Serialize(object obj, JavaScriptSerializer serializer)
+        public IDictionary<string, object> Serialize(object obj)
         {
             throw new NotImplementedException();
         }
-
     }
 }

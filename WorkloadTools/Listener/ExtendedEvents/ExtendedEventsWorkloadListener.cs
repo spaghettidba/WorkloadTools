@@ -1,13 +1,5 @@
-﻿using Microsoft.SqlServer.XEvent.Linq;
-using NLog;
-using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using NLog;
+using Microsoft.Data.SqlClient;
 
 namespace WorkloadTools.Listener.ExtendedEvents
 {

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NFX.ApplicationModel.Pile;
+﻿using System.Collections.Concurrent;
+
+using Azos;
+using Azos.Pile;
 
 namespace WorkloadTools
 {
@@ -17,7 +15,8 @@ namespace WorkloadTools
 
         public MMFEventQueue()
         {
-            pile = new MMFPile("workloadevents");
+            var app = new Azos.Apps.AzosApplication(null);
+            pile = new MMFPile(app, "workloadevents");
             pile.DataDirectoryRoot = System.IO.Path.GetTempPath();
             pointers = new ConcurrentQueue<PilePointer>();
             pile.Start();

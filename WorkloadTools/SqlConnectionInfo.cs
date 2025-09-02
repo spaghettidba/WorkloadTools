@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace WorkloadTools
+﻿namespace WorkloadTools
 {
     public class SqlConnectionInfo
     {
@@ -14,7 +9,7 @@ namespace WorkloadTools
         public string UserName { get; set; }
         public string Password { get; set; }
         public bool Encrypt { get; set; } = false;
-        public bool TrustServerCertificate { get; set; } = false;
+        public bool TrustServerCertificate { get; set; } = true;
         public string ApplicationName { get; set; } = "WorkloadTools";
         public int MaxPoolSize { get; set; } = 500;
         public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();

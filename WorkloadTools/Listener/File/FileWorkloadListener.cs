@@ -1,13 +1,7 @@
-﻿using System;
-using System.Data;
-using System.Data.Common;
-using System.Data.SQLite;
-using System.Linq;
+﻿using System.Data.SQLite;
 using System.Text;
 
 using NLog;
-
-using WorkloadTools.Util;
 
 namespace WorkloadTools.Listener.File
 {

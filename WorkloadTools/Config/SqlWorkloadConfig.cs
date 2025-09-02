@@ -1,22 +1,15 @@
-﻿using NLog;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WorkloadTools;
-using System.Web.Script.Serialization;
-using System.IO;
-using DouglasCrockford.JsMin;
+﻿using DouglasCrockford.JsMin;
+using Newtonsoft.Json;
+using NLog;
 using WorkloadTools.Listener.ExtendedEvents;
 using WorkloadTools.Consumer.Replay;
-using WorkloadTools.Consumer.Analysis;
-using WorkloadTools.Util;
+using WorkloadTools.Utils;
 
 namespace WorkloadTools.Config
 {
     public class SqlWorkloadConfig
     {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         public SqlWorkloadConfig()
         {
         }
@@ -25,33 +18,40 @@ namespace WorkloadTools.Config
 
         public static SqlWorkloadConfig LoadFromFile(string path)
         {
-            var ser = new JavaScriptSerializer(new SqlWorkloadConfigTypeResolver());
-            ser.RegisterConverters(new JavaScriptConverter[] { new ModelConverter() });
             using (var r = new StreamReader(path))
             {
-                var json = r.ReadToEnd();
+                string json = r.ReadToEnd();
                 var minifier = new JsMinifier();
-                // minify JSON to strip away comments
-                // Comments in config files are very useful but JSON parsers
-                // do not allow comments. Minification solves the issue.
-                SqlWorkloadConfig result = null;
-                string jsonMin = null;
+                string jsonMin;
                 try
                 {
                     jsonMin = minifier.Minify(json);
                 }
                 catch (Exception e)
                 {
-                    throw new FormatException($"Unable to load configuration from '{path}'. The file contains syntax errors.", e);
+                    throw new FormatException($"Unable to load configuration from '{path}'. " +
+                                              "The file contains syntax errors.", e);
                 }
 
+                Dictionary<string, object> dictionary;
                 try
                 {
-                    result = ser.Deserialize<SqlWorkloadConfig>(jsonMin);
+                    dictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonMin);
                 }
                 catch (Exception e)
                 {
-                    throw new FormatException($"Unable to load configuration from '{path}'. The file contains semantic errors.", e);
+                    throw new FormatException($"Unable to load configuration from '{path}'. The file contains semantic errors (invalid JSON).", e);
+                }
+
+                ModelConverter converter = new ModelConverter();
+                SqlWorkloadConfig result;
+                try
+                {
+                    result = (SqlWorkloadConfig)converter.Deserialize(dictionary, typeof(SqlWorkloadConfig));
+                }
+                catch (Exception e)
+                {
+                    throw new FormatException($"Unable to convert dictionary to SqlWorkloadConfig.", e);
                 }
                 return result;
             }
@@ -59,7 +59,6 @@ namespace WorkloadTools.Config
 
         public static void Test()
         {
-            var ser = new JavaScriptSerializer(new SqlWorkloadConfigTypeResolver());
             var x = new SqlWorkloadConfig()
             {
                 Controller = new WorkloadController()
@@ -103,13 +102,8 @@ namespace WorkloadTools.Config
                 }
             });
 
-            var s = ser.Serialize(x);
-
+            string s = JsonConvert.SerializeObject(x, Formatting.Indented);
             Console.WriteLine(s);
-
-            //SqlWorkloadConfig tc = ser.Deserialize<SqlWorkloadConfig>(Samples.Sample.ToString());
-
         }
-
     }
 }
