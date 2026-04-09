@@ -30,7 +30,7 @@ namespace WorkloadTools.Consumer.Analysis
         private readonly Dictionary<string, int> logins = new Dictionary<string, int>();
         private readonly Dictionary<string, int> hosts = new Dictionary<string, int>();
 
-        private Queue<WorkloadEvent> _internalQueue;
+        private Queue<WorkloadEvent> _internalQueue = new Queue<WorkloadEvent>();
         private readonly object _internalQueueLock = new object();
         private Thread Worker;
         private bool stopped = false;
@@ -77,7 +77,7 @@ namespace WorkloadTools.Consumer.Analysis
             {
                 lock (_internalQueueLock)
                 {
-                    return _internalQueue != null && _internalQueue.Count > 0;
+                    return _internalQueue.Count > 0;
                 }
             }
         }
@@ -142,7 +142,7 @@ namespace WorkloadTools.Consumer.Analysis
                 {
                     CloseInterval();
 
-                    if (_internalQueue != null && _internalQueue.Count > 0)
+                    if (_internalQueue.Count > 0)
                     {
                         data = _internalQueue.Dequeue();
                         hasData = true;
@@ -181,12 +181,6 @@ namespace WorkloadTools.Consumer.Analysis
 
             lock (_internalQueueLock)
             {
-                // Ensure the queue is initialized
-                if (_internalQueue == null)
-                {
-                    _internalQueue = new Queue<WorkloadEvent>();
-                }
-
                 // Block when the queue is full to avoid unbounded memory growth
                 while (!stopped && _internalQueue.Count >= MaxInternalQueueSize)
                 {
@@ -708,6 +702,7 @@ namespace WorkloadTools.Consumer.Analysis
                 var Table = from kvp in rawData
                             let t = kvp.Key
                             let stats = kvp.Value
+                            where stats.ExecutionCount > 0
                             group stats by new
                             {
                                 application_id = t.Application_id,
@@ -829,6 +824,7 @@ namespace WorkloadTools.Consumer.Analysis
                 var Table = from kvp in rawData
                             let t = kvp.Key
                             let stats = kvp.Value
+                            where stats.ExecutionCount > 0
                             select new
                             {
                                 interval_id = current_interval_id,
