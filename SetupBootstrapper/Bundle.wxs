@@ -28,8 +28,12 @@
             />
     </BootstrapperApplicationRef>
 
+    <Variable Name="InstallFolder" Value="[$(var.PlatformProgramFilesFolder)]WorkloadTools" Type="string" />
+
 		<Chain>
-      <MsiPackage SourceFile="..\Setup\bin\$(var.Platform)\Release\WorkloadTools_$(var.Platform).msi" Id="WorkloadToolsMsi" />
+      <MsiPackage SourceFile="..\Setup\bin\$(var.Platform)\Release\WorkloadTools_$(var.Platform).msi" Id="WorkloadToolsMsi">
+        <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
+      </MsiPackage>
       <PackageGroupRef Id="VCRedist"/>
 		</Chain>
 	</Bundle>
