@@ -40,7 +40,7 @@ namespace WorkloadTools.Consumer.Analysis
         private static readonly Regex _emptyString = new Regex("\\'\\'", RegexOptions.Compiled);
         private static readonly Regex _unicodeConstant = new Regex("N{STR}", RegexOptions.Compiled);
         private static readonly Regex _stringConstant = new Regex("(')(((?!\\1).|\\1{2})*)\\1", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static readonly Regex _paramNameValueStr = new Regex(@"@(?<paramname>\w+)\s?=\s?[N]?['[""](?<paramvalue>([^'\]""])+('{2})?)?['\]""]", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _paramNameValueStr = new Regex(@"@(?<paramname>\w+)\s*=\s*N?'(?<paramvalue>(?:[^']|'')*)'", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex _paramNameValueNum = new Regex(@"@(?<paramname>\w+)\s?=\s?(?<paramvalue>([0-9.])+)", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex _binaryConstant = new Regex("0X([0-9ABCDEF])+", RegexOptions.Compiled);
         private static readonly Regex _numericConstant = new Regex("(?<prefix>[\\(\\s,=\\-><\\!\\&\\|\\+\\*\\/\\%\\~\\$])(?<digits>[\\-\\.\\d]+)", RegexOptions.Compiled);
