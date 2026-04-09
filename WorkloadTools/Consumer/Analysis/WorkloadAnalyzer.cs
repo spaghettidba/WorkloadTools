@@ -36,7 +36,7 @@ namespace WorkloadTools.Consumer.Analysis
         private bool stopped = false;
         public int MaxInternalQueueSize { get; set; } = 10000;
 
-        private ConcurrentDictionary<ExecutionDetailKey, AggregatedExecutionStats> rawData;
+        private ConcurrentDictionary<ExecutionDetailKey,List<ExecutionDetailValue>> rawData;
 		private DataTable errorData;
         private readonly SqlTextNormalizer normalizer;
         private bool TargetTableCreated = false;
@@ -388,21 +388,36 @@ namespace WorkloadTools.Consumer.Analysis
                 Host_id = hostId,
                 Login_id = loginId
             };
+            var theValue = new ExecutionDetailValue()
+            {
+                Event_time = evt.StartTime,
+                Cpu_us = evt.CPU,
+                Reads = evt.Reads,
+                Writes = evt.Writes,
+                Duration_us = evt.Duration
+            };
 
-            // Update pre-aggregated stats - O(n_distinct_keys) memory instead of O(n_events)
-            rawData.AddOrUpdate(
-                theKey,
-                _ =>
+            // Look up execution detail 
+            if (rawData.TryGetValue(theKey, out var theList))
+            {
+                if (theList == null)
                 {
-                    var stats = new AggregatedExecutionStats();
-                    stats.Accumulate(evt);
-                    return stats;
-                },
-                (_, existing) =>
+                    theList = new List<ExecutionDetailValue>();
+                }
+                theList.Add(theValue);
+            }
+            else
+            {
+                theList = new List<ExecutionDetailValue>
                 {
-                    existing.Accumulate(evt);
-                    return existing;
-                });
+                    theValue
+                };
+
+                if (!rawData.TryAdd(theKey, theList))
+                {
+                    throw new InvalidOperationException("Unable to add an executionEvent to the queue");
+                }
+            }
         }
 
         public void Stop()
@@ -698,12 +713,17 @@ namespace WorkloadTools.Consumer.Analysis
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
 
-                // Group pre-aggregated stats by (app, db, host, login) - ignoring sql_hash
-                var Table = from kvp in rawData
-                            let t = kvp.Key
-                            let stats = kvp.Value
-                            where stats.ExecutionCount > 0
-                            group stats by new
+                var Table = from t in rawData.Keys
+                            from v in rawData[t]
+                            group new
+                            {
+                                v.Cpu_us,
+                                v.Duration_us,
+                                v.Event_time,
+                                v.Reads,
+                                v.Writes
+                            }
+                            by new
                             {
                                 application_id = t.Application_id,
                                 database_id = t.Database_id,
@@ -718,26 +738,26 @@ namespace WorkloadTools.Consumer.Analysis
                                 grp.Key.host_id,
                                 grp.Key.login_id,
 
-                                min_cpu_us = grp.Min(s => s.MinCpu_us),
-                                max_cpu_us = grp.Max(s => s.MaxCpu_us),
-                                sum_cpu_us = grp.Sum(s => s.SumCpu_us),
+                                min_cpu_us = grp.Min(v => v.Cpu_us),
+                                max_cpu_us = grp.Max(v => v.Cpu_us),
+                                sum_cpu_us = grp.Sum(v => v.Cpu_us),
 
-                                min_reads = grp.Min(s => s.MinReads),
-                                max_reads = grp.Max(s => s.MaxReads),
-                                sum_reads = grp.Sum(s => s.SumReads),
+                                min_reads = grp.Min(v => v.Reads),
+                                max_reads = grp.Max(v => v.Reads),
+                                sum_reads = grp.Sum(v => v.Reads),
 
-                                min_writes = grp.Min(s => s.MinWrites),
-                                max_writes = grp.Max(s => s.MaxWrites),
-                                sum_writes = grp.Sum(s => s.SumWrites),
+                                min_writes = grp.Min(v => v.Writes),
+                                max_writes = grp.Max(v => v.Writes),
+                                sum_writes = grp.Sum(v => v.Writes),
 
-                                min_duration_us = grp.Min(s => s.MinDuration_us),
-                                max_duration_us = grp.Max(s => s.MaxDuration_us),
-                                sum_duration_us = grp.Sum(s => s.SumDuration_us),
+                                min_duration_us = grp.Min(v => v.Duration_us),
+                                max_duration_us = grp.Max(v => v.Duration_us),
+                                sum_duration_us = grp.Sum(v => v.Duration_us),
 
-                                min_execution_date = grp.Min(s => s.MinEventTime),
-                                max_execution_date = grp.Max(s => s.MaxEventTime),
+                                min_execution_date = grp.Min(v => v.Event_time),
+                                max_execution_date = grp.Max(v => v.Event_time),
 
-                                execution_count = grp.Sum(s => s.ExecutionCount)
+                                execution_count = grp.Count()
                             };
 
                 using (var reader = ObjectReader.Create(Table, "application_id", "database_id", "host_id", "login_id", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "min_reads", "max_reads", "sum_reads", "min_writes", "max_writes", "sum_writes", "min_duration_us", "max_duration_us", "sum_duration_us", "min_execution_date", "max_execution_date", "execution_count"))
@@ -806,7 +826,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         private void WriteExecutionDetails(SqlConnection conn, SqlTransaction tran, int current_interval_id)
         {
-            long numRows;
+            int numRows;
 
             using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
                                             SqlBulkCopyOptions.KeepIdentity |
@@ -820,49 +840,63 @@ namespace WorkloadTools.Consumer.Analysis
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
 
-                // Each rawData entry is already pre-aggregated per (sql_hash, app, db, host, login)
-                var Table = from kvp in rawData
-                            let t = kvp.Key
-                            let stats = kvp.Value
-                            where stats.ExecutionCount > 0
-                            select new
+                var Table = from t in rawData.Keys
+                            from v in rawData[t]
+                            group new
                             {
-                                interval_id = current_interval_id,
-
+                                v.Cpu_us,
+                                v.Duration_us,
+                                v.Event_time,
+                                v.Reads,
+                                v.Writes
+                            }
+                            by new
+                            {
                                 sql_hash = t.Sql_hash,
                                 application_id = t.Application_id,
                                 database_id = t.Database_id,
                                 host_id = t.Host_id,
-                                login_id = t.Login_id,
+                                login_id = t.Login_id
+                            }
+                            into grp
+                            select new
+                            {
+                                interval_id = current_interval_id,
 
-                                avg_cpu_us = stats.ExecutionCount > 0 && stats.SumCpu_us.HasValue ? (long?)(stats.SumCpu_us.Value / stats.ExecutionCount) : (long?)null,
-                                min_cpu_us = stats.MinCpu_us,
-                                max_cpu_us = stats.MaxCpu_us,
-                                sum_cpu_us = stats.SumCpu_us,
+                                grp.Key.sql_hash,
+                                grp.Key.application_id,
+                                grp.Key.database_id,
+                                grp.Key.host_id,
+                                grp.Key.login_id,
 
-                                avg_reads = stats.ExecutionCount > 0 && stats.SumReads.HasValue ? (long?)(stats.SumReads.Value / stats.ExecutionCount) : (long?)null,
-                                min_reads = stats.MinReads,
-                                max_reads = stats.MaxReads,
-                                sum_reads = stats.SumReads,
+                                avg_cpu_us = grp.Average(v => v.Cpu_us),
+                                min_cpu_us = grp.Min(v => v.Cpu_us),
+                                max_cpu_us = grp.Max(v => v.Cpu_us),
+                                sum_cpu_us = grp.Sum(v => v.Cpu_us),
 
-                                avg_writes = stats.ExecutionCount > 0 && stats.SumWrites.HasValue ? (long?)(stats.SumWrites.Value / stats.ExecutionCount) : (long?)null,
-                                min_writes = stats.MinWrites,
-                                max_writes = stats.MaxWrites,
-                                sum_writes = stats.SumWrites,
+                                avg_reads = grp.Average(v => v.Reads),
+                                min_reads = grp.Min(v => v.Reads),
+                                max_reads = grp.Max(v => v.Reads),
+                                sum_reads = grp.Sum(v => v.Reads),
 
-                                avg_duration_us = stats.ExecutionCount > 0 && stats.SumDuration_us.HasValue ? (long?)(stats.SumDuration_us.Value / stats.ExecutionCount) : (long?)null,
-                                min_duration_us = stats.MinDuration_us,
-                                max_duration_us = stats.MaxDuration_us,
-                                sum_duration_us = stats.SumDuration_us,
+                                avg_writes = grp.Average(v => v.Writes),
+                                min_writes = grp.Min(v => v.Writes),
+                                max_writes = grp.Max(v => v.Writes),
+                                sum_writes = grp.Sum(v => v.Writes),
 
-                                execution_count = (long)stats.ExecutionCount
+                                avg_duration_us = grp.Average(v => v.Duration_us),
+                                min_duration_us = grp.Min(v => v.Duration_us),
+                                max_duration_us = grp.Max(v => v.Duration_us),
+                                sum_duration_us = grp.Sum(v => v.Duration_us),
+
+                                execution_count = grp.Count()
                             };
 
                 using (var reader = ObjectReader.Create(Table, "interval_id", "sql_hash", "application_id", "database_id", "host_id", "login_id", "avg_cpu_us", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "avg_reads", "min_reads", "max_reads", "sum_reads", "avg_writes", "min_writes", "max_writes", "sum_writes", "avg_duration_us", "min_duration_us", "max_duration_us", "sum_duration_us", "execution_count"))
                 {
                     bulkCopy.WriteToServer(reader);
                 }
-                numRows = rawData.Sum(x => x.Value.ExecutionCount);
+                numRows = rawData.Sum(x => x.Value.Count);
                 logger.Info($"{numRows} rows aggregated");
                 numRows = rawData.Count();
                 logger.Info($"{numRows} rows written");
@@ -1089,7 +1123,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         private void PrepareDataTables()
         {
-            rawData = new ConcurrentDictionary<ExecutionDetailKey, AggregatedExecutionStats>();
+            rawData = new ConcurrentDictionary<ExecutionDetailKey, List<ExecutionDetailValue>>();
 			errorData = new DataTable();
             _ = errorData.Columns.Add("type", typeof(int));
             _ = errorData.Columns.Add("message", typeof(string));
@@ -1294,68 +1328,13 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
-        /// <summary>
-        /// Pre-aggregated execution statistics per query key.
-        /// Stores running min/max/sum/count so that memory usage is O(distinct_queries)
-        /// rather than O(total_events), preventing unbounded memory growth on long workloads.
-        /// </summary>
-        internal class AggregatedExecutionStats
+        internal class ExecutionDetailValue
         {
-            public long ExecutionCount { get; private set; }
-            public DateTime MinEventTime { get; private set; } = DateTime.MaxValue;
-            public DateTime MaxEventTime { get; private set; } = DateTime.MinValue;
-
-            public long? MinCpu_us { get; private set; }
-            public long? MaxCpu_us { get; private set; }
-            public long? SumCpu_us { get; private set; }
-
-            public long? MinReads { get; private set; }
-            public long? MaxReads { get; private set; }
-            public long? SumReads { get; private set; }
-
-            public long? MinWrites { get; private set; }
-            public long? MaxWrites { get; private set; }
-            public long? SumWrites { get; private set; }
-
-            public long? MinDuration_us { get; private set; }
-            public long? MaxDuration_us { get; private set; }
-            public long? SumDuration_us { get; private set; }
-
-            public void Accumulate(ExecutionWorkloadEvent evt)
-            {
-                ExecutionCount++;
-
-                if (evt.StartTime < MinEventTime) MinEventTime = evt.StartTime;
-                if (evt.StartTime > MaxEventTime) MaxEventTime = evt.StartTime;
-
-                if (evt.CPU.HasValue)
-                {
-                    MinCpu_us = MinCpu_us.HasValue ? Math.Min(MinCpu_us.Value, evt.CPU.Value) : evt.CPU.Value;
-                    MaxCpu_us = MaxCpu_us.HasValue ? Math.Max(MaxCpu_us.Value, evt.CPU.Value) : evt.CPU.Value;
-                    SumCpu_us = (SumCpu_us ?? 0) + evt.CPU.Value;
-                }
-
-                if (evt.Reads.HasValue)
-                {
-                    MinReads = MinReads.HasValue ? Math.Min(MinReads.Value, evt.Reads.Value) : evt.Reads.Value;
-                    MaxReads = MaxReads.HasValue ? Math.Max(MaxReads.Value, evt.Reads.Value) : evt.Reads.Value;
-                    SumReads = (SumReads ?? 0) + evt.Reads.Value;
-                }
-
-                if (evt.Writes.HasValue)
-                {
-                    MinWrites = MinWrites.HasValue ? Math.Min(MinWrites.Value, evt.Writes.Value) : evt.Writes.Value;
-                    MaxWrites = MaxWrites.HasValue ? Math.Max(MaxWrites.Value, evt.Writes.Value) : evt.Writes.Value;
-                    SumWrites = (SumWrites ?? 0) + evt.Writes.Value;
-                }
-
-                if (evt.Duration.HasValue)
-                {
-                    MinDuration_us = MinDuration_us.HasValue ? Math.Min(MinDuration_us.Value, evt.Duration.Value) : evt.Duration.Value;
-                    MaxDuration_us = MaxDuration_us.HasValue ? Math.Max(MaxDuration_us.Value, evt.Duration.Value) : evt.Duration.Value;
-                    SumDuration_us = (SumDuration_us ?? 0) + evt.Duration.Value;
-                }
-            }
+            public DateTime Event_time { get; set; }
+            public long? Cpu_us { get; set; }
+            public long? Reads { get; set; }
+            public long? Writes { get; set; }
+            public long? Duration_us { get; set; }
         }
     }
 }
