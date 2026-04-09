@@ -66,6 +66,7 @@ namespace WorkloadTools
                             continue;
                         }
 
+                        logger.Debug($"Event of type {evt.Type} read. Start Time: {evt.StartTime}");
                         _ = Parallel.ForEach(Consumers, (cons) =>
                         {
                             cons.Consume(evt);
@@ -85,7 +86,7 @@ namespace WorkloadTools
                 if (!forceStopped)
                 {
                     var beginWait = DateTime.Now;
-                    while (Consumers.Where(c => c is BufferedWorkloadConsumer).Any(c => c.HasMoreEvents()) && beginWait > DateTime.Now.AddMinutes(-1))
+                    while (Consumers.Where(c => c is BufferedWorkloadConsumer).Any(c => c.HasMoreEvents()) && DateTime.Now < beginWait.AddMinutes(1))
                     {
                         Thread.Sleep(10);
                     }

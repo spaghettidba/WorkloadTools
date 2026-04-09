@@ -1,4 +1,5 @@
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,12 +46,20 @@ namespace WorkloadTools.Consumer.Replay
         private Thread sweeper;
 
         private long eventCount;
+        private long dispatchedEventCount;
         private DateTime startTime = DateTime.MinValue;
 
         // holds the total number of events to replay
         // only available when reading from a file
         // for realtime replays this is not available
         private long totalEventCount = 0;
+
+        // holds the number of events that have been executed by the workers
+        private long executedEventCount;
+
+        // watchdog: fires if no command has been executed for WatchdogIntervalSeconds
+        public int WatchdogIntervalSeconds { get; set; } = 30;
+        private Timer watchdogTimer;
 
         public enum ThreadingModeEnum : int
         {
@@ -63,6 +72,43 @@ namespace WorkloadTools.Consumer.Replay
         public ReplayConsumer()
         {
             WorkLimiter = new Semaphore(ThreadLimit, ThreadLimit);
+        }
+
+        private void EnsureWatchdogRunning()
+        {
+            if (watchdogTimer != null)
+            {
+                return;
+            }
+
+            var intervalMs = WatchdogIntervalSeconds * 1000;
+            watchdogTimer = new Timer(
+                delegate
+                {
+                    var current = Interlocked.Read(ref executedEventCount);
+                    var dispatched = Interlocked.Read(ref dispatchedEventCount);
+                    var bufferedEventCount = ReplayWorkers.Values.Sum(x => x.QueueLength);
+
+                    // Always log on every watchdog tick so the user can see progress
+                    // (or lack thereof) at wall-clock intervals, regardless of whether
+                    // the event count has crossed a modulus boundary.
+                    LogReplayProgress(current, forceLog: true);
+
+                    // Check for completion: all dispatched events have been executed
+                    // and nothing is left in any buffer.
+                    if (dispatched > 0
+                        && current >= dispatched
+                        && Buffer.Count == 0
+                        && bufferedEventCount == 0)
+                    {
+                        // Stop the watchdog - nothing left to watch.
+                        watchdogTimer?.Dispose();
+                        watchdogTimer = null;
+                    }
+                },
+                null,
+                intervalMs,
+                intervalMs);
         }
 
         private string WorkerKey(ExecutionWorkloadEvent evnt)
@@ -114,21 +160,9 @@ namespace WorkloadTools.Consumer.Replay
                 return;
             }
 
-            if (totalEventCount > 0)
-            {
-                if (eventCount % (totalEventCount / 1000) == 0)
-                {
-                    var percentInfo = (double)eventCount / (double)totalEventCount;
-                    logger.Info("{eventCount} ({percentInfo:P}) events replayed - {bufferedEventCount} events buffered", eventCount, percentInfo, Buffer.Count);
-                }
-            }
-            else
-            {
-                if (eventCount % WorkerStatsCommandCount == 0)
-                {
-                    logger.Info("{eventCount} events replayed - {bufferedEventCount} events buffered", eventCount, Buffer.Count);
-                }
-            }
+            // dispatchedEventCount tracks only the ExecutionWorkloadEvents that have been
+            // dispatched to a worker, giving a stable monotonic counter to drive log intervals.
+            dispatchedEventCount++;
 
             if (startTime == DateTime.MinValue)
             {
@@ -188,6 +222,8 @@ namespace WorkloadTools.Consumer.Replay
                     RelativeDelays = RelativeDelays
                 };
 
+                rw.CommandExecuted += OnWorkerCommandExecuted;
+
                 rw.AppendCommand(command);
 
                 if (stopped) { return; }
@@ -220,12 +256,17 @@ namespace WorkloadTools.Consumer.Replay
                 };
                 sweeper.Start();
             }
+
+            EnsureWatchdogRunning();
         }
 
         protected override void Dispose(bool disposing)
         {
             logger.Info("Disposing ReplayConsumer");
             stopped = true;
+
+            watchdogTimer?.Dispose();
+            watchdogTimer = null;
 
             foreach (var r in ReplayWorkers.Values)
             {
@@ -269,6 +310,7 @@ namespace WorkloadTools.Consumer.Replay
 
             if (outWrk != null)
             {
+                outWrk.CommandExecuted -= OnWorkerCommandExecuted;
                 outWrk.Stop();
                 outWrk.Dispose();
             }
@@ -287,12 +329,13 @@ namespace WorkloadTools.Consumer.Replay
                 {
                     if (ThreadingMode == ThreadingModeEnum.ThreadPools)
                     {
+                        // Using a semaphore to avoid overwhelming the threadpool
+                        // Without this precaution, the memory consumption goes to the roof
+                        _ = WorkLimiter.WaitOne();
+
+                        var queued = false;
                         try
                         {
-                            // Using a semaphore to avoid overwhelming the threadpool
-                            // Without this precaution, the memory consumption goes to the roof
-                            _ = WorkLimiter.WaitOne();
-
                             // Queue the execution of a statement in the threadpool.
                             // The statement will get executed in a separate thread eventually.
                             _ = ThreadPool.QueueUserWorkItem(
@@ -313,13 +356,21 @@ namespace WorkloadTools.Consumer.Replay
                                             Console.WriteLine(e.Message);
                                         }
                                     }
+                                    finally
+                                    {
+                                        // Release only after execution completes to actually
+                                        // bound the number of concurrently executing commands.
+                                        _ = WorkLimiter.Release();
+                                    }
                                 }
                                 );
+                            queued = true;
                         }
                         finally
                         {
-                            // Release the semaphore
-                            _ = WorkLimiter.Release();
+                            // If queuing itself failed, release the slot we acquired
+                            // so the semaphore is not permanently leaked.
+                            if (!queued) { _ = WorkLimiter.Release(); }
                         }
                     }
                     else if (ThreadingMode == ThreadingModeEnum.Tasks)
@@ -327,39 +378,38 @@ namespace WorkloadTools.Consumer.Replay
                         // TODO: Is this not the same as WorkerTask?
                         // Here the task is created by ReplayConsumer.
                         // With WorkerTask the task is created by ReplayWorker.Start.
-                        try
-                        {
-                            // Using a semaphore to avoid overwhelming the threadpool
-                            // Without this precaution, the memory consumption goes to the roof
-                            _ = WorkLimiter.WaitOne();
 
-                            // Start a new Task to run the statement
-                            var t = Task.Factory.StartNew(
-                                delegate
+                        // Using a semaphore to avoid overwhelming the threadpool
+                        // Without this precaution, the memory consumption goes to the roof
+                        _ = WorkLimiter.WaitOne();
+
+                        // Start a new Task to run the statement
+                        var t = Task.Factory.StartNew(
+                            delegate
+                            {
+                                try
+                                {
+                                    wrk.ExecuteNextCommand();
+                                }
+                                catch (Exception e)
                                 {
                                     try
                                     {
-                                        wrk.ExecuteNextCommand();
+                                        logger.Error(e, "Unhandled exception in ReplayWorker.ExecuteCommand");
                                     }
-                                    catch (Exception e)
+                                    catch
                                     {
-                                        try
-                                        {
-                                            logger.Error(e, "Unhandled exception in ReplayWorker.ExecuteCommand");
-                                        }
-                                        catch
-                                        {
-                                            Console.WriteLine(e.Message);
-                                        }
+                                        Console.WriteLine(e.Message);
                                     }
                                 }
-                                );
-                        }
-                        finally
-                        {
-                            // Release the semaphore
-                            _ = WorkLimiter.Release();
-                        }
+                                finally
+                                {
+                                    // Release only after execution completes to actually
+                                    // bound the number of concurrently executing commands.
+                                    _ = WorkLimiter.Release();
+                                }
+                            }
+                            );
                     }
                     else if (ThreadingMode == ThreadingModeEnum.WorkerTask)
                     {
@@ -386,7 +436,69 @@ namespace WorkloadTools.Consumer.Replay
 
         public override bool HasMoreEvents()
         {
-            return ReplayWorkers.Count(t => t.Value.HasCommands) > 0;
+            return ReplayWorkers.Count(t => t.Value.HasCommands) > 0 || Buffer.Count > 0;
+        }
+
+        private long completionLogged = 0;
+
+        private void OnWorkerCommandExecuted(object sender, EventArgs e)
+        {
+            var executed = Interlocked.Increment(ref executedEventCount);
+            EnsureWatchdogRunning();
+            LogReplayProgress(executed);
+
+            // Log completion eagerly as soon as the last command is executed,
+            // without waiting for the next watchdog tick which may never fire
+            // if the controller disposes first.
+            // Only applies when totalEventCount is known (i.e. file-based replay).
+            // For realtime replay, totalEventCount is 0 and there is no defined end.
+            if (totalEventCount > 0)
+            {
+                var dispatched = Interlocked.Read(ref dispatchedEventCount);
+                if (executed >= dispatched
+                    && Buffer.Count == 0
+                    && ReplayWorkers.Values.Sum(x => x.QueueLength) == 0
+                    && Interlocked.CompareExchange(ref completionLogged, 1, 0) == 0)
+                {
+                    LogReplayProgress(executed, forceLog: true);
+                    logger.Info("Replay completed: {executed} commands executed out of {dispatched} dispatched", executed, dispatched);
+                }
+            }
+        }
+
+        private void LogReplayProgress(long executed, bool forceLog = false)
+        {
+            // Determine the log interval:
+            // - If dispatchedEventCount is known and > 0: aim for ~1000 log lines for large workloads,
+            //   fall back to ~10 for small ones (< 1000 events).
+            // - If dispatchedEventCount is unknown: fall back to WorkerStatsCommandCount.
+            var dispatched = Interlocked.Read(ref dispatchedEventCount);
+
+            long logInterval;
+            if (dispatched > 0)
+            {
+                var fineInterval = dispatched / 1000;
+                var coarseInterval = Math.Max(1, dispatched / 10);
+                logInterval = fineInterval >= 1 ? fineInterval : coarseInterval;
+            }
+            else
+            {
+                logInterval = Math.Max(1, WorkerStatsCommandCount);
+            }
+
+            if (forceLog || executed == 1 || executed % logInterval == 0)
+            {
+                var bufferedEventCount = ReplayWorkers.Values.Sum(x => x.QueueLength);
+                if (dispatched > 0)
+                {
+                    var percentInfo = (double)executed / (double)dispatched;
+                    logger.Info($"{executed} ({percentInfo:P}) events replayed - {Buffer.Count + bufferedEventCount} events buffered");
+                }
+                else
+                {
+                    logger.Info($"{executed} events replayed - {Buffer.Count + bufferedEventCount} events buffered");
+                }
+            }
         }
     }
 }

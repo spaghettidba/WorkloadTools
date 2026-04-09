@@ -50,23 +50,31 @@ namespace WorkloadTools.Consumer
         {
             while (!stopped)
             {
-                WorkloadEvent evt;
-                while (!Buffer.TryDequeue(out evt))
+                try
                 {
-                    if (stopped)
+                    WorkloadEvent evt;
+                    while (!Buffer.TryDequeue(out evt))
                     {
-                        return;
+                        if (stopped)
+                        {
+                            return;
+                        }
+
+                        spin.SpinOnce();
                     }
 
-                    spin.SpinOnce();
-                }
+                    if (evt == null)
+                    {
+                        continue;
+                    }
 
-                if (evt == null)
+                    ConsumeBuffered(evt);
+                }
+                catch (Exception ex)
                 {
-                    continue;
+                    logger.Error($"Error occurred consuming buffered events: {ex.Message}.");
+                    throw;
                 }
-
-                ConsumeBuffered(evt);
             }
         }
 

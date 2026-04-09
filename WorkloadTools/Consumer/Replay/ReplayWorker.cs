@@ -157,13 +157,22 @@ namespace WorkloadTools.Consumer.Replay
             logger.Debug("Stopped");
         }
 
+        public event EventHandler CommandExecuted;
+
         public void ExecuteNextCommand()
         {
             var cmd = GetNextCommand();
             if (cmd != null)
             {
-                ExecuteCommand(cmd);
-                commandCount++;
+                try
+                {
+                    ExecuteCommand(cmd);
+                }
+                finally
+                {
+                    commandCount++;
+                    CommandExecuted?.Invoke(this, EventArgs.Empty);
+                }
             }
             else
             {
@@ -650,7 +659,7 @@ MESSAGE:
         {
             if (disposing)
             {
-                logger.Info("Disposing ReplayWorker");
+                logger.Debug("Disposing ReplayWorker");
 
                 Stop();
                 try

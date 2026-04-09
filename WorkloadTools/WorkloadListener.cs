@@ -98,7 +98,7 @@ namespace WorkloadTools
 
         public EventQueueType QueueType = EventQueueType.BinarySerialized;
 
-        protected bool stopped;
+        protected bool stopped = false;
 
         public WorkloadListener()
         {
