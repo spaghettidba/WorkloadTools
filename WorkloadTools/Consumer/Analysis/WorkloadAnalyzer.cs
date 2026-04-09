@@ -909,6 +909,12 @@ namespace WorkloadTools.Consumer.Analysis
             // This handles the case where CloseInterval fires multiple times for the same
             // interval_id (e.g. events with identical timestamps) without raising a
             // PRIMARY KEY violation.
+            //
+            // NOTE: In SQL Server MERGE, all SET expressions reference the ORIGINAL target
+            // row values, not any values being updated by other SET clauses in the same
+            // statement. Therefore `target.execution_count` below is the pre-update count,
+            // so `(target.execution_count + source.execution_count)` is the correct new
+            // total count to use as the denominator for the combined averages.
             var mergeSql = $@"
                 MERGE [{ConnectionInfo.SchemaName}].[WorkloadDetails] AS target
                 USING #WorkloadDetails_Staging AS source
