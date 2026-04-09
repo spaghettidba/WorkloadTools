@@ -72,6 +72,7 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="WorkloadTools\BinarySerializedBufferedEventQueueTest.cs" />
+    <Compile Include="WorkloadTools\SqlTextNormalizerTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
