@@ -59,6 +59,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         private DateTime lastDump = DateTime.MinValue;
         private DateTime lastEventTime = DateTime.MinValue;
+        private volatile int lastWrittenIntervalId = -1;
 
         public WorkloadAnalyzer()
 		{
@@ -77,6 +78,19 @@ namespace WorkloadTools.Consumer.Analysis
             var duration = lastEventTime - lastDump;
             if (duration.TotalMinutes >= Interval)
             {
+                // Avoid writing the same interval_id twice. This can happen when
+                // Interval=0 (the default) and multiple events share the same
+                // second-precision timestamp: after the first write sets
+                // lastDump=lastEventTime, the condition above is 0>=0 (always true),
+                // so the next loop iteration would attempt to INSERT to WorkloadDetails
+                // for an interval_id that was already committed.
+                var prospectiveIntervalId = ComputeIntervalId(lastEventTime);
+                if (prospectiveIntervalId == lastWrittenIntervalId)
+                {
+                    lastDump = lastEventTime;
+                    return;
+                }
+
                 try
                 {
                     var numRetries = 0;
@@ -471,6 +485,10 @@ namespace WorkloadTools.Consumer.Analysis
                     }
 
                     tran.Commit();
+                    if (WriteDetail)
+                    {
+                        lastWrittenIntervalId = current_interval_id;
+                    }
                 }
                 catch(Exception)
                 {
@@ -794,42 +812,6 @@ namespace WorkloadTools.Consumer.Analysis
         {
             int numRows;
 
-            // Create a temporary staging table to hold the new aggregated data
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.Transaction = tran;
-                cmd.CommandText = @"
-                    IF OBJECT_ID('tempdb..#WorkloadDetails_Staging') IS NOT NULL
-                        DROP TABLE #WorkloadDetails_Staging;
-                    CREATE TABLE #WorkloadDetails_Staging (
-                        [interval_id]     [int]    NOT NULL,
-                        [sql_hash]        [bigint] NOT NULL,
-                        [application_id]  [int]    NOT NULL,
-                        [database_id]     [int]    NOT NULL,
-                        [host_id]         [int]    NOT NULL,
-                        [login_id]        [int]    NOT NULL,
-                        [avg_cpu_us]      [bigint] NULL,
-                        [min_cpu_us]      [bigint] NULL,
-                        [max_cpu_us]      [bigint] NULL,
-                        [sum_cpu_us]      [bigint] NULL,
-                        [avg_reads]       [bigint] NULL,
-                        [min_reads]       [bigint] NULL,
-                        [max_reads]       [bigint] NULL,
-                        [sum_reads]       [bigint] NULL,
-                        [avg_writes]      [bigint] NULL,
-                        [min_writes]      [bigint] NULL,
-                        [max_writes]      [bigint] NULL,
-                        [sum_writes]      [bigint] NULL,
-                        [avg_duration_us] [bigint] NULL,
-                        [min_duration_us] [bigint] NULL,
-                        [max_duration_us] [bigint] NULL,
-                        [sum_duration_us] [bigint] NULL,
-                        [execution_count] [bigint] NULL
-                    );
-                ";
-                cmd.ExecuteNonQuery();
-            }
-
             using (var bulkCopy = new System.Data.SqlClient.SqlBulkCopy(conn,
                                             SqlBulkCopyOptions.KeepIdentity |
                                             SqlBulkCopyOptions.FireTriggers |
@@ -838,7 +820,7 @@ namespace WorkloadTools.Consumer.Analysis
                                             tran))
             {
 
-                bulkCopy.DestinationTableName = "#WorkloadDetails_Staging";
+                bulkCopy.DestinationTableName = "[" + ConnectionInfo.SchemaName + "].[WorkloadDetails]";
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
 
@@ -902,105 +884,6 @@ namespace WorkloadTools.Consumer.Analysis
                 logger.Info($"{numRows} rows aggregated");
                 numRows = rawData.Count();
                 logger.Info($"{numRows} rows written");
-            }
-
-            // MERGE staging data into WorkloadDetails, combining aggregate statistics
-            // for rows that already exist (same interval_id + sql_hash + dimension keys).
-            // This handles the case where CloseInterval fires multiple times for the same
-            // interval_id (e.g. events with identical timestamps) without raising a
-            // PRIMARY KEY violation.
-            //
-            // NOTE: In SQL Server MERGE, all SET expressions reference the ORIGINAL target
-            // row values, not any values being updated by other SET clauses in the same
-            // statement. Therefore `target.execution_count` below is the pre-update count,
-            // so `(target.execution_count + source.execution_count)` is the correct new
-            // total count to use as the denominator for the combined averages.
-            var mergeSql = $@"
-                MERGE [{ConnectionInfo.SchemaName}].[WorkloadDetails] AS target
-                USING #WorkloadDetails_Staging AS source
-                ON (    target.interval_id    = source.interval_id
-                    AND target.sql_hash       = source.sql_hash
-                    AND target.application_id = source.application_id
-                    AND target.database_id    = source.database_id
-                    AND target.host_id        = source.host_id
-                    AND target.login_id       = source.login_id
-                )
-                WHEN MATCHED THEN UPDATE SET
-                    avg_cpu_us      = CASE WHEN target.sum_cpu_us IS NULL AND source.sum_cpu_us IS NULL THEN NULL
-                                          ELSE (COALESCE(target.sum_cpu_us, 0) + COALESCE(source.sum_cpu_us, 0))
-                                               / NULLIF(target.execution_count + source.execution_count, 0) END,
-                    min_cpu_us      = CASE WHEN target.min_cpu_us IS NULL THEN source.min_cpu_us
-                                          WHEN source.min_cpu_us IS NULL THEN target.min_cpu_us
-                                          WHEN source.min_cpu_us < target.min_cpu_us THEN source.min_cpu_us
-                                          ELSE target.min_cpu_us END,
-                    max_cpu_us      = CASE WHEN target.max_cpu_us IS NULL THEN source.max_cpu_us
-                                          WHEN source.max_cpu_us IS NULL THEN target.max_cpu_us
-                                          WHEN source.max_cpu_us > target.max_cpu_us THEN source.max_cpu_us
-                                          ELSE target.max_cpu_us END,
-                    sum_cpu_us      = CASE WHEN target.sum_cpu_us IS NULL AND source.sum_cpu_us IS NULL THEN NULL
-                                          ELSE COALESCE(target.sum_cpu_us, 0) + COALESCE(source.sum_cpu_us, 0) END,
-                    avg_reads       = CASE WHEN target.sum_reads IS NULL AND source.sum_reads IS NULL THEN NULL
-                                          ELSE (COALESCE(target.sum_reads, 0) + COALESCE(source.sum_reads, 0))
-                                               / NULLIF(target.execution_count + source.execution_count, 0) END,
-                    min_reads       = CASE WHEN target.min_reads IS NULL THEN source.min_reads
-                                          WHEN source.min_reads IS NULL THEN target.min_reads
-                                          WHEN source.min_reads < target.min_reads THEN source.min_reads
-                                          ELSE target.min_reads END,
-                    max_reads       = CASE WHEN target.max_reads IS NULL THEN source.max_reads
-                                          WHEN source.max_reads IS NULL THEN target.max_reads
-                                          WHEN source.max_reads > target.max_reads THEN source.max_reads
-                                          ELSE target.max_reads END,
-                    sum_reads       = CASE WHEN target.sum_reads IS NULL AND source.sum_reads IS NULL THEN NULL
-                                          ELSE COALESCE(target.sum_reads, 0) + COALESCE(source.sum_reads, 0) END,
-                    avg_writes      = CASE WHEN target.sum_writes IS NULL AND source.sum_writes IS NULL THEN NULL
-                                          ELSE (COALESCE(target.sum_writes, 0) + COALESCE(source.sum_writes, 0))
-                                               / NULLIF(target.execution_count + source.execution_count, 0) END,
-                    min_writes      = CASE WHEN target.min_writes IS NULL THEN source.min_writes
-                                          WHEN source.min_writes IS NULL THEN target.min_writes
-                                          WHEN source.min_writes < target.min_writes THEN source.min_writes
-                                          ELSE target.min_writes END,
-                    max_writes      = CASE WHEN target.max_writes IS NULL THEN source.max_writes
-                                          WHEN source.max_writes IS NULL THEN target.max_writes
-                                          WHEN source.max_writes > target.max_writes THEN source.max_writes
-                                          ELSE target.max_writes END,
-                    sum_writes      = CASE WHEN target.sum_writes IS NULL AND source.sum_writes IS NULL THEN NULL
-                                          ELSE COALESCE(target.sum_writes, 0) + COALESCE(source.sum_writes, 0) END,
-                    avg_duration_us = CASE WHEN target.sum_duration_us IS NULL AND source.sum_duration_us IS NULL THEN NULL
-                                          ELSE (COALESCE(target.sum_duration_us, 0) + COALESCE(source.sum_duration_us, 0))
-                                               / NULLIF(target.execution_count + source.execution_count, 0) END,
-                    min_duration_us = CASE WHEN target.min_duration_us IS NULL THEN source.min_duration_us
-                                          WHEN source.min_duration_us IS NULL THEN target.min_duration_us
-                                          WHEN source.min_duration_us < target.min_duration_us THEN source.min_duration_us
-                                          ELSE target.min_duration_us END,
-                    max_duration_us = CASE WHEN target.max_duration_us IS NULL THEN source.max_duration_us
-                                          WHEN source.max_duration_us IS NULL THEN target.max_duration_us
-                                          WHEN source.max_duration_us > target.max_duration_us THEN source.max_duration_us
-                                          ELSE target.max_duration_us END,
-                    sum_duration_us = CASE WHEN target.sum_duration_us IS NULL AND source.sum_duration_us IS NULL THEN NULL
-                                          ELSE COALESCE(target.sum_duration_us, 0) + COALESCE(source.sum_duration_us, 0) END,
-                    execution_count = target.execution_count + source.execution_count
-                WHEN NOT MATCHED THEN INSERT (
-                    interval_id, sql_hash, application_id, database_id, host_id, login_id,
-                    avg_cpu_us,      min_cpu_us,      max_cpu_us,      sum_cpu_us,
-                    avg_reads,       min_reads,       max_reads,       sum_reads,
-                    avg_writes,      min_writes,      max_writes,      sum_writes,
-                    avg_duration_us, min_duration_us, max_duration_us, sum_duration_us,
-                    execution_count
-                ) VALUES (
-                    source.interval_id, source.sql_hash, source.application_id, source.database_id, source.host_id, source.login_id,
-                    source.avg_cpu_us,      source.min_cpu_us,      source.max_cpu_us,      source.sum_cpu_us,
-                    source.avg_reads,       source.min_reads,       source.max_reads,       source.sum_reads,
-                    source.avg_writes,      source.min_writes,      source.max_writes,      source.sum_writes,
-                    source.avg_duration_us, source.min_duration_us, source.max_duration_us, source.sum_duration_us,
-                    source.execution_count
-                );
-            ";
-
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.Transaction = tran;
-                cmd.CommandText = mergeSql;
-                cmd.ExecuteNonQuery();
             }
         }
 
@@ -1176,6 +1059,12 @@ namespace WorkloadTools.Consumer.Analysis
             GC.WaitForPendingFinalizers();
         }
 
+        private static int ComputeIntervalId(DateTime intervalTime)
+        {
+            // interval id is the number of seconds since 01/01/2000
+            return (int)intervalTime.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
+        }
+
         private int CreateInterval(SqlConnection conn, SqlTransaction tran, DateTime intervalTime)
         {
             var sql = @"
@@ -1190,8 +1079,7 @@ namespace WorkloadTools.Consumer.Analysis
             ";
             sql = string.Format(sql, ConnectionInfo.SchemaName);
 
-            // interval id is the number of seconds since 01/01/2000
-            var interval_id = (int)intervalTime.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
+            var interval_id = ComputeIntervalId(intervalTime);
 
             using (var cmd = conn.CreateCommand())
             {
