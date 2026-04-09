@@ -599,18 +599,22 @@ SELECT 'FormatVersion','{Assembly.GetEntryAssembly().GetName().Version}'
             // Signal ProcessBuffer to stop so it no longer competes for the connection
             stopped = true;
 
-            // Wait for the background ProcessBuffer task to finish its current operation
+            // Wait for the background ProcessBuffer task to finish its current operation.
+            // Use a timeout to avoid blocking indefinitely if the task is unresponsive.
             try
             {
-                BufferReader?.Wait();
+                BufferReader?.Wait(TimeSpan.FromSeconds(60));
             }
             catch (Exception)
             {
                 // Task may have already faulted; continue so we can flush remaining data
             }
 
-            // Drain any events still sitting in the base-class Buffer into the local cache
-            // so they are persisted before we close the connection
+            // At this point ProcessBuffer has stopped (stopped=true exits its loop) or
+            // we timed out. Drain any events still sitting in the base-class Buffer into
+            // the local cache so they are persisted before we close the connection.
+            // ConcurrentQueue.TryDequeue is thread-safe even in the unlikely case that
+            // the task is still winding down.
             if (databaseInitialized)
             {
                 WorkloadEvent evt;
