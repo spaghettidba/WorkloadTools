@@ -275,7 +275,11 @@ namespace WorkloadTools.Consumer.WorkloadFile
             rowcount = events_update_cmd.ExecuteNonQuery();
             if (rowcount == 0)
             {
-                logger.Debug("Starting event not found - " + $"EventSequence: {evt.EventSequence}");
+                // No matching starting event found (e.g. the XE session only captures completed
+                // events, or the starting event was lost). Insert the completed event directly
+                // so that it is not silently dropped.
+                logger.Debug("Starting event not found - inserting completed event directly. " + $"EventSequence: {evt.EventSequence}");
+                InsertExecutionEvent(evnt);
             }
         }
 
@@ -361,45 +365,35 @@ namespace WorkloadTools.Consumer.WorkloadFile
         {
             var evt = (WaitStatsWorkloadEvent)evnt;
 
-            _ = waits_cmd.Parameters.AddWithValue("$row_id", row_id++);
-            _ = waits_cmd.Parameters.AddWithValue("$event_sequence", null);
-            _ = waits_cmd.Parameters.AddWithValue("$event_type", evt.Type);
-            _ = waits_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
-            _ = waits_cmd.Parameters.AddWithValue("$client_app_name", null);
-            _ = waits_cmd.Parameters.AddWithValue("$client_host_name", null);
-            _ = waits_cmd.Parameters.AddWithValue("$database_name", null);
-            _ = waits_cmd.Parameters.AddWithValue("$server_principal_name", null);
-            _ = waits_cmd.Parameters.AddWithValue("$session_id", null);
-            _ = waits_cmd.Parameters.AddWithValue("$sql_text", null);
-            _ = waits_cmd.Parameters.AddWithValue("$cpu", null);
-            _ = waits_cmd.Parameters.AddWithValue("$duration", null);
-            _ = waits_cmd.Parameters.AddWithValue("$reads", null);
-            _ = waits_cmd.Parameters.AddWithValue("$writes", null);
+            var eventRowId = row_id++;
 
-            _ = waits_cmd.ExecuteNonQuery();
+            _ = events_cmd.Parameters.AddWithValue("$row_id", eventRowId);
+            _ = events_cmd.Parameters.AddWithValue("$event_sequence", null);
+            _ = events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
+            _ = events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
+            _ = events_cmd.Parameters.AddWithValue("$client_app_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$client_host_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$database_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$server_principal_name", null);
+            _ = events_cmd.Parameters.AddWithValue("$session_id", null);
+            _ = events_cmd.Parameters.AddWithValue("$sql_text", null);
+            _ = events_cmd.Parameters.AddWithValue("$cpu", null);
+            _ = events_cmd.Parameters.AddWithValue("$duration", null);
+            _ = events_cmd.Parameters.AddWithValue("$reads", null);
+            _ = events_cmd.Parameters.AddWithValue("$writes", null);
 
-            var tran = conn.BeginTransaction();
-            try
+            _ = events_cmd.ExecuteNonQuery();
+
+            foreach (DataRow dr in evt.Waits.Rows)
             {
+                _ = waits_cmd.Parameters.AddWithValue("$row_id", eventRowId);
+                _ = waits_cmd.Parameters.AddWithValue("$wait_type", dr["wait_type"]);
+                _ = waits_cmd.Parameters.AddWithValue("$wait_sec", dr["wait_sec"]);
+                _ = waits_cmd.Parameters.AddWithValue("$resource_sec", dr["resource_sec"]);
+                _ = waits_cmd.Parameters.AddWithValue("$signal_sec", dr["signal_sec"]);
+                _ = waits_cmd.Parameters.AddWithValue("$wait_count", dr["wait_count"]);
 
-                foreach (DataRow dr in evt.Waits.Rows)
-                {
-                    _ = waits_cmd.Parameters.AddWithValue("$row_id", row_id);
-                    _ = waits_cmd.Parameters.AddWithValue("$wait_type", dr["wait_type"]);
-                    _ = waits_cmd.Parameters.AddWithValue("$wait_sec", dr["wait_sec"]);
-                    _ = waits_cmd.Parameters.AddWithValue("$resource_sec", dr["resource_sec"]);
-                    _ = waits_cmd.Parameters.AddWithValue("$signal_sec", dr["signal_sec"]);
-                    _ = waits_cmd.Parameters.AddWithValue("$wait_count", dr["wait_count"]);
-
-                    _ = waits_cmd.ExecuteNonQuery();
-                }
-
-                tran.Commit();
-            }
-            catch (Exception)
-            {
-                tran.Rollback();
-                throw;
+                _ = waits_cmd.ExecuteNonQuery();
             }
         }
 
@@ -407,7 +401,10 @@ namespace WorkloadTools.Consumer.WorkloadFile
         private void InsertDiskPerfEvent(WorkloadEvent evnt)
         {
             var evt = (DiskPerfWorkloadEvent)evnt;
-            _ = events_cmd.Parameters.AddWithValue("$row_id", row_id++);
+
+            var eventRowId = row_id++;
+
+            _ = events_cmd.Parameters.AddWithValue("$row_id", eventRowId);
             _ = events_cmd.Parameters.AddWithValue("$event_sequence", null);
             _ = events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
             _ = events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
@@ -424,40 +421,28 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
             _ = events_cmd.ExecuteNonQuery();
 
-            var tran = conn.BeginTransaction();
-            try
+            foreach (DataRow dr in evt.DiskPerf.Rows)
             {
+                _ = diskperf_cmd.Parameters.AddWithValue("$row_id", eventRowId);
+                _ = diskperf_cmd.Parameters.AddWithValue("$database_name", dr["database_name"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$physical_filename", dr["physical_filename"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$logical_filename", dr["logical_filename"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$file_type", dr["file_type"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$volume_mount_point", dr["volume_mount_point"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$read_latency_ms", dr["read_latency_ms"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$reads", dr["reads"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$read_bytes", dr["read_bytes"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$write_latency_ms", dr["write_latency_ms"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$writes", dr["writes"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$write_bytes", dr["write_bytes"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$cum_read_latency_ms", dr["cum_read_latency_ms"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$cum_reads", dr["cum_reads"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$cum_read_bytes", dr["cum_read_bytes"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$cum_write_latency_ms", dr["cum_write_latency_ms"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$cum_writes", dr["cum_writes"]);
+                _ = diskperf_cmd.Parameters.AddWithValue("$cum_write_bytes", dr["cum_write_bytes"]);
 
-                foreach (DataRow dr in evt.DiskPerf.Rows)
-                {
-                    _ = diskperf_cmd.Parameters.AddWithValue("$row_id", row_id);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$database_name", dr["database_name"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$physical_filename", dr["physical_filename"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$logical_filename", dr["logical_filename"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$file_type", dr["file_type"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$volume_mount_point", dr["volume_mount_point"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$read_latency_ms", dr["read_latency_ms"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$reads", dr["reads"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$read_bytes", dr["read_bytes"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$write_latency_ms", dr["write_latency_ms"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$writes", dr["writes"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$write_bytes", dr["write_bytes"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$cum_read_latency_ms", dr["cum_read_latency_ms"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$cum_reads", dr["cum_reads"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$cum_read_bytes", dr["cum_read_bytes"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$cum_write_latency_ms", dr["cum_write_latency_ms"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$cum_writes", dr["cum_writes"]);
-                    _ = diskperf_cmd.Parameters.AddWithValue("$cum_write_bytes", dr["cum_write_bytes"]);
-
-                    _ = counters_cmd.ExecuteNonQuery();
-                }
-
-                tran.Commit();
-            }
-            catch (Exception)
-            {
-                tran.Rollback();
-                throw;
+                _ = diskperf_cmd.ExecuteNonQuery();
             }
         }
 
@@ -465,7 +450,9 @@ namespace WorkloadTools.Consumer.WorkloadFile
         {
             var evt = (CounterWorkloadEvent)evnt;
 
-            _ = events_cmd.Parameters.AddWithValue("$row_id", row_id++);
+            var eventRowId = row_id++;
+
+            _ = events_cmd.Parameters.AddWithValue("$row_id", eventRowId);
             _ = events_cmd.Parameters.AddWithValue("$event_sequence", null);
             _ = events_cmd.Parameters.AddWithValue("$event_type", evt.Type);
             _ = events_cmd.Parameters.AddWithValue("$start_time", evt.StartTime);
@@ -482,25 +469,13 @@ namespace WorkloadTools.Consumer.WorkloadFile
 
             _ = events_cmd.ExecuteNonQuery();
 
-            var tran = conn.BeginTransaction();
-            try
+            foreach (var dr in evt.Counters)
             {
+                _ = counters_cmd.Parameters.AddWithValue("$row_id", eventRowId);
+                _ = counters_cmd.Parameters.AddWithValue("$name", dr.Key.ToString());
+                _ = counters_cmd.Parameters.AddWithValue("$value", dr.Value);
 
-                foreach (var dr in evt.Counters)
-                {
-                    _ = counters_cmd.Parameters.AddWithValue("$row_id", row_id);
-                    _ = counters_cmd.Parameters.AddWithValue("$name", dr.Key.ToString());
-                    _ = counters_cmd.Parameters.AddWithValue("$value", dr.Value);
-
-                    _ = counters_cmd.ExecuteNonQuery();
-                }
-
-                tran.Commit();
-            }
-            catch (Exception)
-            {
-                tran.Rollback();
-                throw;
+                _ = counters_cmd.ExecuteNonQuery();
             }
         }
 
@@ -621,6 +596,33 @@ SELECT 'FormatVersion','{Assembly.GetEntryAssembly().GetName().Version}'
         {
             logger.Info("Closing the connection to the output file");
 
+            // Signal ProcessBuffer to stop so it no longer competes for the connection
+            stopped = true;
+
+            // Wait for the background ProcessBuffer task to finish its current operation
+            try
+            {
+                BufferReader?.Wait();
+            }
+            catch (Exception)
+            {
+                // Task may have already faulted; continue so we can flush remaining data
+            }
+
+            // Drain any events still sitting in the base-class Buffer into the local cache
+            // so they are persisted before we close the connection
+            if (databaseInitialized)
+            {
+                WorkloadEvent evt;
+                while (Buffer.TryDequeue(out evt))
+                {
+                    if (evt != null)
+                    {
+                        cache.Enqueue(evt);
+                    }
+                }
+            }
+
             forceFlush = true;
             if (conn != null)
             {
@@ -640,13 +642,11 @@ SELECT 'FormatVersion','{Assembly.GetEntryAssembly().GetName().Version}'
             {
                 //ignore
             }
-
-            stopped = true;
         }
 
         public override bool HasMoreEvents()
         {
-            return cache.Count > 0;
+            return cache.Count > 0 || Buffer.Count > 0;
         }
     }
 }
