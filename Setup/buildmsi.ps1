@@ -95,19 +95,19 @@ $workloadViewerDir = [System.IO.Path]::GetFullPath("$PSScriptRoot\..\WorkloadVie
 $convertWorkloadDir = [System.IO.Path]::GetFullPath("$PSScriptRoot\..\ConvertWorkload\bin\Release")
 
 & $heat dir "$sqlWorkloadDir" `
-    -cg ProductComponents -dr INSTALLFOLDER -srd -sreg `
+    -cg ProductComponents -dr INSTALLFOLDER -srd -sreg -ag `
     -t "$PSScriptRoot\transform.xsl" `
     -out "$PSScriptRoot\harvest.wxs" -nologo
 if ($LASTEXITCODE -ne 0) { throw "heat.exe failed for SqlWorkload." }
 
 & $heat dir "$workloadViewerDir" `
-    -cg WorkloadViewerComponents -dr INSTALLFOLDER -srd -sreg `
+    -cg WorkloadViewerComponents -dr INSTALLFOLDER -srd -sreg -ag `
     -t "$PSScriptRoot\transform.xsl" -t "$PSScriptRoot\transform2.xsl" `
     -out "$PSScriptRoot\harvest2.wxs" -nologo
 if ($LASTEXITCODE -ne 0) { throw "heat.exe failed for WorkloadViewer." }
 
 & $heat dir "$convertWorkloadDir" `
-    -cg ConvertWorkloadComponents -dr INSTALLFOLDER -srd -sreg `
+    -cg ConvertWorkloadComponents -dr INSTALLFOLDER -srd -sreg -ag `
     -t "$PSScriptRoot\transform.xsl" -t "$PSScriptRoot\transform2.xsl" `
     -t "$PSScriptRoot\transform3.xsl" `
     -out "$PSScriptRoot\harvest3.wxs" -nologo
