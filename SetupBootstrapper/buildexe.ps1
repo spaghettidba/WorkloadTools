@@ -38,7 +38,7 @@ if (-not $msbuild) {
 # ---------------------------------------------------------------------------
 # Prepare output directory
 # ---------------------------------------------------------------------------
-$outDir = "$PSScriptRoot\bin\Release"
+$outDir = "$PSScriptRoot\bin\$Platform\Release"
 if (-not (Test-Path $outDir)) {
     New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 } elseif (Test-Path "$outDir\*" -PathType Any) {
