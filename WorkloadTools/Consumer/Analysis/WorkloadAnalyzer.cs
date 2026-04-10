@@ -61,6 +61,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         private DateTime lastDump = DateTime.MinValue;
         private DateTime lastEventTime = DateTime.MinValue;
+        private volatile int lastWrittenIntervalId = -1;
 
         public WorkloadAnalyzer()
 		{
@@ -88,6 +89,19 @@ namespace WorkloadTools.Consumer.Analysis
             var duration = lastEventTime - lastDump;
             if (duration.TotalMinutes >= Interval)
             {
+                // Avoid writing the same interval_id twice. This can happen when
+                // Interval=0 (the default) and multiple events share the same
+                // second-precision timestamp: after the first write sets
+                // lastDump=lastEventTime, the condition above is 0>=0 (always true),
+                // so the next loop iteration would attempt to INSERT to WorkloadDetails
+                // for an interval_id that was already committed.
+                var prospectiveIntervalId = ComputeIntervalId(lastEventTime);
+                if (prospectiveIntervalId == lastWrittenIntervalId)
+                {
+                    lastDump = lastEventTime;
+                    return;
+                }
+
                 try
                 {
                     var numRetries = 0;
@@ -492,8 +506,9 @@ namespace WorkloadTools.Consumer.Analysis
                         {
                             WriteExecutionDetails(conn, tran, current_interval_id);
                         }
+
+                        rawData.Clear();
                     }
-                    rawData.Clear();
 
                     if (WriteDetail)
                     {
@@ -505,6 +520,10 @@ namespace WorkloadTools.Consumer.Analysis
                     }
 
                     tran.Commit();
+                    if (WriteDetail)
+                    {
+                        lastWrittenIntervalId = current_interval_id;
+                    }
                 }
                 catch(Exception)
                 {
@@ -1075,6 +1094,12 @@ namespace WorkloadTools.Consumer.Analysis
             GC.WaitForPendingFinalizers();
         }
 
+        private int ComputeIntervalId(DateTime intervalTime)
+        {
+            // interval id is the number of seconds since 01/01/2000
+            return (int)intervalTime.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
+        }
+
         private int CreateInterval(SqlConnection conn, SqlTransaction tran, DateTime intervalTime)
         {
             var sql = @"
@@ -1089,8 +1114,7 @@ namespace WorkloadTools.Consumer.Analysis
             ";
             sql = string.Format(sql, ConnectionInfo.SchemaName);
 
-            // interval id is the number of seconds since 01/01/2000
-            var interval_id = (int)intervalTime.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
+            var interval_id = ComputeIntervalId(intervalTime);
 
             using (var cmd = conn.CreateCommand())
             {
