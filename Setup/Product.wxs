@@ -36,7 +36,7 @@
       <ComponentGroupRef Id="ProductComponents" />
       <ComponentGroupRef Id="WorkloadViewerComponents" />
       <ComponentGroupRef Id="ProductReports" />
-      <ComponentGroupRef Id="ConvertWorkload" />
+      <ComponentGroupRef Id="ConvertWorkloadComponents" />
     </Feature>
 
   </Package>
@@ -60,13 +60,6 @@
         <File Id="filF8339E0B13434A31BB913FADC4066D7D" Source="..\Reports\WorkloadTools Report - Sample.pbix" />
         <File Id="fil9A72942DD7E14FC98051DF6EAA302AF0" Source="..\Reports\WorkloadTools Report - Template.pbit" />
         <File Id="filB480F52C6274410197E5CB8F865AE5BB" Source="..\Reports\README.md" />
-      </Component>
-    </ComponentGroup>
-  </Fragment>
-  <Fragment>
-    <ComponentGroup Id="ConvertWorkload">
-      <Component Id="ConvertWorkloadId" Directory="INSTALLFOLDER" Guid="633CDC2A-00D2-403D-BBD3-5E96A79AA5A8">
-        <File Id="ConvertWorkloadExeId" Source="..\ConvertWorkload\bin\release\ConvertWorkload.exe" />
       </Component>
     </ComponentGroup>
   </Fragment>

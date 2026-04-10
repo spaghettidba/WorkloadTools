@@ -37,6 +37,19 @@
       <SuppressRegistry>true</SuppressRegistry>
       <Transforms>$(MSBuildThisFileDirectory)transform.xsl;$(MSBuildThisFileDirectory)transform2.xsl</Transforms>
     </HarvestDirectory>
+    <!--
+      ConvertWorkload does not have a platform-specific output folder.
+      transform.xsl removes log files; transform2.xsl removes DLLs already present
+      in the SqlWorkload harvest; transform3.xsl keeps only ConvertWorkload.*
+      files so that shared runtime dependencies are not duplicated.
+    -->
+    <HarvestDirectory Include="..\ConvertWorkload\bin\$(Configuration)">
+      <ComponentGroupName>ConvertWorkloadComponents</ComponentGroupName>
+      <DirectoryRefId>INSTALLFOLDER</DirectoryRefId>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+      <SuppressRegistry>true</SuppressRegistry>
+      <Transforms>$(MSBuildThisFileDirectory)transform.xsl;$(MSBuildThisFileDirectory)transform2.xsl;$(MSBuildThisFileDirectory)transform3.xsl</Transforms>
+    </HarvestDirectory>
   </ItemGroup>
   <ItemGroup>
     <Content Include="postbuild.bat" />
