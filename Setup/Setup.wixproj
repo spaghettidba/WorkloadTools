@@ -1,64 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" InitialTargets="EnsureWixToolsetInstalled" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<!--
+  WiX v4 SDK-style project. No Visual Studio WiX extension is required to build.
+  Restore NuGet packages first (msbuild -t:Restore or dotnet restore), then build normally.
+  Use buildmsi.ps1 for a standalone build that also handles code signing.
+-->
+<Project Sdk="WixToolset.Sdk/4.0.5">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProductVersion>3.10</ProductVersion>
-    <ProjectGuid>bbf5fda0-c08f-48c9-9b98-e017dd8abb5d</ProjectGuid>
-    <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>Setup</OutputName>
+    <OutputName>WorkloadTools</OutputName>
     <OutputType>Package</OutputType>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
-    <DefineConstants>Debug</DefineConstants>
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <!-- Default version for local developer builds; CI always passes DefineConstants explicitly -->
+    <DefineConstants Condition="'$(DefineConstants)' == ''">BuildVersion=0.0.0.0</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="harvest.wxs" />
-    <Compile Include="harvest2.wxs" />
-    <Compile Include="Product.wxs" />
+    <PackageReference Include="WixToolset.Heat.wixext" Version="4.0.5" />
+    <PackageReference Include="WixToolset.UI.wixext" Version="4.0.5" />
   </ItemGroup>
+  <!--
+    HarvestDirectory items replace the WiX v3 HeatDirectory MSBuild tasks.
+    The WiX Heat extension harvests the output directories of the .NET projects
+    and generates component groups that are referenced from Product.wxs.
+    XSL transforms filter out duplicate and unwanted files.
+  -->
   <ItemGroup>
-    <ProjectReference Include="..\ConvertWorkload\ConvertWorkload.csproj">
-      <Name>ConvertWorkload</Name>
-      <Project>{62e37c03-ba08-46ce-a583-d71fb7a8825b}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
-    <ProjectReference Include="..\SqlWorkload\SqlWorkload.csproj">
-      <Name>SqlWorkload</Name>
-      <Project>{fb46ad2c-df81-4d35-b419-d93e5ef9d98a}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>
-      </DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
-    <ProjectReference Include="..\WorkloadViewer\WorkloadViewer.csproj">
-      <Name>WorkloadViewer</Name>
-      <Project>{6e10e31f-d04d-4cb7-8bb9-71abd4b6b973}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
+    <HarvestDirectory Include="..\SqlWorkload\bin\$(Platform)\$(Configuration)">
+      <ComponentGroupName>ProductComponents</ComponentGroupName>
+      <DirectoryRefId>INSTALLFOLDER</DirectoryRefId>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+      <SuppressRegistry>true</SuppressRegistry>
+      <Transforms>$(MSBuildThisFileDirectory)transform.xsl</Transforms>
+    </HarvestDirectory>
+    <HarvestDirectory Include="..\WorkloadViewer\bin\$(Platform)\$(Configuration)">
+      <ComponentGroupName>WorkloadViewerComponents</ComponentGroupName>
+      <DirectoryRefId>INSTALLFOLDER</DirectoryRefId>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+      <SuppressRegistry>true</SuppressRegistry>
+      <Transforms>$(MSBuildThisFileDirectory)transform.xsl;$(MSBuildThisFileDirectory)transform2.xsl</Transforms>
+    </HarvestDirectory>
   </ItemGroup>
   <ItemGroup>
     <Content Include="postbuild.bat" />
@@ -66,34 +44,9 @@
     <Content Include="transform.xsl" />
     <Content Include="transform2.xsl" />
   </ItemGroup>
-  <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
-  <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
-    <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
-  </Target>
-  <!--
-	To modify your build process, add your task inside one of the targets below and uncomment it.
-	Other similar extension points exist, see Wix.targets.
-	<Target Name="BeforeBuild">
-	</Target>
-	<Target Name="AfterBuild">
-	</Target>
-	-->
-  <Target Name="BeforeBuild">
-    <GetAssemblyIdentity AssemblyFiles="..\SqlWorkload\bin\$(Platform)\$(Configuration)\SqlWorkload.exe">
-      <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
-    </GetAssemblyIdentity>
-    <PropertyGroup>
-      <DefineConstants>BuildVersion=%(AssemblyVersion.Version)</DefineConstants>
-    </PropertyGroup>
-    <HeatDirectory OutputFile="$(ProjectDir)\harvest.wxs" Directory="..\SqlWorkload\bin\$(Platform)\$(Configuration)" ComponentGroupName="ProductComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.SqlWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" Transforms="transform.xsl" />
-    <HeatDirectory OutputFile="$(ProjectDir)\harvest2.wxs" Directory="..\WorkloadViewer\bin\$(Platform)\$(Configuration)" ComponentGroupName="WorkloadViewerComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.WorkloadViewer.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" Transforms="transform.xsl;transform2.xsl" />
-    <HeatDirectory OutputFile="$(ProjectDir)\harvest3.wxs" Directory="..\ConvertWorkload\bin\$(Configuration)" ComponentGroupName="ConvertWorkloadComponents" DirectoryRefId="INSTALLFOLDER" AutogenerateGuids="true" PreprocessorVariable="var.ConvertWorkload.TargetDir" SuppressRegistry="true" SuppressRootDirectory="true" ToolPath="$(WixToolPath)" NoLogo="true" Transforms="transform.xsl;transform2.xsl" />
-  </Target>
   <PropertyGroup>
-    <PreBuildEvent />
-  </PropertyGroup>
-  <PropertyGroup>
-    <PostBuildEvent>call $(ProjectDir)postbuild.bat "!(TargetPath)" "$(TargetDir)$(SolutionName)_$(Platform)$(TargetExt)"</PostBuildEvent>
+    <!-- Use a fixed product name so the signed output is WorkloadTools_<Platform>.msi
+         even when the project is built outside of the solution context. -->
+    <PostBuildEvent>call $(ProjectDir)postbuild.bat "$(TargetPath)" "$(TargetDir)WorkloadTools_$(Platform)$(TargetExt)"</PostBuildEvent>
   </PropertyGroup>
 </Project>

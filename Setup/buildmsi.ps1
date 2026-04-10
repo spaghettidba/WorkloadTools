@@ -2,149 +2,57 @@ param (
     [Parameter(Mandatory=$false)]
     [string]$BuildVersion = "1.0.0.0",
     [Parameter(Mandatory=$false)]
-    [string]$Platform = "x64",
-    [Parameter(Mandatory=$false)]
-    [string]$WixBinPath = "c:\Program Files (x86)\WiX Toolset v3.11\bin"
+    [string]$Platform = "x64"
 )
 
 Set-Location $PSScriptRoot
 
-# Remove previous builds
-If(Test-Path $PSScriptRoot\bin\$Platform\Release\* -PathType Any) {
-    Remove-Item $PSScriptRoot\bin\$Platform\Release\*
+# ---------------------------------------------------------------------------
+# Locate MSBuild via vswhere (ships with Visual Studio 2017+)
+# ---------------------------------------------------------------------------
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+if (-not (Test-Path $vswhere)) {
+    throw "vswhere.exe not found at '$vswhere'. Visual Studio 2017 or newer is required."
 }
 
+$msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild `
+    -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1
+if (-not $msbuild) {
+    throw "MSBuild.exe not found. Please install Visual Studio with the MSBuild component."
+}
 
+# ---------------------------------------------------------------------------
+# Prepare output directory
+# ---------------------------------------------------------------------------
+$outDir = "$PSScriptRoot\bin\$Platform\Release"
+if (-not (Test-Path $outDir)) {
+    New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+} elseif (Test-Path "$outDir\*" -PathType Any) {
+    Remove-Item "$outDir\*" -Force
+}
 
-$heatArgs = @(
-    "dir",
-    "$PSScriptRoot\..\SqlWorkload\bin\$Platform\release",
-    "-gg",
-    "-sfrag",
-    "-sreg",
-    "-srd",
-    "-nologo",
-    "-cg",
-    "ProductComponents",
-    "-dr"
-    "INSTALLFOLDER",
-    "-out",
-    "$PSScriptRoot\harvest.wxs",
-    "-var",
-    "var.SqlWorkload.TargetDir",
-    "-t",
-    "$PSScriptRoot\transform.xsl"
-)
+# ---------------------------------------------------------------------------
+# Restore WiX SDK NuGet packages (WixToolset.Sdk, Heat, UI extensions)
+# ---------------------------------------------------------------------------
+& $msbuild "$PSScriptRoot\Setup.wixproj" -t:Restore -nologo -verbosity:minimal
 
-# Write-Host $heatArgs
+# ---------------------------------------------------------------------------
+# Build the MSI
+# The WiX SDK handles harvesting (replacing the old heat.exe step) and
+# compiling/linking (replacing the old candle.exe + light.exe steps).
+# DefineConstants passes the version as a WiX preprocessor variable so that
+# $(var.BuildVersion) in Product.wxs resolves to the correct value.
+# ---------------------------------------------------------------------------
+& $msbuild "$PSScriptRoot\Setup.wixproj" `
+    -t:Rebuild `
+    -p:Configuration=Release `
+    -p:Platform=$Platform `
+    "-p:DefineConstants=BuildVersion=$BuildVersion" `
+    -nologo -verbosity:minimal
 
-& "$WixBinPath\heat.exe" @heatArgs
-
-
-
-
-$heatArgs = @(
-    "dir",
-    "$PSScriptRoot\..\WorkloadViewer\bin\$Platform\release",
-    "-gg",
-    "-sfrag",
-    "-sreg",
-    "-srd",
-    "-nologo",
-    "-cg",
-    "WorkloadViewerComponents",
-    "-dr"
-    "INSTALLFOLDER",
-    "-out",
-    "$PSScriptRoot\harvest2.wxs",
-    "-var",
-    "var.WorkloadViewer.TargetDir",
-    "-t",
-    "$PSScriptRoot\transform.xsl",
-    "-t",
-    "$PSScriptRoot\transform2.xsl"
-)
-
-
-#  Write-Host "$WixBinPath\heat.exe"
-#  Write-Host $heatArgs
-
-& "$WixBinPath\heat.exe" @heatArgs
-
-
-
-
-
-
-
-$heatArgs = @(
-    "dir",
-    "$PSScriptRoot\..\ConvertWorkload\bin\release",
-    "-gg",
-    "-sfrag",
-    "-sreg",
-    "-srd",
-    "-nologo",
-    "-cg",
-    "ConvertWorkloadComponents",
-    "-dr"
-    "INSTALLFOLDER",
-    "-out",
-    "$PSScriptRoot\harvest3.wxs",
-    "-var",
-    "var.ConvertWorkload.TargetDir",
-    "-t",
-    "$PSScriptRoot\transform.xsl",
-    "-t",
-    "$PSScriptRoot\transform2.xsl"
-    "-t",
-    "$PSScriptRoot\transform3.xsl"
-)
-
-#  Write-Host "$WixBinPath\heat.exe"
-#  Write-Host $heatArgs
-
-& "$WixBinPath\heat.exe" @heatArgs
-
-
-#----------------------------------------------------------------
-
-
-$candleArgs = @(
-    "-nologo",
-    "-out",
-    "$PSScriptRoot\candleout\",
-    "-dSqlWorkload.TargetDir=`"$PSScriptRoot\..\SqlWorkload\bin\$Platform\release`""
-    "-dWorkloadViewer.TargetDir=`"$PSScriptRoot\..\WorkloadViewer\bin\$Platform\release`""
-    "-dConvertWorkload.TargetDir=`"$PSScriptRoot\..\ConvertWorkload\bin\release`""
-    "-dBuildVersion=$BuildVersion",
-    "-dPlatform=$Platform",
-    "$PSScriptRoot\Product.wxs",
-    "$PSScriptRoot\harvest.wxs",
-    "$PSScriptRoot\harvest2.wxs",
-    "$PSScriptRoot\harvest3.wxs",
-    "-arch"
-    "$Platform"
-)
-
-# Write-Host $candleArgs
-
-& "$WixBinPath\candle.exe" @candleArgs
-
-#----------------------------------------------------------------
-
-$lightArgs = @(
-    "-out",
-    ".\bin\$Platform\Release\WorkloadTools.msi"
-    "$PSScriptRoot\candleout\*.wixobj",
-    "-ext",
-    "WixUIExtension"
-)
-
-# Write-Host $lightArgs
-
-
-& "$WixBinPath\light.exe" @lightArgs
-
-
-. $PSScriptRoot\SignMsi.ps1 -InputFile ".\bin\$Platform\Release\WorkloadTools.msi" -OutputFile ".\bin\$Platform\Release\WorkloadTools_$Platform.msi"
+# ---------------------------------------------------------------------------
+# Sign (or just rename if no signing cert is configured)
+# ---------------------------------------------------------------------------
+. $PSScriptRoot\SignMsi.ps1 `
+    -InputFile "$outDir\WorkloadTools.msi" `
+    -OutputFile "$outDir\WorkloadTools_$Platform.msi"

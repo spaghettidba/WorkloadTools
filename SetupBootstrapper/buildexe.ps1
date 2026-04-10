@@ -2,62 +2,67 @@ param (
     [Parameter(Mandatory=$false)]
     [string]$BuildVersion = "1.0.0.0",
     [Parameter(Mandatory=$false)]
-    [string]$Platform = "x64",
-    [Parameter(Mandatory=$false)]
-    [string]$WixBinPath = "c:\Program Files (x86)\WiX Toolset v3.11\bin"
+    [string]$Platform = "x64"
 )
 
-
-. $PSScriptRoot\..\Setup\buildmsi.ps1 -BuildVersion $BuildVersion -Platform $Platform -WixBinPath $WixBinPath
+# ---------------------------------------------------------------------------
+# Build the MSI first
+# ---------------------------------------------------------------------------
+. $PSScriptRoot\..\Setup\buildmsi.ps1 -BuildVersion $BuildVersion -Platform $Platform
 
 Set-Location $PSScriptRoot
 
-# Remove previous builds
-If(Test-Path $PSScriptRoot\bin\$Platform\Release\* -PathType Any) {
-    Remove-Item $PSScriptRoot\bin\$Platform\Release\*
+# ---------------------------------------------------------------------------
+# Resolve the version from SharedAssemblyInfo.cs if the caller left the default
+# ---------------------------------------------------------------------------
+if ($BuildVersion -eq "1.0.0.0") {
+    $BuildVersion = (Get-Content ..\SharedAssemblyInfo.cs |
+        Where-Object { $_.StartsWith("[assembly: AssemblyVersion(") }).
+        Replace('[assembly: AssemblyVersion("','').Replace('")]','')
 }
 
-
-if($BuildVersion -eq "1.0.0.0") {
-    # Try to read from SharedAssemblyInfo
-    $BuildVersion = (Get-Content ..\SharedAssemblyInfo.cs | Where-Object { $_.StartsWith("[assembly: AssemblyVersion(") }).Replace('[assembly: AssemblyVersion("','').Replace('")]','')
+# ---------------------------------------------------------------------------
+# Locate MSBuild via vswhere (ships with Visual Studio 2017+)
+# ---------------------------------------------------------------------------
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+if (-not (Test-Path $vswhere)) {
+    throw "vswhere.exe not found at '$vswhere'. Visual Studio 2017 or newer is required."
 }
 
-#----------------------------------------------------------------
+$msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild `
+    -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1
+if (-not $msbuild) {
+    throw "MSBuild.exe not found. Please install Visual Studio with the MSBuild component."
+}
 
+# ---------------------------------------------------------------------------
+# Prepare output directory
+# ---------------------------------------------------------------------------
+$outDir = "$PSScriptRoot\bin\Release"
+if (-not (Test-Path $outDir)) {
+    New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+} elseif (Test-Path "$outDir\*" -PathType Any) {
+    Remove-Item "$outDir\*" -Force
+}
 
-$candleArgs = @(
-    "-nologo",
-    "-out",
-    "$PSScriptRoot\candleout\",
-    "-dBuildVersion=$BuildVersion",
-    "-dPlatform=$Platform",
-    "$PSScriptRoot\Bundle.wxs",
-    "-arch",
-    "$Platform",
-    "-ext",
-    "WixBalExtension"
-)
+# ---------------------------------------------------------------------------
+# Restore WiX SDK NuGet packages (WixToolset.Sdk, Bal, UI extensions)
+# ---------------------------------------------------------------------------
+& $msbuild "$PSScriptRoot\SetupBootstrapper.wixproj" -t:Restore -nologo -verbosity:minimal
 
-# Write-Host $candleArgs
+# ---------------------------------------------------------------------------
+# Build the bundle EXE
+# ---------------------------------------------------------------------------
+& $msbuild "$PSScriptRoot\SetupBootstrapper.wixproj" `
+    -t:Rebuild `
+    -p:Configuration=Release `
+    -p:Platform=$Platform `
+    "-p:DefineConstants=BuildVersion=$BuildVersion" `
+    -nologo -verbosity:minimal
 
-& "$WixBinPath\candle.exe" @candleArgs
-
-#----------------------------------------------------------------
-
-$lightArgs = @(
-    "-out",
-    ".\bin\Release\WorkloadTools.exe"
-    "$PSScriptRoot\candleout\*.wixobj",
-    "-ext",
-    "WixUIExtension",
-    "-ext",
-    "WixBalExtension"
-)
-
-# Write-Host $lightArgs
-
-
-& "$WixBinPath\light.exe" @lightArgs
-
-. $PSScriptRoot\SignMsi.ps1 -InputFile ".\bin\Release\WorkloadTools.exe" -OutputFile ".\bin\Release\WorkloadTools_$Platform.exe"
+# ---------------------------------------------------------------------------
+# Sign (or just rename if no signing cert is configured)
+# ---------------------------------------------------------------------------
+. $PSScriptRoot\SignMsi.ps1 `
+    -InputFile "$outDir\WorkloadTools.exe" `
+    -OutputFile "$outDir\WorkloadTools_$Platform.exe"
