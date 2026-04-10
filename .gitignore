@@ -266,3 +266,4 @@ harvest3.wxs
 Setup/SignParams.ps1
 SetupBootstrapper/SignParams.ps1
 *.wixobj.nuget/nuget.exe
+*.wixobj
