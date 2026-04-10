@@ -1059,7 +1059,7 @@ namespace WorkloadTools.Consumer.Analysis
             GC.WaitForPendingFinalizers();
         }
 
-        private static int ComputeIntervalId(DateTime intervalTime)
+        private int ComputeIntervalId(DateTime intervalTime)
         {
             // interval id is the number of seconds since 01/01/2000
             return (int)intervalTime.Subtract(DateTime.MinValue.AddYears(1999)).TotalSeconds;
