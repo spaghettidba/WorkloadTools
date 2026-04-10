@@ -17,42 +17,7 @@
          Harvesting is built into WixToolset.Sdk; no separate extension is needed. -->
     <PackageReference Include="WixToolset.UI.wixext" Version="4.0.5" />
   </ItemGroup>
-  <!--
-    Build-order dependencies: the three .NET projects must be compiled before WiX
-    harvests their output directories (HarvestDirectory below).  Without these
-    references the harvest directories may not exist when building Setup.wixproj
-    directly from Visual Studio or via msbuild, causing WIX0094.
 
-    ReferenceOutputAssembly=false  – do not pass the .NET assembly as a compile input.
-    SkipGetTargetFrameworkProperties=true – suppresses cross-targeting errors for
-                                            old-style .NET Framework .csproj files.
-
-    SqlWorkload and WorkloadViewer use Platform=AnyCPU → output to bin\x64\<Config>
-    when the WiX project Platform is x64, and Platform=x86 → bin\x86\<Config> when
-    the WiX project Platform is x86 – matching the HarvestDirectory paths below.
-    ConvertWorkload always outputs to bin\<Config> regardless of platform.
-  -->
-  <PropertyGroup>
-    <_NetPlatform Condition="'$(Platform)' == 'x86'">x86</_NetPlatform>
-    <_NetPlatform Condition="'$(Platform)' != 'x86'">AnyCPU</_NetPlatform>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\SqlWorkload\SqlWorkload.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
-      <AdditionalProperties>Platform=$(_NetPlatform)</AdditionalProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\WorkloadViewer\WorkloadViewer.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
-      <AdditionalProperties>Platform=$(_NetPlatform)</AdditionalProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\ConvertWorkload\ConvertWorkload.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
-      <AdditionalProperties>Platform=AnyCPU</AdditionalProperties>
-    </ProjectReference>
-  </ItemGroup>
   <!-- Exclude any stale WiX v3 harvest files that may exist on disk from a
        previous build. WiX v4 SDK auto-includes all *.wxs files in the project
        directory; these generated files use undefined preprocessor variables. -->

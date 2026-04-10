@@ -74,6 +74,7 @@ if (-not (Test-Path $outDir)) {
     -p:Platform=$Platform `
     "-p:DefineConstants=BuildVersion=$BuildVersion" `
     -nologo -verbosity:minimal
+if ($LASTEXITCODE -ne 0) { throw "Setup.wixproj build failed." }
 
 # ---------------------------------------------------------------------------
 # Sign (or just rename if no signing cert is configured)
