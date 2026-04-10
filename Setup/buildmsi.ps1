@@ -96,12 +96,14 @@ $convertWorkloadDir = [System.IO.Path]::GetFullPath("$PSScriptRoot\..\ConvertWor
 
 & $heat dir "$sqlWorkloadDir" `
     -cg ProductComponents -dr INSTALLFOLDER -srd -sreg -ag `
+    -var var.SqlWorkloadDir `
     -t "$PSScriptRoot\transform.xsl" `
     -out "$PSScriptRoot\harvest.wxs" -nologo
 if ($LASTEXITCODE -ne 0) { throw "heat.exe failed for SqlWorkload." }
 
 & $heat dir "$workloadViewerDir" `
     -cg WorkloadViewerComponents -dr INSTALLFOLDER -srd -sreg -ag `
+    -var var.WorkloadViewerDir `
     -t "$PSScriptRoot\transform.xsl" -t "$PSScriptRoot\transform2.xsl" `
     -t "$PSScriptRoot\transform-nodirs.xsl" `
     -out "$PSScriptRoot\harvest2.wxs" -nologo
@@ -109,6 +111,7 @@ if ($LASTEXITCODE -ne 0) { throw "heat.exe failed for WorkloadViewer." }
 
 & $heat dir "$convertWorkloadDir" `
     -cg ConvertWorkloadComponents -dr INSTALLFOLDER -srd -sreg -ag `
+    -var var.ConvertWorkloadDir `
     -t "$PSScriptRoot\transform.xsl" -t "$PSScriptRoot\transform2.xsl" `
     -t "$PSScriptRoot\transform3.xsl" -t "$PSScriptRoot\transform-nodirs.xsl" `
     -out "$PSScriptRoot\harvest3.wxs" -nologo
@@ -127,6 +130,9 @@ $arch = if ($Platform -eq 'x86') { 'x86' } else { 'x64' }
     -arch $arch `
     "-dBuildVersion=$BuildVersion" `
     "-dPlatform=$Platform" `
+    "-dSqlWorkloadDir=$sqlWorkloadDir" `
+    "-dWorkloadViewerDir=$workloadViewerDir" `
+    "-dConvertWorkloadDir=$convertWorkloadDir" `
     -out "$objDir\" `
     -nologo
 if ($LASTEXITCODE -ne 0) { throw "candle.exe failed." }
