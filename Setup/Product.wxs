@@ -42,11 +42,14 @@
   </Package>
 
   <Fragment>
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="$(var.PlatformProgramFilesFolder)">
-        <Directory Id="INSTALLFOLDER" Name="WorkloadTools" />
-      </Directory>
-    </Directory>
+    <!--
+      WiX v4: Standard Windows Installer directories (TARGETDIR, ProgramFiles*Folder)
+      are declared with <StandardDirectory> instead of <Directory>.
+      TARGETDIR is implicit and does not need to be declared explicitly.
+    -->
+    <StandardDirectory Id="$(var.PlatformProgramFilesFolder)">
+      <Directory Id="INSTALLFOLDER" Name="WorkloadTools" />
+    </StandardDirectory>
   </Fragment>
 
   <Fragment>

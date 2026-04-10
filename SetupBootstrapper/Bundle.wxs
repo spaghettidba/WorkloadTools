@@ -2,8 +2,9 @@
 <!--
   WiX v4 Bundle source file.
   Key changes from WiX v3:
-    - Namespace URIs updated to wixtoolset.org/schemas/v4/wxs
-    - ExePackage: PerMachine="yes" -> Scope="perMachine", InstallCommand -> InstallArguments
+    - Namespace URIs updated to wixtoolset.org/schemas/v4/wxs (bal sub-namespace)
+    - BootstrapperApplicationRef replaced by BootstrapperApplication + bal:WixStandardBootstrapperApplication with Theme
+    - ExePackage: PerMachine="yes" removed (not valid on ExePackage); Cache="no" -> Cache="remove"; InstallCommand -> InstallArguments
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
@@ -19,13 +20,14 @@
   <?define ProductVersion="$(var.BuildVersion)" ?>
 
   <Bundle Name="$(var.ProductName)" Version="$(var.ProductVersion)" Manufacturer="$(var.CompanyName)" UpgradeCode="cad976c4-d0c6-4313-b605-ec3749a23b5f">
-    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
+    <BootstrapperApplication>
       <bal:WixStandardBootstrapperApplication
             LicenseFile="License\License.rtf"
             LogoFile="License\Icon.png"
             LogoSideFile="License\SideLogo.png"
+            Theme="rtfLicense"
             />
-    </BootstrapperApplicationRef>
+    </BootstrapperApplication>
 
     <Variable Name="InstallFolder" Value="[$(var.PlatformProgramFilesFolder)]WorkloadTools" Type="string" />
 
@@ -40,9 +42,8 @@
   <Fragment>
     <PackageGroup Id="VCRedist">
       <ExePackage
-         Cache="no"
+         Cache="remove"
          Compressed="yes"
-         Scope="perMachine"
          Permanent="yes"
          Vital="yes"
          Name="Redist\vcredist_$(var.Platform).exe"
