@@ -103,13 +103,14 @@ if ($LASTEXITCODE -ne 0) { throw "heat.exe failed for SqlWorkload." }
 & $heat dir "$workloadViewerDir" `
     -cg WorkloadViewerComponents -dr INSTALLFOLDER -srd -sreg -ag `
     -t "$PSScriptRoot\transform.xsl" -t "$PSScriptRoot\transform2.xsl" `
+    -t "$PSScriptRoot\transform-nodirs.xsl" `
     -out "$PSScriptRoot\harvest2.wxs" -nologo
 if ($LASTEXITCODE -ne 0) { throw "heat.exe failed for WorkloadViewer." }
 
 & $heat dir "$convertWorkloadDir" `
     -cg ConvertWorkloadComponents -dr INSTALLFOLDER -srd -sreg -ag `
     -t "$PSScriptRoot\transform.xsl" -t "$PSScriptRoot\transform2.xsl" `
-    -t "$PSScriptRoot\transform3.xsl" `
+    -t "$PSScriptRoot\transform3.xsl" -t "$PSScriptRoot\transform-nodirs.xsl" `
     -out "$PSScriptRoot\harvest3.wxs" -nologo
 if ($LASTEXITCODE -ne 0) { throw "heat.exe failed for ConvertWorkload." }
 
