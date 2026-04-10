@@ -22,6 +22,31 @@ if (-not $msbuild) {
 }
 
 # ---------------------------------------------------------------------------
+# Build the .NET projects whose output directories will be harvested into
+# the MSI by the WiX SDK HarvestDirectory items in Setup.wixproj.
+#
+# SqlWorkload and WorkloadViewer use the "AnyCPU" configuration to produce
+# x64 output (bin\x64\Release) and "x86" for x86 output (bin\x86\Release).
+# ConvertWorkload always outputs to bin\Release regardless of platform.
+# ---------------------------------------------------------------------------
+$netPlatform = if ($Platform -eq 'x86') { 'x86' } else { 'AnyCPU' }
+
+& $msbuild "$PSScriptRoot\..\SqlWorkload\SqlWorkload.csproj" `
+    -t:Rebuild -p:Configuration=Release "-p:Platform=$netPlatform" `
+    -nologo -verbosity:minimal
+if ($LASTEXITCODE -ne 0) { throw "SqlWorkload build failed." }
+
+& $msbuild "$PSScriptRoot\..\WorkloadViewer\WorkloadViewer.csproj" `
+    -t:Rebuild -p:Configuration=Release "-p:Platform=$netPlatform" `
+    -nologo -verbosity:minimal
+if ($LASTEXITCODE -ne 0) { throw "WorkloadViewer build failed." }
+
+& $msbuild "$PSScriptRoot\..\ConvertWorkload\ConvertWorkload.csproj" `
+    -t:Rebuild -p:Configuration=Release `
+    -nologo -verbosity:minimal
+if ($LASTEXITCODE -ne 0) { throw "ConvertWorkload build failed." }
+
+# ---------------------------------------------------------------------------
 # Prepare output directory
 # ---------------------------------------------------------------------------
 $outDir = "$PSScriptRoot\bin\$Platform\Release"
