@@ -61,8 +61,11 @@
   <PropertyGroup>
     <PostBuildEvent>call $(ProjectDir)postbuild.bat "$(TargetPath)" "$(TargetDir)WorkloadTools_$(Platform)$(TargetExt)"</PostBuildEvent>
   </PropertyGroup>
-  <Import Project="$(WixTargetsPath)" />
+  <Import Project="$(WixTargetsPath)" Condition="Exists('$(WixTargetsPath)')" />
   <Target Name="EnsureWixTargetsImported" BeforeTargets="PrepareForBuild" Condition=" '$(WixTargetsImported)' == '' ">
-    <Error Text="WiX Toolset v3 build targets were not found at '$(WixTargetsPath)'. Please install WiX Toolset v3.x from https://wixtoolset.org/." />
+    <Warning Text="WiX Toolset v3 build targets were not found at '$(WixTargetsPath)'. Build skipped. Use buildexe.ps1 to build the bootstrapper." />
+  </Target>
+  <Target Name="Build" Condition=" '$(WixTargetsImported)' == '' ">
+    <Message Text="SetupBootstrapper project skipped: WiX Toolset v3 is not installed. Use buildexe.ps1 to build the bootstrapper." Importance="high" />
   </Target>
 </Project>
