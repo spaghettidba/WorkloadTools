@@ -30,9 +30,11 @@ namespace WorkloadTools.Consumer.Analysis
         private readonly Dictionary<string, int> logins = new Dictionary<string, int>();
         private readonly Dictionary<string, int> hosts = new Dictionary<string, int>();
 
-        private readonly Queue<WorkloadEvent> _internalQueue = new Queue<WorkloadEvent>();
+        private Queue<WorkloadEvent> _internalQueue = new Queue<WorkloadEvent>();
+        private readonly object _internalQueueLock = new object();
         private Thread Worker;
         private bool stopped = false;
+        public int MaxInternalQueueSize { get; set; } = 10000;
 
         private ConcurrentDictionary<ExecutionDetailKey,List<ExecutionDetailValue>> rawData;
 		private DataTable errorData;
@@ -69,7 +71,16 @@ namespace WorkloadTools.Consumer.Analysis
 			};
 		}
 
-        public bool HasEventsQueued => _internalQueue.Count > 0;
+        public bool HasEventsQueued
+        {
+            get
+            {
+                lock (_internalQueueLock)
+                {
+                    return _internalQueue.Count > 0;
+                }
+            }
+        }
 
         private void CloseInterval()
         {
@@ -124,18 +135,30 @@ namespace WorkloadTools.Consumer.Analysis
         {
             while (!stopped)
             {
-                lock (_internalQueue)
+                WorkloadEvent data = null;
+                bool hasData = false;
+
+                lock (_internalQueueLock)
                 {
                     CloseInterval();
 
-                    if (_internalQueue.Count == 0)
+                    if (_internalQueue.Count > 0)
                     {
-                        Thread.Sleep(10);
-                        continue;
+                        data = _internalQueue.Dequeue();
+                        hasData = true;
+                        // Notify Add() that a slot is now free
+                        Monitor.PulseAll(_internalQueueLock);
                     }
-                
-                    var data = _internalQueue.Dequeue();
+                }
+
+                if (hasData)
+                {
                     InternalAdd(data);
+                }
+                else
+                {
+                    // Sleep outside the lock so Add() is not blocked unnecessarily
+                    Thread.Sleep(10);
                 }
             }
         }
@@ -155,12 +178,19 @@ namespace WorkloadTools.Consumer.Analysis
             {
                 logger.Error(e, "Unable to start the worker thread for WorkloadAnalyzer");
             }
-            
 
-            lock (_internalQueue)
+            lock (_internalQueueLock)
             {
+                // Block when the queue is full to avoid unbounded memory growth
+                while (!stopped && _internalQueue.Count >= MaxInternalQueueSize)
+                {
+                    Monitor.Wait(_internalQueueLock);
+                }
+
+                if (stopped) return;
+
                 lastEventTime = evt.StartTime;
-                if(lastDump == DateTime.MinValue)
+                if (lastDump == DateTime.MinValue)
                 {
                     lastDump = lastEventTime;
                 }
@@ -408,6 +438,11 @@ namespace WorkloadTools.Consumer.Analysis
                 }
             }
             stopped = true;
+            // Wake up any Add() calls that may be blocked waiting for queue space
+            lock (_internalQueueLock)
+            {
+                Monitor.PulseAll(_internalQueueLock);
+            }
         }
 
         [MethodImpl(MethodImplOptions.Synchronized)]

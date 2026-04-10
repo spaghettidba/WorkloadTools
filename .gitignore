@@ -265,4 +265,4 @@ harvest2.wxs
 harvest3.wxs
 Setup/SignParams.ps1
 SetupBootstrapper/SignParams.ps1
-*.wixobj
+*.wixobj.nuget/nuget.exe
