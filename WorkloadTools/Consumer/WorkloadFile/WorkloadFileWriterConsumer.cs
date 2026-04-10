@@ -275,11 +275,7 @@ namespace WorkloadTools.Consumer.WorkloadFile
             rowcount = events_update_cmd.ExecuteNonQuery();
             if (rowcount == 0)
             {
-                // No matching starting event found (e.g. the XE session only captures completed
-                // events, or the starting event was lost). Insert the completed event directly
-                // so that it is not silently dropped.
-                logger.Debug("Starting event not found - inserting completed event directly. " + $"EventSequence: {evt.EventSequence}");
-                InsertExecutionEvent(evnt);
+                logger.Debug("Starting event not found - " + $"EventSequence: {evt.EventSequence}");
             }
         }
 
