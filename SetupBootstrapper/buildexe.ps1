@@ -22,43 +22,66 @@ if ($BuildVersion -eq "1.0.0.0") {
 }
 
 # ---------------------------------------------------------------------------
-# Locate MSBuild via vswhere (ships with Visual Studio 2017+)
+# Locate WiX v3 tools (candle.exe, light.exe)
+# The WIX environment variable is set automatically by the WiX v3 installer.
 # ---------------------------------------------------------------------------
-$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-if (-not (Test-Path $vswhere)) {
-    throw "vswhere.exe not found at '$vswhere'. Visual Studio 2017 or newer is required."
+$wixDir = $null
+if ($env:WIX -and (Test-Path $env:WIX)) {
+    $wixDir = $env:WIX
+}
+if (-not $wixDir) {
+    $wixDir = @(
+        "${env:ProgramFiles(x86)}\WiX Toolset v3.14",
+        "${env:ProgramFiles(x86)}\WiX Toolset v3.11",
+        "${env:ProgramFiles(x86)}\WiX Toolset v3.10",
+        "${env:ProgramFiles}\WiX Toolset v3.14",
+        "${env:ProgramFiles}\WiX Toolset v3.11"
+    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+}
+if (-not $wixDir) {
+    throw "WiX Toolset v3 not found. Install from https://wixtoolset.org/ or set the WIX environment variable."
 }
 
-$msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild `
-    -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1
-if (-not $msbuild) {
-    throw "MSBuild.exe not found. Please install Visual Studio with the MSBuild component."
-}
+$candle = Join-Path $wixDir "bin\candle.exe"
+$light  = Join-Path $wixDir "bin\light.exe"
 
 # ---------------------------------------------------------------------------
-# Prepare output directory
+# Prepare output and intermediate directories
 # ---------------------------------------------------------------------------
 $outDir = "$PSScriptRoot\bin\$Platform\Release"
-if (-not (Test-Path $outDir)) {
-    New-Item -ItemType Directory -Path $outDir -Force | Out-Null
-} elseif (Test-Path "$outDir\*" -PathType Any) {
-    Remove-Item "$outDir\*" -Force
+$objDir = "$PSScriptRoot\obj\$Platform\Release"
+
+foreach ($dir in $outDir, $objDir) {
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    } elseif (Test-Path "$dir\*") {
+        Remove-Item "$dir\*" -Recurse -Force
+    }
 }
 
 # ---------------------------------------------------------------------------
-# Restore WiX SDK NuGet packages (WixToolset.Sdk, Bal, UI extensions)
+# Compile Bundle.wxs with candle.exe
 # ---------------------------------------------------------------------------
-& $msbuild "$PSScriptRoot\SetupBootstrapper.wixproj" -t:Restore -nologo -verbosity:minimal
+$arch = if ($Platform -eq 'x86') { 'x86' } else { 'x64' }
+
+& $candle `
+    "$PSScriptRoot\Bundle.wxs" `
+    -arch $arch `
+    "-dBuildVersion=$BuildVersion" `
+    "-dPlatform=$Platform" `
+    -out "$objDir\" `
+    -nologo -ext WixBalExtension
+if ($LASTEXITCODE -ne 0) { throw "candle.exe failed for Bundle.wxs." }
 
 # ---------------------------------------------------------------------------
-# Build the bundle EXE
+# Link with light.exe to produce the bootstrapper EXE
 # ---------------------------------------------------------------------------
-& $msbuild "$PSScriptRoot\SetupBootstrapper.wixproj" `
-    -t:Rebuild `
-    -p:Configuration=Release `
-    -p:Platform=$Platform `
-    "-p:DefineConstants=BuildVersion=$BuildVersion" `
-    -nologo -verbosity:minimal
+$wixObjs = Get-ChildItem "$objDir\*.wixobj" | Select-Object -ExpandProperty FullName
+
+& $light $wixObjs `
+    -out "$outDir\WorkloadTools.exe" `
+    -nologo -ext WixBalExtension
+if ($LASTEXITCODE -ne 0) { throw "light.exe failed for Bundle." }
 
 # ---------------------------------------------------------------------------
 # Sign (or just rename if no signing cert is configured)

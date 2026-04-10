@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  WiX v4 Bundle source file.
-  Key changes from WiX v3:
-    - Namespace URIs updated to wixtoolset.org/schemas/v4/wxs (bal sub-namespace)
-    - BootstrapperApplicationRef replaced by BootstrapperApplication + bal:WixStandardBootstrapperApplication with Theme
-    - ExePackage: PerMachine="yes" removed (not valid on ExePackage); Cache="no" -> Cache="remove"; InstallCommand -> InstallArguments
--->
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
 
   <?if $(var.Platform) = x64 ?>
     <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
@@ -20,14 +13,13 @@
   <?define ProductVersion="$(var.BuildVersion)" ?>
 
   <Bundle Name="$(var.ProductName)" Version="$(var.ProductVersion)" Manufacturer="$(var.CompanyName)" UpgradeCode="cad976c4-d0c6-4313-b605-ec3749a23b5f">
-    <BootstrapperApplication>
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
       <bal:WixStandardBootstrapperApplication
             LicenseFile="License\License.rtf"
             LogoFile="License\Icon.png"
             LogoSideFile="License\SideLogo.png"
-            Theme="rtfLicense"
             />
-    </BootstrapperApplication>
+    </BootstrapperApplicationRef>
 
     <Variable Name="InstallFolder" Value="[$(var.PlatformProgramFilesFolder)]WorkloadTools" Type="string" />
 
@@ -42,13 +34,14 @@
   <Fragment>
     <PackageGroup Id="VCRedist">
       <ExePackage
-         Cache="remove"
+         Cache="no"
          Compressed="yes"
+         PerMachine="yes"
          Permanent="yes"
          Vital="yes"
          Name="Redist\vcredist_$(var.Platform).exe"
          SourceFile="Redist\vcredist_$(var.Platform).exe"
-         InstallArguments="/install /quiet /norestart">
+         InstallCommand="/install /quiet /norestart">
 
         <ExitCode Value="3010" Behavior="forceReboot"/>
 
