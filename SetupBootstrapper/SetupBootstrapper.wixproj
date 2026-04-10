@@ -1,40 +1,50 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" InitialTargets="EnsureWixToolsetInstalled" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  WiX v3 MSBuild project. Requires WiX Toolset v3.x to be installed.
+  See https://wixtoolset.org/ to download WiX v3.
+  For a standalone build, use buildexe.ps1.
+  The MSI (Setup project) must be built before building this bundle.
+-->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>3.10</ProductVersion>
-    <ProjectGuid>cad976c4-d0c6-4313-b605-ec3749a23b5f</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>WorkloadTools</OutputName>
+    <ProjectGuid>{CAD976C4-D0C6-4313-B605-EC3749A23B5F}</ProjectGuid>
     <OutputType>Bundle</OutputType>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <OutputPath>bin\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug</DefineConstants>
+    <OutputName>WorkloadTools</OutputName>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <!-- Default version for local developer builds; buildexe.ps1 always passes BuildVersion -->
+    <BuildVersion Condition=" '$(BuildVersion)' == '' ">0.0.0.0</BuildVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
-    <DefineConstants>Debug</DefineConstants>
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <IntermediateOutputPath>obj\x86\Release\</IntermediateOutputPath>
+    <DefineConstants>BuildVersion=$(BuildVersion);Platform=$(Platform)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <IntermediateOutputPath>obj\x64\Release\</IntermediateOutputPath>
+    <DefineConstants>BuildVersion=$(BuildVersion);Platform=$(Platform)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <IntermediateOutputPath>obj\x86\Debug\</IntermediateOutputPath>
+    <DefineConstants>BuildVersion=$(BuildVersion);Platform=$(Platform)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <IntermediateOutputPath>obj\x64\Debug\</IntermediateOutputPath>
+    <DefineConstants>BuildVersion=$(BuildVersion);Platform=$(Platform)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Bundle.wxs" />
   </ItemGroup>
   <ItemGroup>
-    <WixExtension Include="WixBalExtension">
-      <HintPath>$(WixExtDir)\WixBalExtension.dll</HintPath>
-      <Name>WixBalExtension</Name>
-    </WixExtension>
+    <WixExtension Include="WixBalExtension" />
+    <WixExtension Include="WixUIExtension" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="License" />
@@ -48,34 +58,14 @@
     <Content Include="Redist\vcredist_x86.exe" />
     <Content Include="SignMsi.ps1" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Setup\Setup.wixproj">
-      <Name>Setup</Name>
-      <Project>{bbf5fda0-c08f-48c9-9b98-e017dd8abb5d}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
-  <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
-    <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
-  </Target>
   <PropertyGroup>
-    <PostBuildEvent>call $(ProjectDir)postbuild.bat "!(TargetPath)" "$(TargetDir)$(SolutionName)_$(Platform)$(TargetExt)"</PostBuildEvent>
+    <PostBuildEvent>call $(ProjectDir)postbuild.bat "$(TargetPath)" "$(TargetDir)WorkloadTools_$(Platform)$(TargetExt)"</PostBuildEvent>
   </PropertyGroup>
-
-	<Target Name="BeforeBuild">
-    <GetAssemblyIdentity AssemblyFiles="..\SqlWorkload\bin\$(Platform)\$(Configuration)\SqlWorkload.exe">
-      <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
-    </GetAssemblyIdentity>
-    <PropertyGroup>
-      <DefineConstants>BuildVersion=%(AssemblyVersion.Version)</DefineConstants>
-    </PropertyGroup>
-	</Target>
-	<Target Name="AfterBuild">
-	</Target>
-
+  <Import Project="$(WixTargetsPath)" Condition="Exists('$(WixTargetsPath)')" />
+  <Target Name="EnsureWixTargetsImported" BeforeTargets="PrepareForBuild" Condition=" '$(WixTargetsImported)' == '' ">
+    <Warning Text="WiX Toolset v3 build targets were not found at '$(WixTargetsPath)'. Build skipped. Use buildexe.ps1 to build the bootstrapper." />
+  </Target>
+  <Target Name="Build" Condition=" '$(WixTargetsImported)' == '' ">
+    <Message Text="SetupBootstrapper project skipped: WiX Toolset v3 is not installed. Use buildexe.ps1 to build the bootstrapper." Importance="high" />
+  </Target>
 </Project>

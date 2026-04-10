@@ -1,23 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" 
-     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" 
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
 
   <?if $(var.Platform) = x64 ?>
-    <?define Win64 = "yes" ?>
     <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
-    <?define PlatformReleaseFolder = "ReleaseX64" ?>
   <?else ?>
-    <?define Win64 = "no" ?>
     <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
-    <?define PlatformReleaseFolder = "Release" ?>
   <?endif ?>
 
   <?define ProductName="WorkloadTools" ?>
   <?define CompanyName="sqlconsulting.it" ?>
   <?define ProductVersion="$(var.BuildVersion)" ?>
-
-
 
   <Bundle Name="$(var.ProductName)" Version="$(var.ProductVersion)" Manufacturer="$(var.CompanyName)" UpgradeCode="cad976c4-d0c6-4313-b605-ec3749a23b5f">
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
@@ -30,13 +23,14 @@
 
     <Variable Name="InstallFolder" Value="[$(var.PlatformProgramFilesFolder)]WorkloadTools" Type="string" />
 
-		<Chain>
+    <Chain>
       <MsiPackage SourceFile="..\Setup\bin\$(var.Platform)\Release\WorkloadTools_$(var.Platform).msi" Id="WorkloadToolsMsi">
         <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
       </MsiPackage>
       <PackageGroupRef Id="VCRedist"/>
-		</Chain>
-	</Bundle>
+    </Chain>
+  </Bundle>
+
   <Fragment>
     <PackageGroup Id="VCRedist">
       <ExePackage
@@ -49,7 +43,6 @@
          SourceFile="Redist\vcredist_$(var.Platform).exe"
          InstallCommand="/install /quiet /norestart">
 
-        <!-- -->
         <ExitCode Value="3010" Behavior="forceReboot"/>
 
         <!-- Ignore "Newer version installed" error -->
