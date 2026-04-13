@@ -132,7 +132,13 @@ namespace WorkloadTools.Consumer.WorkloadFile
                     write_bytes,
                     write_latency_ms,
                     writes,
-                    write_bytes
+                    write_bytes,
+                    cum_read_latency_ms,
+                    cum_reads,
+                    cum_read_bytes,
+                    cum_write_latency_ms,
+                    cum_writes,
+                    cum_write_bytes
                 )
                 VALUES (
                     $row_id,
