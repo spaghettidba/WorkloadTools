@@ -709,6 +709,7 @@ DEALLOCATE c
 
                 using (var cmd = new SqlCommand(sql, conn))
                 {
+                    cmd.CommandTimeout = 0;
                     _ = cmd.ExecuteNonQuery();
                 }
 
