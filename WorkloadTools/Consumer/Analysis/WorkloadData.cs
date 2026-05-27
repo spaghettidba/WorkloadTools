@@ -29,9 +29,6 @@ namespace WorkloadTools.Consumer.Analysis
 
         public ConcurrentDictionary<ExecutionDetailKey, List<ExecutionDetailValue>> RawData { get; set; }
 
-        private readonly AnalysisDatabaseWriter databaseWriter;
-        private readonly SqlConnectionInfo ConnectionInfo;
-
         public WorkloadData() {
             if (RawData == null)
             {
@@ -128,7 +125,6 @@ namespace WorkloadTools.Consumer.Analysis
             if (RawData == null)
             {
                 PrepareDataTables();
-                PrepareDictionaries();
             }
 
             var norm = Normalizer.NormalizeSqlText(evt.Text, (int)evt.SPID);
@@ -226,29 +222,6 @@ namespace WorkloadTools.Consumer.Analysis
             ErrorData = new DataTable();
             _ = ErrorData.Columns.Add("type", typeof(int));
             _ = ErrorData.Columns.Add("message", typeof(string));
-        }
-
-        public void PrepareDictionaries()
-        {
-            databaseWriter.CreateTargetDatabase();
-
-            using (var conn = new SqlConnection())
-            {
-                conn.ConnectionString = ConnectionInfo.ConnectionString();
-                conn.Open();
-
-                var sql = string.Format(@"SELECT * FROM [{0}].[Applications]", ConnectionInfo.SchemaName);
-                databaseWriter.AddAllRows(conn, sql, Applications);
-
-                sql = string.Format(@"SELECT * FROM [{0}].[Databases]", ConnectionInfo.SchemaName);
-                databaseWriter.AddAllRows(conn, sql, Databases);
-
-                sql = string.Format(@"SELECT * FROM [{0}].[Hosts]", ConnectionInfo.SchemaName);
-                databaseWriter.AddAllRows(conn, sql, Hosts);
-
-                sql = string.Format(@"SELECT * FROM [{0}].[Logins]", ConnectionInfo.SchemaName);
-                databaseWriter.AddAllRows(conn, sql, Logins);
-            }
         }
 
         public void Dispose()

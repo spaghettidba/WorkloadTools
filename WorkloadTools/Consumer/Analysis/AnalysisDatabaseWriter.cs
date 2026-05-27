@@ -751,6 +751,35 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
+        /// <summary>
+        /// Populates dictionaries in WorkloadData (Applications, Databases, Hosts, Logins)
+        /// reading from the analysis database
+        /// </summary>
+        public void PopulateDictionariesFromDatabase(WorkloadData data)
+        {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+
+            CreateTargetDatabase();
+
+            using (var conn = new SqlConnection())
+            {
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
+                conn.Open();
+
+                var sql = string.Format(@"SELECT * FROM [{0}].[Applications]", ConnectionInfo.SchemaName);
+                AddAllRows(conn, sql, data.Applications);
+
+                sql = string.Format(@"SELECT * FROM [{0}].[Databases]", ConnectionInfo.SchemaName);
+                AddAllRows(conn, sql, data.Databases);
+
+                sql = string.Format(@"SELECT * FROM [{0}].[Hosts]", ConnectionInfo.SchemaName);
+                AddAllRows(conn, sql, data.Hosts);
+
+                sql = string.Format(@"SELECT * FROM [{0}].[Logins]", ConnectionInfo.SchemaName);
+                AddAllRows(conn, sql, data.Logins);
+            }
+        }
+
         protected void CreateTargetTables()
         {
             CreateTargetDatabase();

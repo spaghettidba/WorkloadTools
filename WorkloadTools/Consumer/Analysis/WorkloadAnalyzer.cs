@@ -42,6 +42,7 @@ namespace WorkloadTools.Consumer.Analysis
         
         private AnalysisDatabaseWriter databaseWriter;
         private WorkloadData workloadData;
+        private bool dictionariesPopulated = false;
 
         public WorkloadAnalyzer()
 		{
@@ -163,6 +164,16 @@ namespace WorkloadTools.Consumer.Analysis
 
                 if (hasData)
                 {
+                    // Populates dictionaries from the database on the first execution
+                    // event, which is guaranteed to arrive before any other event type
+                    // due to the way events are generated in the trace processing code.
+                    if (!dictionariesPopulated && data is ExecutionWorkloadEvent)
+                    {
+                        databaseWriter.ConnectionInfo = this.ConnectionInfo;
+                        databaseWriter.PopulateDictionariesFromDatabase(workloadData);
+                        dictionariesPopulated = true;
+                    }
+
                     workloadData.InternalAdd(data);
                 }
                 else
