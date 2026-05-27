@@ -62,167 +62,175 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DouglasCrockford.JsMin, Version=1.1.3.0, Culture=neutral, PublicKeyToken=99147aa1108448b7, processorArchitecture=MSIL">
-      <HintPath>..\packages\DouglasCrockford.JsMin.1.1.3\lib\net40-client\DouglasCrockford.JsMin.dll</HintPath>
-    </Reference>
-    <Reference Include="FastMember, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\FastMember.1.5.0\lib\net461\FastMember.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.AzureStorageEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.AzureStorageEnum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.BatchParserClient, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.BatchParserClient.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.ConnectionInfo, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.ConnectionInfo.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.ConnectionInfoExtended, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.ConnectionInfoExtended.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Diagnostics.Strace, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Diagnostics.Strace.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Dmf, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Dmf.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Dmf.Common, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Dmf.Common.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.Collector, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.Collector.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.CollectorEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.CollectorEnum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.RegisteredServers, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.RegisteredServers.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.Sdk.Sfc, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.Sdk.Sfc.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.SqlParser, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.SqlParser.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.Utility, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.Utility.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.UtilityEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.UtilityEnum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.XEvent, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.XEvent.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.XEventDbScoped, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.XEventDbScoped.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.XEventDbScopedEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.XEventDbScopedEnum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.XEventEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.XEventEnum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.PolicyEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.PolicyEnum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.RegSvrEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.RegSvrEnum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.ServiceBrokerEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.ServiceBrokerEnum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Smo, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Smo.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.SmoExtended, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SmoExtended.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.SqlClrProvider, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SqlClrProvider.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.SqlEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SqlEnum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.SqlTDiagm, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SqlTDiagm.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.SqlWmiManagement, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SqlWmiManagement.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.SString, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SString.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Types, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Types.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.WmiEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.WmiEnum.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Xe.Core, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\runtimes\win-$(CurrentPlatform)\native\Microsoft.SqlServer.Xe.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.XEvent.Linq, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\runtimes\win-$(CurrentPlatform)\native\Microsoft.SqlServer.XEvent.Linq.dll</HintPath>
-    </Reference>
-    <Reference Include="NFX, Version=3.0.0.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NFX.3.5.0.5\lib\NFX.dll</HintPath>
-    </Reference>
-    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\packages\NLog.4.7.15\lib\net45\NLog.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data.SQLite, Version=1.0.112.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Data.SQLite.Core.1.0.112.0\lib\net46\System.Data.SQLite.dll</HintPath>
-    </Reference>
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Transactions" />
-    <Reference Include="System.Web.Extensions" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+	  <Reference Include="DouglasCrockford.JsMin, Version=1.1.3.0, Culture=neutral, PublicKeyToken=99147aa1108448b7, processorArchitecture=MSIL">
+		  <HintPath>..\packages\DouglasCrockford.JsMin.1.1.3\lib\net40-client\DouglasCrockford.JsMin.dll</HintPath>
+	  </Reference>
+	  <Reference Include="FastMember, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+		  <HintPath>..\packages\FastMember.1.5.0\lib\net461\FastMember.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.AzureStorageEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.AzureStorageEnum.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.BatchParserClient, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.BatchParserClient.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.ConnectionInfo, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.ConnectionInfo.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.ConnectionInfoExtended, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.ConnectionInfoExtended.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Diagnostics.Strace, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Diagnostics.Strace.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Dmf, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Dmf.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Dmf.Common, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Dmf.Common.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.Collector, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.Collector.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.CollectorEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.CollectorEnum.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.RegisteredServers, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.RegisteredServers.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.Sdk.Sfc, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.Sdk.Sfc.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.SqlParser, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.SqlParser.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.Utility, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.Utility.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.UtilityEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.UtilityEnum.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.XEvent, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.XEvent.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.XEventDbScoped, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.XEventDbScoped.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.XEventDbScopedEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.XEventDbScopedEnum.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Management.XEventEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Management.XEventEnum.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.PolicyEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.PolicyEnum.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.RegSvrEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.RegSvrEnum.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.ServiceBrokerEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.ServiceBrokerEnum.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Smo, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Smo.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.SmoExtended, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SmoExtended.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.SqlClrProvider, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SqlClrProvider.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.SqlEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SqlEnum.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.SqlTDiagm, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SqlTDiagm.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.SqlWmiManagement, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SqlWmiManagement.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.SString, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.SString.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Types, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.Types.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.WmiEnum, Version=14.100.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\lib\net40\Microsoft.SqlServer.WmiEnum.dll</HintPath>
+		  <Private>True</Private>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.Xe.Core, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=AMD64">
+		  <SpecificVersion>False</SpecificVersion>
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\runtimes\win-$(CurrentPlatform)\native\Microsoft.SqlServer.Xe.Core.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Microsoft.SqlServer.XEvent.Linq, Version=14.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=AMD64">
+		  <SpecificVersion>False</SpecificVersion>
+		  <HintPath>..\packages\Microsoft.SqlServer.SqlManagementObjects.140.17279.0\runtimes\win-$(CurrentPlatform)\native\Microsoft.SqlServer.XEvent.Linq.dll</HintPath>
+	  </Reference>
+	  <Reference Include="NFX, Version=3.0.0.1, Culture=neutral, processorArchitecture=MSIL">
+		  <HintPath>..\packages\NFX.3.5.0.5\lib\NFX.dll</HintPath>
+	  </Reference>
+	  <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+		  <HintPath>..\packages\NLog.4.7.15\lib\net45\NLog.dll</HintPath>
+	  </Reference>
+	  <Reference Include="System" />
+	  <Reference Include="System.Configuration" />
+	  <Reference Include="System.Core" />
+	  <Reference Include="System.Data.SQLite, Version=1.0.112.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+		  <HintPath>..\packages\System.Data.SQLite.Core.1.0.112.0\lib\net46\System.Data.SQLite.dll</HintPath>
+	  </Reference>
+	  <Reference Include="System.IO.Compression" />
+	  <Reference Include="System.Runtime.Serialization" />
+	  <Reference Include="System.ServiceModel" />
+	  <Reference Include="System.Transactions" />
+	  <Reference Include="System.Web.Extensions" />
+	  <Reference Include="System.Xml.Linq" />
+	  <Reference Include="System.Data.DataSetExtensions" />
+	  <Reference Include="Microsoft.CSharp" />
+	  <Reference Include="System.Data" />
+	  <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config\SqlWorkloadConfig.cs" />
     <Compile Include="Config\SqlWorkloadConfigTypeResolver.cs" />
     <Compile Include="Consumer\Analysis\AnalysisConsumer.cs" />
+    <Compile Include="Consumer\Analysis\AnalysisDatabaseWriter.cs" />
+    <Compile Include="Consumer\Analysis\DuckDbAnalysisDatabaseWriter.cs" />
+    <Compile Include="Consumer\Analysis\ExecutionDetailValue.cs" />
+    <Compile Include="Consumer\Analysis\NormalizedQuery.cs" />
+    <Compile Include="Consumer\Analysis\SqliteAnalysisDatabaseWriter.cs" />
+    <Compile Include="Consumer\Analysis\SqlServerAnalysisDatabaseWriter.cs" />
+    <Compile Include="Consumer\Analysis\ExecutionDetailKey.cs" />
+    <Compile Include="Consumer\Analysis\WorkloadData.cs" />
     <Compile Include="Consumer\BufferedWorkloadConsumer.cs" />
     <Compile Include="Consumer\Analysis\NormalizedSqlText.cs" />
     <Compile Include="Consumer\Analysis\SqlTextNormalizer.cs" />
