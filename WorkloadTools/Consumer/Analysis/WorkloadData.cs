@@ -16,7 +16,7 @@ namespace WorkloadTools.Consumer.Analysis
         public DataTable ErrorData { get; set; }
         
         
-        public DataTable CounterData { get; set; }
+        public DataTable PerformanceCounters { get; set; }
         public DataTable WaitsData { get; set; }
         public DataTable DiskPerfData { get; set; }
         public SqlTextNormalizer Normalizer { get; set; }
@@ -98,24 +98,24 @@ namespace WorkloadTools.Consumer.Analysis
 
         private void InternalAdd(CounterWorkloadEvent evt)
         {
-            if (CounterData == null)
+            if (PerformanceCounters == null)
             {
-                CounterData = new DataTable();
+                PerformanceCounters = new DataTable();
 
-                _ = CounterData.Columns.Add("event_time", typeof(DateTime));
-                _ = CounterData.Columns.Add("counter_name", typeof(string));
-                _ = CounterData.Columns.Add("counter_value", typeof(float));
+                _ = PerformanceCounters.Columns.Add("event_time", typeof(DateTime));
+                _ = PerformanceCounters.Columns.Add("counter_name", typeof(string));
+                _ = PerformanceCounters.Columns.Add("counter_value", typeof(float));
             }
 
             foreach (var cntr in evt.Counters.Keys)
             {
-                var row = CounterData.NewRow();
+                var row = PerformanceCounters.NewRow();
 
                 row.SetField("event_time", evt.StartTime);
                 row.SetField("counter_name", cntr.ToString());
                 row.SetField("counter_value", evt.Counters[cntr]);
 
-                CounterData.Rows.Add(row);
+                PerformanceCounters.Rows.Add(row);
             }
 
         }
@@ -228,7 +228,7 @@ namespace WorkloadTools.Consumer.Analysis
         {
             RawData?.Clear();
             ErrorData?.Dispose();
-            CounterData?.Dispose();
+            PerformanceCounters?.Dispose();
             WaitsData?.Dispose();
         }
 

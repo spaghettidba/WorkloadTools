@@ -1,7 +1,8 @@
-﻿using NLog;
-using System;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
@@ -10,10 +11,14 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using WorkloadTools.Util;
-using System.Collections.Concurrent;
+
 using FastMember;
+
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
+
+using NLog;
+
+using WorkloadTools.Util;
 
 namespace WorkloadTools.Consumer.Analysis
 {
@@ -21,8 +26,16 @@ namespace WorkloadTools.Consumer.Analysis
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        public SqlConnectionInfo ConnectionInfo { get; set; }
-        public int Interval { get; set; }
+        public SqlConnectionInfo ConnectionInfo 
+        { 
+            get => connectionInfo;
+            set { connectionInfo = value; if (databaseWriter != null) databaseWriter.ConnectionInfo = value; }
+        }
+        public int Interval 
+        {
+            get => interval; 
+            set { interval = value; if(databaseWriter != null) databaseWriter.Interval = value; } 
+        }
 
         private Queue<WorkloadEvent> _internalQueue = new Queue<WorkloadEvent>();
         private readonly object _internalQueueLock = new object();
@@ -30,11 +43,31 @@ namespace WorkloadTools.Consumer.Analysis
         private bool stopped = false;
         public int MaxInternalQueueSize { get; set; } = 10000;
 
-        public int MaximumWriteRetries { get; set; }
-		public bool TruncateTo4000 { get; set; }
-		public bool TruncateTo1024 { get; set; }
-        public bool WriteDetail { get; set; } = true;
-        public bool WriteSummary { get; set; } = true;
+        public int MaximumWriteRetries 
+        {
+            get => maximumWriteRetries;
+            set { maximumWriteRetries = value; if (databaseWriter != null) databaseWriter.MaximumWriteRetries = value; }
+        }
+        public bool TruncateTo4000 
+        { 
+            get => truncateTo4000;
+            set { truncateTo4000 = value; if (databaseWriter != null) databaseWriter.TruncateTo4000 = value; }
+        }
+        public bool TruncateTo1024 
+        { 
+            get => truncateTo1024; 
+            set { truncateTo1024 = value; if (databaseWriter != null) databaseWriter.TruncateTo1024 = value; }
+        }
+        public bool WriteDetail 
+        { 
+            get => writeDetail;
+            set { writeDetail = value; if (databaseWriter != null) databaseWriter.WriteDetail = value; }
+        }
+        public bool WriteSummary
+        {
+            get => writeSummary;
+            set { writeSummary = value; if (databaseWriter != null) databaseWriter.WriteSummary = value; }
+        }
 
         private DateTime lastDump = DateTime.MinValue;
         private DateTime lastEventTime = DateTime.MinValue;
@@ -43,9 +76,17 @@ namespace WorkloadTools.Consumer.Analysis
         private AnalysisDatabaseWriter databaseWriter;
         private WorkloadData workloadData;
         private bool dictionariesPopulated = false;
+        private int interval;
+        private SqlConnectionInfo connectionInfo;
+        private int maximumWriteRetries;
+        private bool truncateTo4000;
+        private bool truncateTo1024;
+        private bool writeDetail = true;
+        private bool writeSummary = true;
 
         public WorkloadAnalyzer()
 		{
+
             workloadData = new WorkloadData()
             {
                 Normalizer = new SqlTextNormalizer()
@@ -290,6 +331,9 @@ namespace WorkloadTools.Consumer.Analysis
         {
             workloadData?.Dispose();
         }
+
+
+
     }
 }
 
