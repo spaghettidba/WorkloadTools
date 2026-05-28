@@ -22,6 +22,7 @@ namespace WorkloadTools.Consumer.Analysis
     public abstract class AnalysisDatabaseWriter
     {
         protected static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        protected readonly WorkloadSummaryAggregator _aggregator = new WorkloadSummaryAggregator();
 
         public SqlConnectionInfo ConnectionInfo { get; set; }
         public int Interval { get; set; }
@@ -56,7 +57,7 @@ namespace WorkloadTools.Consumer.Analysis
 		protected abstract void PopulateDictionariesFromDatabaseInternal(WorkloadData data);
 		protected abstract void AddAllRowsInternal(SqlConnection conn, string sql, Dictionary<string, int> d);
 
-		protected void InvokeGC()
+        protected void InvokeGC()
 		{
 			GC.Collect();
 			GC.WaitForPendingFinalizers();

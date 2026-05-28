@@ -20,7 +20,6 @@ namespace WorkloadTools.Consumer.Analysis
     {
         private SqlConnection _connection;
         private SqlTransaction _transaction;
-        private readonly WorkloadSummaryAggregator _aggregator = new WorkloadSummaryAggregator();
 
         [MethodImpl(MethodImplOptions.Synchronized)]
         public override void WriteToServer(DateTime intervalTime)
@@ -489,7 +488,7 @@ namespace WorkloadTools.Consumer.Analysis
         {
             CreateTargetDatabase();
 
-            var sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\DatabaseSchema.sql");
+            var sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\SqlServerDatabaseSchema.sql");
 
             sql = sql.Replace("{DatabaseName}", ConnectionInfo.DatabaseName);
             sql = sql.Replace("{SchemaName}", ConnectionInfo.SchemaName);
