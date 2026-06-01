@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
@@ -219,7 +220,7 @@ namespace WorkloadTools.Consumer.Analysis
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
 
-                using (var reader = ObjectReader.Create(summaryRecords, "ApplicationId", "DatabaseId", "HostId", "LoginId", "MinCpuUs", "MaxCpuUs", "SumCpuUs", "MinReads", "MaxReads", "SumReads", "MinWrites", "MaxWrites", "SumWrites", "MinDurationUs", "MaxDurationUs", "SumDurationUs", "MinExecutionDate", "MaxExecutionDate", "ExecutionCount"))
+                using (var reader = ObjectReader.Create(summaryRecords, "application_id", "database_id", "host_id", "login_id", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "min_reads", "max_reads", "sum_reads", "min_writes", "max_writes", "sum_writes", "min_duration_us", "max_duration_us", "sum_duration_us", "min_execution_date", "max_execution_date", "execution_count"))
                 {
                     bulkCopy.WriteToServer(reader);
                 }
@@ -298,7 +299,7 @@ namespace WorkloadTools.Consumer.Analysis
                 bulkCopy.BatchSize = 1000;
                 bulkCopy.BulkCopyTimeout = 300;
 
-                using (var reader = ObjectReader.Create(detailRecords, "IntervalId", "SqlHash", "ApplicationId", "DatabaseId", "HostId", "LoginId", "AvgCpuUs", "MinCpuUs", "MaxCpuUs", "SumCpuUs", "AvgReads", "MinReads", "MaxReads", "SumReads", "AvgWrites", "MinWrites", "MaxWrites", "SumWrites", "AvgDurationUs", "MinDurationUs", "MaxDurationUs", "SumDurationUs", "ExecutionCount"))
+                using (var reader = ObjectReader.Create(detailRecords, "interval_id", "sql_hash", "application_id", "database_id", "host_id", "login_id", "avg_cpu_us", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "avg_reads", "min_reads", "max_reads", "sum_reads", "avg_writes", "min_writes", "max_writes", "sum_writes", "avg_duration_us", "min_duration_us", "max_duration_us", "sum_duration_us", "execution_count"))
                 {
                     bulkCopy.WriteToServer(reader);
                 }
@@ -601,11 +602,11 @@ namespace WorkloadTools.Consumer.Analysis
             }
         }
 
-        protected override void AddAllRowsInternal(SqlConnection conn, string sql, Dictionary<string, int> d)
+        protected override void AddAllRowsInternal(DbConnection conn, string sql, Dictionary<string, int> d)
         {
             try
             {
-                using (var adapter = new SqlDataAdapter(sql, conn))
+                using (var adapter = new SqlDataAdapter(sql, (SqlConnection)conn))
                 {
                     using (var ds = new DataSet())
                     {

@@ -1,9 +1,10 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
+using System.Data.SQLite;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -12,121 +13,96 @@ using System.Transactions;
 
 using FastMember;
 
-using Microsoft.Data.Sqlite;
-
 using NFX.DataAccess.Distributed;
 
 using NLog;
 
 using WorkloadTools.Util;
-using System.Data.SQLite;
+
+//--------------------------------------ATTENTION--------------------------------------
+//For SQLite you need to use mai.table_name to refer to permanent tables and temp.table_name to refer to temporary tables.
+//If you don't use the main. prefix and there is a temporary table with the same name as the permanent table,
+//SQLite will write to the temporary table instead of the permanent one without throwing any error.
 
 namespace WorkloadTools.Consumer.Analysis
 {
+
     internal class SqliteAnalysisDatabaseWriter : AnalysisDatabaseWriter
     {
-        //TODO: We need to make this connection string like the other one for Sql Server and also add other parameters.
-        private readonly string connectionString = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder()
-        {
-            DataSource = "analysis.db",
-            //this is on default
-            Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadWriteCreate
-        }.ToString();
+        private SQLiteConnection _connection;
+        private SQLiteTransaction _transaction;
 
-        private Microsoft.Data.Sqlite.SqliteConnection _connection;
-        private Microsoft.Data.Sqlite.SqliteTransaction _transaction;
-
-        /*
-        private void WriteToDatabase(IDataReader reader, string tableName)
+        //Given a DataTable and the name of the table, this method fill that table with the data.
+        //If it is a temporary table, tableName needs to be temp.name_of_the_table.
+        //If it is a permanent table, tableName doesn't need the main. prefix because it is automaticaly added in the query.
+        private void WriteToTable(DataTable dt, string tableName)
         {
-            while (reader.Read())
+            
+            using (var command = new SQLiteCommand())
             {
+                command.Connection = _connection;
+                command.Transaction = _transaction;
+
+                var columns = new System.Collections.Generic.List<string>();
+                var schemaCommand = _connection.CreateCommand();
+                schemaCommand.Transaction = _transaction;
+                string[] tableNames = tableName.Split('.');
+                //if is 2 that it is a temp.something table, if is 1 it is a normal table because Sqlite does't have Schemas.
+                if (tableNames.Length == 2)
+                {
+                    schemaCommand.CommandText = $"PRAGMA [{tableNames[0]}].table_info([{tableNames[1]}]);";
+                }
+                else
+                {
+                    schemaCommand.CommandText = $"PRAGMA main.table_info([{tableName}]);";
+                }
+
+                using (var reader = schemaCommand.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        columns.Add(reader.GetString(1));
+                    }
+                }
+
+                var columnNames = string.Join(", ", columns.ConvertAll(c => $"[{c}]"));
+                var paramNames = string.Join(", ", columns.ConvertAll(c => $"${c}"));
+                if (tableNames.Length == 2)
+                {
+                    command.CommandText = $"INSERT INTO [{tableNames[0]}].[{tableNames[1]}] ({columnNames}) VALUES ({paramNames});";
+                }
+                else
+                {
+                    command.CommandText = $"INSERT INTO main.[{tableName}] ({columnNames}) VALUES ({paramNames});";
+                }
+
+                var parameterObjects = new System.Collections.Generic.Dictionary<string, SQLiteParameter>();
                 foreach (var col in columns)
                 {
-                    try
-                    {
-                        int ordinal = reader.GetOrdinal(col);
-                        parameterObjects[col].Value = reader.GetValue(ordinal) ?? DBNull.Value;
-                    }
-                    catch (IndexOutOfRangeException)
-                    {
-                        parameterObjects[col].Value = DBNull.Value;
-                    }
+                    var param = new SQLiteParameter();
+                    param.ParameterName = $"${col}";
+                    _ = command.Parameters.Add(param);
+                    parameterObjects[col] = param;
                 }
-                _ = command.ExecuteNonQuery();
-            }
-        }
-        */
 
-        private void WriteToDatabase(DataTable dt, string tableName)
-        {
-            using (var transaction = _transaction)
-            {
-                using (var command = new Microsoft.Data.Sqlite.SqliteCommand())
+                foreach (System.Data.DataRow row in dt.Rows)
                 {
-                    command.Connection = _connection;
-                    command.Transaction = transaction;
-
-                    var columns = new System.Collections.Generic.List<string>();
-                    var schemaCommand = _connection.CreateCommand();
-                    schemaCommand.Transaction = transaction;
-                    string[] tableNames = tableName.Split('.');
-                    //if is 2 that it is a temp.something table, if is 1 it is a normal table, SQLite does not support schemas so we ignore the first part if it exists.
-                    if (tableNames.Length == 2)
-                    {
-                        schemaCommand.CommandText = $"PRAGMA [{tableNames[0]}].table_info([{tableNames[1]}]);";
-                    }
-                    else
-                    {
-                        schemaCommand.CommandText = $"PRAGMA table_info([{tableName}]);";
-                    }
-
-                    using (var reader = schemaCommand.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            columns.Add(reader.GetString(1));
-                        }
-                    }
-
-                    var columnNames = string.Join(", ", columns.ConvertAll(c => $"[{c}]"));
-                    var paramNames = string.Join(", ", columns.ConvertAll(c => $"${c}"));
-                    if (tableNames.Length == 2)
-                    {
-                        command.CommandText = $"INSERT INTO [{tableNames[0]}].[{tableNames[1]}] ({columnNames}) VALUES ({paramNames});";
-                    }
-                    else
-                    {
-                        command.CommandText = $"INSERT INTO [{tableName}] ({columnNames}) VALUES ({paramNames});";
-                    }
-
-                    var parameterObjects = new System.Collections.Generic.Dictionary<string, Microsoft.Data.Sqlite.SqliteParameter>();
                     foreach (var col in columns)
                     {
-                        var param = new Microsoft.Data.Sqlite.SqliteParameter();
-                        param.ParameterName = $"${col}";
-                        _ = command.Parameters.Add(param);
-                        parameterObjects[col] = param;
-                    }
-
-                    foreach (System.Data.DataRow row in dt.Rows)
-                    {
-                        foreach (var col in columns)
+                        if (dt.Columns.Contains(col))
                         {
-                            if (dt.Columns.Contains(col))
-                            {
-                                parameterObjects[col].Value = row[col] ?? DBNull.Value;
-                            }
-                            else
-                            {
-                                parameterObjects[col].Value = DBNull.Value;
-                            }
+                            parameterObjects[col].Value = row[col] ?? DBNull.Value;
                         }
-                        _ = command.ExecuteNonQuery();
+                        else
+                        {
+                            parameterObjects[col].Value = DBNull.Value;
+                        }
                     }
+                    _ = command.ExecuteNonQuery();
                 }
-                logger.Info($"{tableName} written to SQLite");
             }
+            logger.Info($"{tableName} written to SQLite");
+            
         }
 
         [MethodImpl(MethodImplOptions.Synchronized)]
@@ -134,9 +110,13 @@ namespace WorkloadTools.Consumer.Analysis
         {
             logger.Trace("Writing Workload Analysis data");
 
-            using (_connection = new Microsoft.Data.Sqlite.SqliteConnection())
+            using (_connection = new SQLiteConnection())
             {
-                _connection.ConnectionString = connectionString;
+                //CreateTargetDatabase();
+
+                //This connection string will create the database file if it doesn't exist
+                _connection.ConnectionString = ConnectionInfo.ConnectionString();
+                //Here the database file will be created if it doesn't exist and the connection will be opened
                 _connection.Open();
 
                 if (!TargetTableCreated)
@@ -212,11 +192,13 @@ namespace WorkloadTools.Consumer.Analysis
 
                 using (var dt = DataUtils.ToDataTable(waitRecords))
                 {
-                    if (dt.Rows.Count == 0) return;
-
+                    if (dt.Rows.Count == 0)
+                    {
+                        return;
+                    }
                     var tableName = "WaitStats";
 
-                    WriteToDatabase(dt, tableName);
+                    WriteToTable(dt, tableName);
                 }
 
                 Data.WaitsData.Dispose();
@@ -238,11 +220,13 @@ namespace WorkloadTools.Consumer.Analysis
 
                 using (var dt = DataUtils.ToDataTable(diskRecords))
                 {
-                    if (dt.Rows.Count == 0) return;
-
+                    if (dt.Rows.Count == 0)
+                    {
+                        return;
+                    }
                     var tableName = "DiskPerf";
 
-                    WriteToDatabase(dt, tableName);
+                    WriteToTable(dt, tableName);
                 }
 
                 Data.DiskPerfData.Dispose();
@@ -264,11 +248,13 @@ namespace WorkloadTools.Consumer.Analysis
 
                 using (var dt = DataUtils.ToDataTable(counterRecords))
                 {
-                    if (dt.Rows.Count == 0) return;
-
+                    if (dt.Rows.Count == 0)
+                    {
+                        return;
+                    }
                     var tableName = "PerformanceCounters";
 
-                    WriteToDatabase(dt, tableName);
+                    WriteToTable(dt, tableName);
                 }
 
                 Data.DiskPerfData.Dispose();
@@ -284,7 +270,7 @@ namespace WorkloadTools.Consumer.Analysis
                 DROP TABLE IF EXISTS temp.WorkloadSummary;
 
                 CREATE TEMP TABLE WorkloadSummary AS
-                SELECT * FROM WorkloadSummary WHERE 1 = 0;
+                SELECT * FROM main.WorkloadSummary WHERE 1 = 0;
             ";
 
             using (var cmd = _connection.CreateCommand())
@@ -294,36 +280,35 @@ namespace WorkloadTools.Consumer.Analysis
                 _ = cmd.ExecuteNonQuery();
             }
 
-            using (var reader = ObjectReader.Create(summaryRecords, "ApplicationId", "DatabaseId", "HostId", "LoginId", "MinCpuUs", "MaxCpuUs", "SumCpuUs", "MinReads", "MaxReads", "SumReads", "MinWrites", "MaxWrites", "SumWrites", "MinDurationUs", "MaxDurationUs", "SumDurationUs", "MinExecutionDate", "MaxExecutionDate", "ExecutionCount"))
+            using (var reader = ObjectReader.Create(summaryRecords, "application_id", "database_id", "host_id", "login_id", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "min_reads", "max_reads", "sum_reads", "min_writes", "max_writes", "sum_writes", "min_duration_us", "max_duration_us", "sum_duration_us", "min_execution_date", "max_execution_date", "execution_count"))
             {
                 var dt = new DataTable();
                 dt.Load(reader);
                 var tableName = "temp.WorkloadSummary";
-                WriteToDatabase(dt, tableName);
+                WriteToTable(dt, tableName);
             }
 
             var affectedRows = 0;
 
             sql = $@"
-                UPDATE WS
+                UPDATE main.WorkloadSummary AS WS
                 SET min_cpu_us = CASE WHEN T.min_cpu_us < WS.min_cpu_us THEN T.min_cpu_us ELSE WS.min_cpu_us END,
                     max_cpu_us = CASE WHEN T.max_cpu_us > WS.max_cpu_us THEN T.max_cpu_us ELSE WS.max_cpu_us END,
-                    sum_cpu_us += T.sum_cpu_us,
+                    sum_cpu_us = WS.sum_cpu_us + T.sum_cpu_us,
                     min_reads  = CASE WHEN T.min_reads < WS.min_reads THEN T.min_reads ELSE WS.min_reads END,
                     max_reads  = CASE WHEN T.max_reads > WS.max_reads THEN T.max_reads ELSE WS.max_reads END,
-                    sum_reads  += T.sum_reads,
+                    sum_reads  = WS.sum_reads + T.sum_reads,
                     min_writes = CASE WHEN T.min_writes < WS.min_writes THEN T.min_writes ELSE WS.min_writes END,
                     max_writes = CASE WHEN T.max_writes > WS.max_writes THEN T.max_writes ELSE WS.max_writes END,
-                    sum_writes += T.sum_writes,
+                    sum_writes = WS.sum_writes + T.sum_writes,
                     min_duration_us = CASE WHEN T.min_duration_us < WS.min_duration_us THEN T.min_duration_us ELSE WS.min_duration_us END,
                     max_duration_us = CASE WHEN T.max_duration_us > WS.max_duration_us THEN T.max_duration_us ELSE WS.max_duration_us END,
-                    sum_duration_us += T.sum_duration_us,
+                    sum_duration_us = WS.sum_duration_us + T.sum_duration_us,
                     min_execution_date = CASE WHEN T.min_execution_date < WS.min_execution_date THEN T.min_execution_date ELSE WS.min_execution_date END,
                     max_execution_date = CASE WHEN T.max_execution_date > WS.max_execution_date THEN T.max_execution_date ELSE WS.max_execution_date END,
-                    execution_count += T.execution_count
-                FROM WorkloadSummary AS WS
-                INNER JOIN temp.WorkloadSummary AS T
-                    ON  T.application_id = WS.application_id
+                    execution_count = WS.execution_count + T.execution_count
+                FROM temp.WorkloadSummary AS T
+                WHERE T.application_id   = WS.application_id
                     AND T.database_id    = WS.database_id
                     AND T.host_id        = WS.host_id
                     AND T.login_id       = WS.login_id;
@@ -336,12 +321,12 @@ namespace WorkloadTools.Consumer.Analysis
             }
 
             sql = $@"
-                INSERT INTO WorkloadSummary 
+                INSERT INTO main.WorkloadSummary 
                 SELECT * 
                 FROM temp.WorkloadSummary AS T
                 WHERE NOT EXISTS (
                     SELECT *
-                    FROM WorkloadSummary AS WS
+                    FROM main.WorkloadSummary AS WS
                     WHERE   T.application_id = WS.application_id
                         AND T.database_id    = WS.database_id
                         AND T.host_id        = WS.host_id
@@ -358,18 +343,18 @@ namespace WorkloadTools.Consumer.Analysis
             logger.Info($"Summary info written ({affectedRows} rows)");
         }
 
-
-        //TODO: THIS METHOD NEED TO BE OPTIMIZED FOR SQLITE. WE NEED TO CREATE A WriteToDatabase FOR AN IDataReader.
         protected override void WriteExecutionDetails(int current_interval_id)
         {
             var detailRecords = _aggregator.AggregateExecutionDetails(Data, current_interval_id);
 
             int numRows;
 
-            using (var reader = ObjectReader.Create(detailRecords, "IntervalId", "SqlHash", "ApplicationId", "DatabaseId", "HostId", "LoginId", "AvgCpuUs", "MinCpuUs", "MaxCpuUs", "SumCpuUs", "AvgReads", "MinReads", "MaxReads", "SumReads", "AvgWrites", "MinWrites", "MaxWrites", "SumWrites", "AvgDurationUs", "MinDurationUs", "MaxDurationUs", "SumDurationUs", "ExecutionCount"))
+            using (var reader = ObjectReader.Create(detailRecords, "interval_id", "sql_hash", "application_id", "database_id", "host_id", "login_id", "avg_cpu_us", "min_cpu_us", "max_cpu_us", "sum_cpu_us", "avg_reads", "min_reads", "max_reads", "sum_reads", "avg_writes", "min_writes", "max_writes", "sum_writes", "avg_duration_us", "min_duration_us", "max_duration_us", "sum_duration_us", "execution_count"))
             {
+                var dataTable = new DataTable();
+                dataTable.Load(reader);
                 var tableName = "WorkloadDetails";
-                WriteToDatabase(reader, tableName);
+                WriteToTable(dataTable, tableName);
             }
             numRows = Data.RawData.Sum(x => x.Value.Count);
             logger.Info($"{numRows} rows aggregated");
@@ -391,11 +376,13 @@ namespace WorkloadTools.Consumer.Analysis
 
                 using (var dt = DataUtils.ToDataTable(errorRecords))
                 {
-                    if (dt.Rows.Count == 0) return;
+                    if (dt.Rows.Count == 0)
+                    {
+                        return;
+                    }
+                    var tableName = "Errors";
 
-                    var tableName = "Error";
-
-                    WriteToDatabase(dt, tableName);
+                    WriteToTable(dt, tableName);
                 }
 
                 Data.DiskPerfData.Dispose();
@@ -406,8 +393,10 @@ namespace WorkloadTools.Consumer.Analysis
         protected override void WriteDictionary(Dictionary<string, int> values, string name)
         {
             var sql = @"
+                DROP TABLE IF EXISTS temp.[{0}];
+
                 CREATE TEMP TABLE [{0}] AS
-                SELECT * FROM [{0}] WHERE 0=1;
+                SELECT * FROM main.[{0}] WHERE 0=1;
             ";
             sql = string.Format(sql, name);
 
@@ -418,16 +407,22 @@ namespace WorkloadTools.Consumer.Analysis
                 _ = cmd.ExecuteNonQuery();
             }
 
-            WriteToDatabase(DataUtils.ToDataTable(from t in values select new { t.Value, t.Key }), "temp."+name);
+            var table = new DataTable();
+            _ = table.Columns.Add($"{name.Substring(0, name.Length - 1)}_id", typeof(int));
+            _ = table.Columns.Add($"{name.Substring(0, name.Length - 1)}_name", typeof(string));
+            foreach (var item in values)
+            {
+                _ = table.Rows.Add(item.Value, item.Key);
+            }
+            WriteToTable(table, "temp." + name);
 
-            //REMEMBER TO TELL BOSS THAT THERE ARE S's THAT ARE ELIMINATED AND REPLACED WHIT S's :D
             sql = @"
-                INSERT INTO [{0}s]
+                INSERT INTO main.[{0}s]
                 SELECT *
                 FROM temp.[{0}s] AS src
                 WHERE NOT EXISTS (
                     SELECT *
-                    FROM [{0}s] AS dst 
+                    FROM main.[{0}s] AS dst 
                     WHERE dst.[{0}_id] = src.[{0}_id]
                 );
             ";
@@ -447,7 +442,7 @@ namespace WorkloadTools.Consumer.Analysis
 
             var sql = @"
                 CREATE TEMP TABLE [{0}] AS
-                SELECT * FROM [{0}] WHERE 0=1;
+                SELECT * FROM main.[{0}] WHERE 0=1;
             ";
             sql = string.Format(sql, tableName);
 
@@ -458,15 +453,15 @@ namespace WorkloadTools.Consumer.Analysis
                 _ = cmd.ExecuteNonQuery();
             }
 
-            WriteToDatabase(DataUtils.ToDataTable(from t in values where t.Value != null select new { t.Value.Hash, t.Value.NormalizedText, t.Value.ExampleText }), "temp."+tableName);
+            WriteToTable(DataUtils.ToDataTable(values.Where(t => t.Value != null).Select(t => new { sql_hash = t.Value.Hash, normalized_text = t.Value.NormalizedText, example_text = t.Value.ExampleText })), "temp." + tableName);
 
             sql = @"
-                INSERT INTO [{0}]
+                INSERT INTO main.[{0}]
                 SELECT *
                 FROM temp.{0} AS src
                 WHERE NOT EXISTS (
                     SELECT *
-                    FROM [{0}] AS dst 
+                    FROM main.[{0}] AS dst 
                     WHERE dst.[sql_hash] = src.[sql_hash]
                 );
             ";
@@ -488,29 +483,36 @@ namespace WorkloadTools.Consumer.Analysis
 
         protected override int CreateInterval(DateTime intervalTime)
         {
-            //TODO: I DO NOT KNOW HOW TO DO THE IF FOR SQLITE BECAUSE IT DOES NOT EXIST.
-            var sql = @"
-                UPDATE [Intervals]
+            var sql_Update = @"
+                UPDATE main.[Intervals]
                 SET  end_time = @end_time
                     ,duration_minutes = @duration_minutes
                 WHERE interval_id = @interval_id;
-
-                IF @@ROWCOUNT = 0
-                    INSERT INTO [Intervals] (interval_id, end_time, duration_minutes) 
-                    VALUES (@interval_id, @end_time, @duration_minutes); 
             ";
-            //sql = string.Format(sql);
+            var sql_Insert = @"
+                INSERT INTO main.[Intervals] (interval_id, end_time, duration_minutes) 
+                VALUES (@interval_id, @end_time, @duration_minutes);
+            ";
 
             var interval_id = ComputeIntervalId(intervalTime);
 
             using (var cmd = _connection.CreateCommand())
             {
                 cmd.Transaction = _transaction;
-                cmd.CommandText = sql;
+                cmd.CommandText = sql_Update;
                 _ = cmd.Parameters.AddWithValue("@interval_id", interval_id);
                 _ = cmd.Parameters.AddWithValue("@end_time", intervalTime);
                 _ = cmd.Parameters.AddWithValue("@duration_minutes", Interval);
-                _ = cmd.ExecuteNonQuery();
+                var row_count = cmd.ExecuteNonQuery();
+
+                if (row_count == 0)
+                {
+                    cmd.CommandText = sql_Insert;
+                    _ = cmd.Parameters.AddWithValue("@interval_id", interval_id);
+                    _ = cmd.Parameters.AddWithValue("@end_time", intervalTime);
+                    _ = cmd.Parameters.AddWithValue("@duration_minutes", Interval);
+                    _ = cmd.ExecuteNonQuery();
+                }
             }
 
             if (!FirstIntervalWritten)
@@ -518,7 +520,7 @@ namespace WorkloadTools.Consumer.Analysis
                 using (var cmd = _connection.CreateCommand())
                 {
                     cmd.Transaction = _transaction;
-                    cmd.CommandText = sql;
+                    cmd.CommandText = sql_Update;
                     _ = cmd.Parameters.AddWithValue("@interval_id", interval_id - 1);
                     _ = cmd.Parameters.AddWithValue("@end_time", intervalTime.AddSeconds(-1));
                     _ = cmd.Parameters.AddWithValue("@duration_minutes", 0);
@@ -530,113 +532,87 @@ namespace WorkloadTools.Consumer.Analysis
             return interval_id;
         }
 
-        //TODO: We need to create a connectrion info for SQLite.
         protected override void CreateTargetTables()
         {
             CreateTargetDatabase();
 
             var sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\SqliteDatabaseSchema.sql");
 
-            sql = sql.Replace("{DatabaseName}", ConnectionInfo.DatabaseName);
-
-            using (var conn = new Microsoft.Data.Sqlite.SqliteConnection())
+            using (var conn = new SQLiteConnection())
             {
-                conn.ConnectionString = connectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
-                conn.ChangeDatabase(ConnectionInfo.DatabaseName);
 
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = sql;
                     _ = cmd.ExecuteNonQuery();
                 }
-
-                //TODO: From here I have no idea of what to do
-                sql = "IF OBJECT_ID('dbo.createAnalysisView') IS NULL EXEC('CREATE PROCEDURE dbo.createAnalysisView AS RETURN 0')";
-                using (var cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = sql;
-                    _ = cmd.ExecuteNonQuery();
-                }
-
-                sql = File.ReadAllText(WorkloadController.BaseLocation + "\\Consumer\\Analysis\\createAnalysisView.sql");
-                using (var cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = sql;
-                    _ = cmd.ExecuteNonQuery();
-                }
-
-                sql = @"
-                    DECLARE @name1 sysname, @name2 sysname;
-
-                    SELECT @name1 = [1], @name2 = [2]
-                    FROM (
-                        SELECT TOP(2) OBJECT_SCHEMA_NAME(object_id) AS schema_name, ROW_NUMBER() OVER (ORDER BY create_date DESC) AS RN
-                        FROM sys.tables
-                        WHERE name = 'WorkloadDetails'
-                        ORDER BY create_date DESC
-                    ) AS src
-                    PIVOT( MIN(schema_name) FOR RN IN ([1], [2])) AS p;
-
-                    SELECT @name1 ,@name2
-
-                    IF OBJECT_ID(@name1 + '.WorkloadDetails') IS NOT NULL OR OBJECT_ID(@name2 + '.WorkloadDetails') IS NOT NULL
-                    BEGIN
-                        EXEC createAnalysisView @name1, @name2;
-                    END
-                ";
-                using (var cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = sql;
-                    _ = cmd.ExecuteNonQuery();
-                }
+                
             }
         }
 
         protected override void CreateTargetDatabase()
         {
-            throw new NotImplementedException("SQLite support for analysis database writing is not yet implemented");
+            try
+            {
+                using (var connection = new SQLiteConnection())
+                {
+                    connection.ConnectionString = ConnectionInfo.ConnectionString();
+                    connection.Open();
+                    logger.Info($"Database {connection.DataSource} created successfully.");
+                }
+            }
+            catch(SQLiteException e)
+            {
+                logger.Error("Unable to create the target database for the analysis", e.Message);
+            }
+            catch(Exception e)
+            {
+                logger.Error(e.Message);
+                throw;
+            }
         }
 
-        //TODO: This method need a new ConnectionInfo for SQLite for the connection string and other info.
         protected override void PopulateDictionariesFromDatabaseInternal(WorkloadData data)
         {
-            using (var conn = new Microsoft.Data.Sqlite.SqliteConnection())
+            using (var conn = new SQLiteConnection())
             {
-                conn.ConnectionString = connectionString;
+                conn.ConnectionString = ConnectionInfo.ConnectionString();
                 conn.Open();
 
-                var sql = @"SELECT * FROM [Applications]";
+                var sql = @"SELECT * FROM main.[Applications]";
                 AddAllRowsInternal(conn, sql, data.Applications);
 
-                sql = @"SELECT * FROM [Databases]";
+                sql = @"SELECT * FROM main.[Databases]";
                 AddAllRowsInternal(conn, sql, data.Databases);
 
-                sql = @"SELECT * FROM [Hosts]";
+                sql = @"SELECT * FROM main.[Hosts]";
                 AddAllRowsInternal(conn, sql, data.Hosts);
 
-                sql = @"SELECT * FROM [Logins]";
+                sql = @"SELECT * FROM main.[Logins]";
                 AddAllRowsInternal(conn, sql, data.Logins);
             }
         }
 
-        //TODO: we need a method to have different parameters for only this method in this class.
-        protected override void AddAllRowsInternal(Microsoft.Data.Sqlite.SqliteConnection conn, string sql, Dictionary<string, int> d)
+        protected override void AddAllRowsInternal(DbConnection conn, string sql, Dictionary<string, int> d)
         {
             try
             {
-                using (var cmd = new Microsoft.Data.Sqlite.SqliteCommand(commandText: sql, connection: conn))
+                using (var adapter = new SQLiteDataAdapter(sql, (SQLiteConnection)conn))
                 {
-                    using (var reader = cmd.ExecuteReader())
+                    using (var ds = new DataSet())
                     {
-                        while (reader.Read())
+                        _ = adapter.Fill(ds);
+                        var dt = ds.Tables[0];
+                        foreach (DataRow dr in dt.Rows)
                         {
-                            d.Add((string)reader[1], (int)reader[0]);
+                            d.Add((string)dr[1], (int)dr[0]);
                         }
                     }
                 }
             }
-            catch (Microsoft.Data.Sqlite.SqliteException e)
+            catch (SQLiteException e)
             {
                 logger.Trace("Unable to read saved classifiers from the analysis database: {0}", e.Message);
             }

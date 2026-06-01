@@ -84,8 +84,9 @@ namespace WorkloadTools.Consumer.Analysis
         private bool writeDetail = true;
         private bool writeSummary = true;
 
-        public WorkloadAnalyzer()
-		{
+        public WorkloadAnalyzer(SqlConnectionInfo info)
+        {
+            ConnectionInfo = info;
 
             workloadData = new WorkloadData()
             {
@@ -96,18 +97,38 @@ namespace WorkloadTools.Consumer.Analysis
                 }
             };
 
-            databaseWriter = new SqlServerAnalysisDatabaseWriter()
+            if (ConnectionInfo.DatabaseType == SqlConnectionInfo.DatabaseTypeEnum.Sqlite.ToString())
             {
-                ConnectionInfo = ConnectionInfo,
-                MaximumWriteRetries = MaximumWriteRetries,
-                TruncateTo1024 = TruncateTo1024,
-                TruncateTo4000 = TruncateTo4000,
-                WriteDetail = WriteDetail,
-                WriteSummary = WriteSummary,
-                Data = workloadData,
-                Interval = Interval
-            };
-
+                databaseWriter = new SqliteAnalysisDatabaseWriter()
+                {
+                    ConnectionInfo = ConnectionInfo,
+                    MaximumWriteRetries = MaximumWriteRetries,
+                    TruncateTo1024 = TruncateTo1024,
+                    TruncateTo4000 = TruncateTo4000,
+                    WriteDetail = WriteDetail,
+                    WriteSummary = WriteSummary,
+                    Data = workloadData,
+                    Interval = Interval
+                };
+            }
+            else if (ConnectionInfo.DatabaseType == SqlConnectionInfo.DatabaseTypeEnum.SqlServer.ToString())
+            {
+                databaseWriter = new SqlServerAnalysisDatabaseWriter()
+                {
+                    ConnectionInfo = ConnectionInfo,
+                    MaximumWriteRetries = MaximumWriteRetries,
+                    TruncateTo1024 = TruncateTo1024,
+                    TruncateTo4000 = TruncateTo4000,
+                    WriteDetail = WriteDetail,
+                    WriteSummary = WriteSummary,
+                    Data = workloadData,
+                    Interval = Interval
+                };
+            }
+            else
+            {
+                throw new NotSupportedException($"Database type {ConnectionInfo.DatabaseType} is not supported.");
+            }
         }
 
         public bool HasEventsQueued
@@ -125,7 +146,7 @@ namespace WorkloadTools.Consumer.Analysis
         {
             // Write collected data to the destination database
             var duration = lastEventTime - lastDump;
-            if (duration.TotalMinutes >= Interval)
+            if (duration.TotalMinutes >= Interval && lastEventTime != DateTime.MinValue)
             {
                 // Avoid writing the same interval_id twice. This can happen when
                 // Interval=0 (the default) and multiple events share the same
@@ -304,19 +325,22 @@ namespace WorkloadTools.Consumer.Analysis
 
         public void Stop()
         {
-            try
+            if (lastEventTime != DateTime.MinValue)
             {
-                databaseWriter.WriteToServer(lastEventTime);
-            }
-            catch (Exception e)
-            {
-                // duplicate key errors might be thrown at this time
-                // that's expected if trying to upload to the same
-                // interval already uploaded and new queries with the 
-                // same hash have been captured
-                if(!e.Message.Contains("Violation of PRIMARY KEY"))
+                try
                 {
-                    throw;
+                    databaseWriter.WriteToServer(lastEventTime);
+                }
+                catch (Exception e)
+                {
+                    // duplicate key errors might be thrown at this time
+                    // that's expected if trying to upload to the same
+                    // interval already uploaded and new queries with the 
+                    // same hash have been captured
+                    if(!(e.Message.Contains("Violation of PRIMARY KEY") || e.Message.Contains("UNIQUE constraint")))
+                    {
+                        throw;
+                    }
                 }
             }
             stopped = true;
@@ -331,9 +355,6 @@ namespace WorkloadTools.Consumer.Analysis
         {
             workloadData?.Dispose();
         }
-
-
-
     }
 }
 

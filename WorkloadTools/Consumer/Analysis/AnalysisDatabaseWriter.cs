@@ -16,6 +16,7 @@ using NLog;
 using WorkloadTools.Util;
 
 using NFX.DataAccess;
+using System.Data.Common;
 
 namespace WorkloadTools.Consumer.Analysis
 {
@@ -55,7 +56,7 @@ namespace WorkloadTools.Consumer.Analysis
         protected abstract void CreateTargetTables();
 		protected abstract void CreateTargetDatabase();
 		protected abstract void PopulateDictionariesFromDatabaseInternal(WorkloadData data);
-		protected abstract void AddAllRowsInternal(SqlConnection conn, string sql, Dictionary<string, int> d);
+		protected abstract void AddAllRowsInternal(DbConnection conn, string sql, Dictionary<string, int> d);
 
         protected void InvokeGC()
 		{

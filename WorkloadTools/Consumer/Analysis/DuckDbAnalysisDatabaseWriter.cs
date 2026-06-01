@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Data;
 using System.Data.SqlClient;
 using NLog;
+using System.Data.Common;
 
 namespace WorkloadTools.Consumer.Analysis
 {
@@ -79,7 +80,7 @@ namespace WorkloadTools.Consumer.Analysis
             throw new NotImplementedException("DuckDB support for analysis database writing is not yet implemented");
         }
 
-        protected override void AddAllRowsInternal(SqlConnection conn, string sql, Dictionary<string, int> d)
+        protected override void AddAllRowsInternal(DbConnection conn, string sql, Dictionary<string, int> d)
         {
             throw new NotImplementedException("DuckDB support for analysis database writing is not yet implemented");
         }

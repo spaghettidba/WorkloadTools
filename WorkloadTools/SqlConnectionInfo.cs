@@ -1,13 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
+
+using Microsoft.Data.Sqlite;
 
 namespace WorkloadTools
 {
     public class SqlConnectionInfo
     {
+        public enum DatabaseTypeEnum
+        {
+            SqlServer,
+            Sqlite,
+            DuckDB
+        }
+
+        public string DatabaseType { get; set; } = DatabaseTypeEnum.SqlServer.ToString();
         public string ServerName { get; set; }
+        public string DataSource { get => ServerName; set => ServerName = value; }
         public string DatabaseName { get; set; } = "master";
         public string SchemaName { get; set; } = "dbo";
         public bool UseIntegratedSecurity { get; set; }
@@ -18,7 +30,6 @@ namespace WorkloadTools
         public string ApplicationName { get; set; } = "WorkloadTools";
         public int MaxPoolSize { get; set; } = 500;
         public Dictionary<string, string> DatabaseMap { get; set; } = new Dictionary<string, string>();
-
 
         public SqlConnectionInfo() { }
 
@@ -44,45 +55,46 @@ namespace WorkloadTools
 
         public string ConnectionString(string applicationName)
         {
-            var connectionString = "Data Source=" + ServerName + "; ";
-            connectionString += "Max Pool Size = " + MaxPoolSize + "; ";
-            if (string.IsNullOrEmpty(DatabaseName))
+            if(DatabaseType == DatabaseTypeEnum.Sqlite.ToString())
             {
-                connectionString += "Initial Catalog = master; ";
-            }
-            else
-            {
-                // try to replace database name with the name
-                // in the database map, if any
-                var effectiveDatabaseName = DatabaseName;
-                if (DatabaseMap.ContainsKey(DatabaseName))
+                var builder = new SqliteConnectionStringBuilder()
                 {
-                    effectiveDatabaseName = DatabaseMap[DatabaseName];
-                }
-                connectionString += "Initial Catalog = " + effectiveDatabaseName + "; ";
+                    DataSource = DataSource,
+                    Mode = SqliteOpenMode.ReadWriteCreate,
+                    Cache = SqliteCacheMode.Default
+                };
+                return builder.ConnectionString;
             }
-            if (string.IsNullOrEmpty(UserName))
+            else if(DatabaseType == DatabaseTypeEnum.DuckDB.ToString())
             {
-                connectionString += "Integrated Security = SSPI; ";
+                throw new NotImplementedException("Not implemented!");
+            }
+            else if (DatabaseType == DatabaseTypeEnum.SqlServer.ToString())
+            {
+                if(string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password))
+                {
+                    UseIntegratedSecurity = true;
+                    UserName = "";
+                    Password = "";
+                }
+                var builder = new SqlConnectionStringBuilder()
+                {
+                    DataSource = ServerName,
+                    MaxPoolSize = MaxPoolSize,
+                    InitialCatalog = string.IsNullOrEmpty(DatabaseName) ? "master" : (DatabaseMap.ContainsKey(DatabaseName) ? DatabaseMap[DatabaseName] : DatabaseName),
+                    IntegratedSecurity = UseIntegratedSecurity,
+                    UserID = UserName,
+                    Password = Password,
+                    ApplicationName = applicationName,
+                    Encrypt = Encrypt,
+                    TrustServerCertificate = TrustServerCertificate
+                };
+                return builder.ConnectionString;
             }
             else
             {
-                connectionString += "User Id = " + UserName + "; ";
-                connectionString += "Password = " + Password + "; ";
+                throw new NotSupportedException("Unsupported database type: " + DatabaseType);
             }
-            if (!string.IsNullOrEmpty(applicationName))
-            {
-                connectionString += "Application Name = " + applicationName + "; ";
-            }
-            if (Encrypt)
-            {
-                connectionString += "Encrypt = true; ";
-            }
-            if (TrustServerCertificate)
-            {
-                connectionString += "TrustServerCertificate = true; ";
-            }
-            return connectionString;
         }
     }
 }

@@ -20,25 +20,25 @@ namespace WorkloadTools.Consumer.Analysis
         /// </summary>
         public class ExecutionSummaryRecord
         {
-            public int ApplicationId { get; set; }
-            public int DatabaseId { get; set; }
-            public int HostId { get; set; }
-            public int LoginId { get; set; }
-            public long MinCpuUs { get; set; }
-            public long MaxCpuUs { get; set; }
-            public long SumCpuUs { get; set; }
-            public long MinReads { get; set; }
-            public long MaxReads { get; set; }
-            public long SumReads { get; set; }
-            public long MinWrites { get; set; }
-            public long MaxWrites { get; set; }
-            public long SumWrites { get; set; }
-            public long MinDurationUs { get; set; }
-            public long MaxDurationUs { get; set; }
-            public long SumDurationUs { get; set; }
-            public DateTime MinExecutionDate { get; set; }
-            public DateTime MaxExecutionDate { get; set; }
-            public long ExecutionCount { get; set; }
+            public int application_id { get; set; }
+            public int database_id { get; set; }
+            public int host_id { get; set; }
+            public int login_id { get; set; }
+            public long min_cpu_us { get; set; }
+            public long max_cpu_us { get; set; }
+            public long sum_cpu_us { get; set; }
+            public long min_reads { get; set; }
+            public long max_reads { get; set; }
+            public long sum_reads { get; set; }
+            public long min_writes { get; set; }
+            public long max_writes { get; set; }
+            public long sum_writes { get; set; }
+            public long min_duration_us { get; set; }
+            public long max_duration_us { get; set; }
+            public long sum_duration_us { get; set; }
+            public DateTime min_execution_date { get; set; }
+            public DateTime max_execution_date { get; set; }
+            public long execution_count { get; set; }
         }
 
         /// <summary>
@@ -46,29 +46,29 @@ namespace WorkloadTools.Consumer.Analysis
         /// </summary>
         public class ExecutionDetailsRecord
         {
-            public int IntervalId { get; set; }
-            public long SqlHash { get; set; }
-            public int ApplicationId { get; set; }
-            public int DatabaseId { get; set; }
-            public int HostId { get; set; }
-            public int LoginId { get; set; }
-            public double AvgCpuUs { get; set; }
-            public long MinCpuUs { get; set; }
-            public long MaxCpuUs { get; set; }
-            public long SumCpuUs { get; set; }
-            public double AvgReads { get; set; }
-            public long MinReads { get; set; }
-            public long MaxReads { get; set; }
-            public long SumReads { get; set; }
-            public double AvgWrites { get; set; }
-            public long MinWrites { get; set; }
-            public long MaxWrites { get; set; }
-            public long SumWrites { get; set; }
-            public double AvgDurationUs { get; set; }
-            public long MinDurationUs { get; set; }
-            public long MaxDurationUs { get; set; }
-            public long SumDurationUs { get; set; }
-            public long ExecutionCount { get; set; }
+            public int interval_id { get; set; }
+            public long sql_hash { get; set; }
+            public int application_id { get; set; }
+            public int database_id { get; set; }
+            public int host_id { get; set; }
+            public int login_id { get; set; }
+            public double avg_cpu_us { get; set; }
+            public long min_cpu_us { get; set; }
+            public long max_cpu_us { get; set; }
+            public long sum_cpu_us { get; set; }
+            public double avg_reads { get; set; }
+            public long min_reads { get; set; }
+            public long max_reads { get; set; }
+            public long sum_reads { get; set; }
+            public double avg_writes { get; set; }
+            public long min_writes { get; set; }
+            public long max_writes { get; set; }
+            public long sum_writes { get; set; }
+            public double avg_duration_us { get; set; }
+            public long min_duration_us { get; set; }
+            public long max_duration_us { get; set; }
+            public long sum_duration_us { get; set; }
+            public long execution_count { get; set; }
         }
 
         /// <summary>
@@ -101,25 +101,25 @@ namespace WorkloadTools.Consumer.Analysis
                                      into grp
                                      select new ExecutionSummaryRecord
                                      {
-                                         ApplicationId = grp.Key.application_id,
-                                         DatabaseId = grp.Key.database_id,
-                                         HostId = grp.Key.host_id,
-                                         LoginId = grp.Key.login_id,
-                                         MinCpuUs = (long)(grp.Min(v => v.Cpu_us) ?? 0),
-                                         MaxCpuUs = (long)(grp.Max(v => v.Cpu_us) ?? 0),
-                                         SumCpuUs = (long)(grp.Sum(v => v.Cpu_us) ?? 0),
-                                         MinReads = (long)(grp.Min(v => v.Reads) ?? 0),
-                                         MaxReads = (long)(grp.Max(v => v.Reads) ?? 0),
-                                         SumReads = (long)(grp.Sum(v => v.Reads) ?? 0),
-                                         MinWrites = (long)(grp.Min(v => v.Writes) ?? 0),
-                                         MaxWrites = (long)(grp.Max(v => v.Writes) ?? 0),
-                                         SumWrites = (long)(grp.Sum(v => v.Writes) ?? 0),
-                                         MinDurationUs = (long)(grp.Min(v => v.Duration_us) ?? 0),
-                                         MaxDurationUs = (long)(grp.Max(v => v.Duration_us) ?? 0),
-                                         SumDurationUs = (long)(grp.Sum(v => v.Duration_us) ?? 0),
-                                         MinExecutionDate = grp.Min(v => v.Event_time),
-                                         MaxExecutionDate = grp.Max(v => v.Event_time),
-                                         ExecutionCount = grp.Count()
+                                         application_id = grp.Key.application_id,
+                                         database_id = grp.Key.database_id,
+                                         host_id = grp.Key.host_id,
+                                         login_id = grp.Key.login_id,
+                                         min_cpu_us = (long)(grp.Min(v => v.Cpu_us) ?? 0),
+                                         max_cpu_us = (long)(grp.Max(v => v.Cpu_us) ?? 0),
+                                         sum_cpu_us = (long)(grp.Sum(v => v.Cpu_us) ?? 0),
+                                         min_reads = (long)(grp.Min(v => v.Reads) ?? 0),
+                                         max_reads = (long)(grp.Max(v => v.Reads) ?? 0),
+                                         sum_reads = (long)(grp.Sum(v => v.Reads) ?? 0),
+                                         min_writes = (long)(grp.Min(v => v.Writes) ?? 0),
+                                         max_writes = (long)(grp.Max(v => v.Writes) ?? 0),
+                                         sum_writes = (long)(grp.Sum(v => v.Writes) ?? 0),
+                                         min_duration_us = (long)(grp.Min(v => v.Duration_us) ?? 0),
+                                         max_duration_us = (long)(grp.Max(v => v.Duration_us) ?? 0),
+                                         sum_duration_us = (long)(grp.Sum(v => v.Duration_us) ?? 0),
+                                         min_execution_date = grp.Min(v => v.Event_time),
+                                         max_execution_date = grp.Max(v => v.Event_time),
+                                         execution_count = grp.Count()
                                      };
 
                 return summaryRecords.ToList();
@@ -157,29 +157,29 @@ namespace WorkloadTools.Consumer.Analysis
                                     into grp
                                     select new ExecutionDetailsRecord
                                     {
-                                        IntervalId = intervalId,
-                                        SqlHash = grp.Key.sql_hash,
-                                        ApplicationId = grp.Key.application_id,
-                                        DatabaseId = grp.Key.database_id,
-                                        HostId = grp.Key.host_id,
-                                        LoginId = grp.Key.login_id,
-                                        AvgCpuUs = grp.Average(v => v.Cpu_us) ?? 0,
-                                        MinCpuUs = (long)(grp.Min(v => v.Cpu_us) ?? 0),
-                                        MaxCpuUs = (long)(grp.Max(v => v.Cpu_us) ?? 0),
-                                        SumCpuUs = (long)(grp.Sum(v => v.Cpu_us) ?? 0),
-                                        AvgReads = grp.Average(v => v.Reads) ?? 0,
-                                        MinReads = (long)(grp.Min(v => v.Reads) ?? 0),
-                                        MaxReads = (long)(grp.Max(v => v.Reads) ?? 0),
-                                        SumReads = (long)(grp.Sum(v => v.Reads) ?? 0),
-                                        AvgWrites = grp.Average(v => v.Writes) ?? 0,
-                                        MinWrites = (long)(grp.Min(v => v.Writes) ?? 0),
-                                        MaxWrites = (long)(grp.Max(v => v.Writes) ?? 0),
-                                        SumWrites = (long)(grp.Sum(v => v.Writes) ?? 0),
-                                        AvgDurationUs = grp.Average(v => v.Duration_us) ?? 0,
-                                        MinDurationUs = (long)(grp.Min(v => v.Duration_us) ?? 0),
-                                        MaxDurationUs = (long)(grp.Max(v => v.Duration_us) ?? 0),
-                                        SumDurationUs = (long)(grp.Sum(v => v.Duration_us) ?? 0),
-                                        ExecutionCount = grp.Count()
+                                        interval_id = intervalId,
+                                        sql_hash = grp.Key.sql_hash,
+                                        application_id = grp.Key.application_id,
+                                        database_id = grp.Key.database_id,
+                                        host_id = grp.Key.host_id,
+                                        login_id = grp.Key.login_id,
+                                        avg_cpu_us = grp.Average(v => v.Cpu_us) ?? 0,
+                                        min_cpu_us = (long)(grp.Min(v => v.Cpu_us) ?? 0),
+                                        max_cpu_us = (long)(grp.Max(v => v.Cpu_us) ?? 0),
+                                        sum_cpu_us = (long)(grp.Sum(v => v.Cpu_us) ?? 0),
+                                        avg_reads = grp.Average(v => v.Reads) ?? 0,
+                                        min_reads = (long)(grp.Min(v => v.Reads) ?? 0),
+                                        max_reads = (long)(grp.Max(v => v.Reads) ?? 0),
+                                        sum_reads = (long)(grp.Sum(v => v.Reads) ?? 0),
+                                        avg_writes = grp.Average(v => v.Writes) ?? 0,
+                                        min_writes = (long)(grp.Min(v => v.Writes) ?? 0),
+                                        max_writes = (long)(grp.Max(v => v.Writes) ?? 0),
+                                        sum_writes = (long)(grp.Sum(v => v.Writes) ?? 0),
+                                        avg_duration_us = grp.Average(v => v.Duration_us) ?? 0,
+                                        min_duration_us = (long)(grp.Min(v => v.Duration_us) ?? 0),
+                                        max_duration_us = (long)(grp.Max(v => v.Duration_us) ?? 0),
+                                        sum_duration_us = (long)(grp.Sum(v => v.Duration_us) ?? 0),
+                                        execution_count = grp.Count()
                                     };
 
                 return detailRecords.ToList();
