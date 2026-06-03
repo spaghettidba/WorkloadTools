@@ -20,7 +20,7 @@ using NLog;
 using WorkloadTools.Util;
 
 //--------------------------------------ATTENTION--------------------------------------
-//For SQLite you need to use mai.table_name to refer to permanent tables and temp.table_name to refer to temporary tables.
+//For SQLite you need to use main.table_name to refer to permanent tables and temp.table_name to refer to temporary tables.
 //If you don't use the main. prefix and there is a temporary table with the same name as the permanent table,
 //SQLite will write to the temporary table instead of the permanent one without throwing any error.
 
@@ -101,7 +101,7 @@ namespace WorkloadTools.Consumer.Analysis
                     _ = command.ExecuteNonQuery();
                 }
             }
-            logger.Info($"{tableName} written to SQLite");
+            logger.Debug($"{tableName} written to SQLite");
             
         }
 
@@ -185,7 +185,7 @@ namespace WorkloadTools.Consumer.Analysis
                 return;
             }
 
-            var waitRecords = _aggregator.AggregateWaitStats(Data.WaitsData, current_interval_id);
+            dynamic waitRecords = _aggregator.AggregateWaitStats(Data.WaitsData, current_interval_id);
 
             lock (Data.WaitsData)
             {
@@ -213,7 +213,7 @@ namespace WorkloadTools.Consumer.Analysis
                 return;
             }
 
-            var diskRecords = _aggregator.AggregateDiskPerf(Data.DiskPerfData, current_interval_id);
+            dynamic diskRecords = _aggregator.AggregateDiskPerf(Data.DiskPerfData, current_interval_id);
 
             lock (Data.DiskPerfData)
             {
@@ -241,7 +241,7 @@ namespace WorkloadTools.Consumer.Analysis
                 return;
             }
 
-            var counterRecords = _aggregator.AggregatePerformanceCounters(Data.PerformanceCounters, current_interval_id);
+            dynamic counterRecords = _aggregator.AggregatePerformanceCounters(Data.PerformanceCounters, current_interval_id);
 
             lock (Data.PerformanceCounters)
             {
@@ -253,12 +253,11 @@ namespace WorkloadTools.Consumer.Analysis
                         return;
                     }
                     var tableName = "PerformanceCounters";
-
                     WriteToTable(dt, tableName);
                 }
 
-                Data.DiskPerfData.Dispose();
-                Data.DiskPerfData = null;
+                Data.PerformanceCounters.Dispose();
+                Data.PerformanceCounters = null;
             }
         }
 
@@ -345,7 +344,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         protected override void WriteExecutionDetails(int current_interval_id)
         {
-            var detailRecords = _aggregator.AggregateExecutionDetails(Data, current_interval_id);
+            dynamic detailRecords = _aggregator.AggregateExecutionDetails(Data, current_interval_id);
 
             int numRows;
 
@@ -369,7 +368,7 @@ namespace WorkloadTools.Consumer.Analysis
                 return;
             }
 
-            var errorRecords = _aggregator.AggregateErrors(Data.ErrorData, current_interval_id);
+            dynamic errorRecords = _aggregator.AggregateErrors(Data.ErrorData, current_interval_id);
 
             lock (Data.ErrorData)
             {

@@ -12,8 +12,6 @@ namespace WorkloadTools.Consumer.Analysis
 {
     internal class DuckDbAnalysisDatabaseWriter : AnalysisDatabaseWriter
     {
-        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-
         public override void WriteToServer(DateTime intervalTime)
         {
             logger.Warn("DuckDB database writing is not yet implemented");

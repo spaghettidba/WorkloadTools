@@ -98,7 +98,7 @@ namespace WorkloadTools.Consumer.Analysis
                 return;
             }
 
-            var waitRecords = _aggregator.AggregateWaitStats(Data.WaitsData, current_interval_id);
+            dynamic waitRecords = _aggregator.AggregateWaitStats(Data.WaitsData, current_interval_id);
 
             lock (Data.WaitsData)
             {
@@ -132,7 +132,7 @@ namespace WorkloadTools.Consumer.Analysis
                 return;
             }
 
-            var diskRecords = _aggregator.AggregateDiskPerf(Data.DiskPerfData, current_interval_id);
+            dynamic diskRecords = _aggregator.AggregateDiskPerf(Data.DiskPerfData, current_interval_id);
 
             lock (Data.DiskPerfData)
             {
@@ -166,7 +166,7 @@ namespace WorkloadTools.Consumer.Analysis
                 return;
             }
 
-            var counterRecords = _aggregator.AggregatePerformanceCounters(Data.PerformanceCounters, current_interval_id);
+            dynamic counterRecords = _aggregator.AggregatePerformanceCounters(Data.PerformanceCounters, current_interval_id);
 
             lock (Data.PerformanceCounters)
             {
@@ -194,7 +194,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         protected override void WriteExecutionSummary()
         {
-            var summaryRecords = _aggregator.AggregateExecutionSummary(Data);
+            dynamic summaryRecords = _aggregator.AggregateExecutionSummary(Data);
 
             var sql = $@"
                 IF OBJECT_ID('tempdb..#WorkloadSummary') IS NOT NULL 
@@ -284,7 +284,7 @@ namespace WorkloadTools.Consumer.Analysis
 
         protected override void WriteExecutionDetails(int current_interval_id)
         {
-            var detailRecords = _aggregator.AggregateExecutionDetails(Data, current_interval_id);
+            dynamic detailRecords = _aggregator.AggregateExecutionDetails(Data, current_interval_id);
 
             int numRows;
 
@@ -317,7 +317,7 @@ namespace WorkloadTools.Consumer.Analysis
                 Data.PrepareDataTables();
             }
 
-            var errorRecords = _aggregator.AggregateErrors(Data.ErrorData, current_interval_id);
+            dynamic errorRecords = _aggregator.AggregateErrors(Data.ErrorData, current_interval_id);
 
             lock (Data.ErrorData)
             {

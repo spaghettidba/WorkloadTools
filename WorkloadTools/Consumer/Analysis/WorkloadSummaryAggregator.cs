@@ -281,7 +281,7 @@ namespace WorkloadTools.Consumer.Analysis
                                      select new
                                      {
                                          interval_id = intervalId,
-                                         grp.Key.counter_name,
+                                         counter_name = grp.Key.counter_name,
                                          min_counter_value = grp.Min(t => t.Field<float>("counter_value")),
                                          max_counter_value = grp.Max(t => t.Field<float>("counter_value")),
                                          avg_counter_value = grp.Average(t => t.Field<float>("counter_value"))
