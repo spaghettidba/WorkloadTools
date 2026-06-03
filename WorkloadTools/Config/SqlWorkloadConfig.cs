@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WorkloadTools;
-using System.Web.Script.Serialization;
+using Newtonsoft.Json;
 using System.IO;
 using DouglasCrockford.JsMin;
 using WorkloadTools.Listener.ExtendedEvents;
@@ -25,8 +25,7 @@ namespace WorkloadTools.Config
 
         public static SqlWorkloadConfig LoadFromFile(string path)
         {
-            var ser = new JavaScriptSerializer(new SqlWorkloadConfigTypeResolver());
-            ser.RegisterConverters(new JavaScriptConverter[] { new ModelConverter() });
+            var settings = new SqlWorkloadJsonSettings();
             using (var r = new StreamReader(path))
             {
                 var json = r.ReadToEnd();
@@ -47,7 +46,7 @@ namespace WorkloadTools.Config
 
                 try
                 {
-                    result = ser.Deserialize<SqlWorkloadConfig>(jsonMin);
+                    result = JsonConvert.DeserializeObject<SqlWorkloadConfig>(jsonMin, settings);
                 }
                 catch (Exception e)
                 {
@@ -59,7 +58,7 @@ namespace WorkloadTools.Config
 
         public static void Test()
         {
-            var ser = new JavaScriptSerializer(new SqlWorkloadConfigTypeResolver());
+            var settings = new SqlWorkloadJsonSettings();
             var x = new SqlWorkloadConfig()
             {
                 Controller = new WorkloadController()
@@ -103,11 +102,11 @@ namespace WorkloadTools.Config
                 }
             });
 
-            var s = ser.Serialize(x);
+            var s = JsonConvert.SerializeObject(x, settings);
 
             Console.WriteLine(s);
 
-            //SqlWorkloadConfig tc = ser.Deserialize<SqlWorkloadConfig>(Samples.Sample.ToString());
+            //SqlWorkloadConfig tc = JsonConvert.DeserializeObject<SqlWorkloadConfig>(Samples.Sample.ToString(), settings);
 
         }
 

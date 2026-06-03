@@ -1,5 +1,4 @@
-﻿using Microsoft.SqlServer.XEvent.Linq;
-using NLog;
+﻿using NLog;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
