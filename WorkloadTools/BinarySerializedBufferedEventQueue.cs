@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.Serialization.Formatters.Binary;
-using WorkloadTools.Util;
-using System.Diagnostics;
+﻿using WorkloadTools.Util;
+using ProtoBuf;
 
 namespace WorkloadTools
 {
@@ -17,8 +10,6 @@ namespace WorkloadTools
         private int _minFile, _maxFile;
 
         private readonly string file_name_uniquifier = "";
-
-        private readonly BinaryFormatter _formatter = new BinaryFormatter();
 
         public BinarySerializedBufferedEventQueue() : base()
         {
@@ -35,14 +26,14 @@ namespace WorkloadTools
             WorkloadEvent[] result = null;
             var destFile = Path.Combine(baseFolder, file_name_uniquifier + ("000000000" + _minFile).Right(9) + ".cache");
             
-            using (var fileStream = new System.IO.FileStream(destFile, System.IO.FileMode.Open))
-            using (var bufferedStream = new BufferedStream(fileStream))
+            using (var fileStream = new System.IO.FileStream(destFile, System.IO.FileMode.Open, FileAccess.Read))
             {
-                result = (WorkloadEvent[])_formatter.Deserialize(bufferedStream);
-                if(result.Length != count)
-                {
-                    throw new ArgumentOutOfRangeException($"The deserialized array is of the wrong size (expected: {count}, found: {result.Length})");
-                }
+                result = ProtoBuf.Serializer.Deserialize<WorkloadEvent[]>(fileStream);
+            }
+
+            if(result.Length != count)
+            {
+                throw new ArgumentOutOfRangeException($"The deserialized array is of the wrong size (expected: {count}, found: {result.Length})");
             }
 
             File.Delete(destFile);
@@ -63,12 +54,11 @@ namespace WorkloadTools
                 File.Delete(destFile);
             }
 
-            using (var fileStream = new FileStream(destFile, FileMode.CreateNew))
-            using (var bufferedStream = new BufferedStream(fileStream))
+            using (var fileStream = new FileStream(destFile, FileMode.CreateNew, FileAccess.Write))
             {
-                _formatter.Serialize(bufferedStream, events);
-                fileStream.Close();
+                ProtoBuf.Serializer.Serialize(fileStream, events);
             }
+
             _maxFile++;
         }
 

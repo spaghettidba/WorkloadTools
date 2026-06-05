@@ -24,6 +24,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Microsoft.SqlServer.XEvent.XELite" Version="2024.2.5.1" />
+    <PackageReference Include="protobuf-net" Version="3.2.56" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="DouglasCrockford.JsMin" Version="1.1.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.6.33829.357
+# Visual Studio Version 18
+VisualStudioVersion = 18.6.11822.322 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlWorkload", "SqlWorkload\SqlWorkload.csproj", "{FB46AD2C-DF81-4D35-B419-D93E5EF9D98A}"
 	ProjectSection(ProjectDependencies) = postProject

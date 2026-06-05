@@ -606,7 +606,7 @@ namespace WorkloadTools.Consumer.Analysis
                         var dt = ds.Tables[0];
                         foreach (DataRow dr in dt.Rows)
                         {
-                            d.Add((string)dr[1], (int)dr[0]);
+                            d.Add((string)dr[1], Convert.ToInt32(dr[0]));
                         }
                     }
                 }
