@@ -384,8 +384,8 @@ namespace WorkloadTools.Consumer.Analysis
                     WriteToTable(dt, tableName);
                 }
 
-                Data.DiskPerfData.Dispose();
-                Data.DiskPerfData = null;
+                Data.ErrorData.Dispose();
+                Data.ErrorData = null;
             }
         }
 

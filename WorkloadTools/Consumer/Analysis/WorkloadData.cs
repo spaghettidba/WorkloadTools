@@ -195,11 +195,10 @@ namespace WorkloadTools.Consumer.Analysis
             // Look up execution detail 
             if (RawData.TryGetValue(theKey, out var theList))
             {
-                if (theList == null)
+                if (theList != null)
                 {
-                    theList = new List<ExecutionDetailValue>();
+                    theList.Add(theValue);
                 }
-                theList.Add(theValue);
             }
             else
             {

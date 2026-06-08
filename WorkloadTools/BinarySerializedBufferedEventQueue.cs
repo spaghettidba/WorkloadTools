@@ -29,7 +29,7 @@ namespace WorkloadTools
             WorkloadEvent[] result = null;
             var destFile = Path.Combine(baseFolder, file_name_uniquifier + ("000000000" + _minFile).Right(9) + ".cache");
             
-            using (var fileStream = new System.IO.FileStream(destFile, System.IO.FileMode.Open, FileAccess.Read))
+            using (var fileStream = new System.IO.FileStream(destFile, System.IO.FileMode.Open))
             {
                 result = ProtoBuf.Serializer.Deserialize<WorkloadEvent[]>(fileStream);
             }
@@ -57,7 +57,7 @@ namespace WorkloadTools
                 File.Delete(destFile);
             }
 
-            using (var fileStream = new FileStream(destFile, FileMode.CreateNew, FileAccess.Write))
+            using (var fileStream = new FileStream(destFile, FileMode.CreateNew))
             {
                 ProtoBuf.Serializer.Serialize(fileStream, events);
             }

@@ -9,6 +9,7 @@ using ProtoBuf;
 namespace WorkloadTools
 {
     [ProtoContract]
+    [ProtoInclude(100, typeof(ColumnWaits))]
     public class WaitStatsWorkloadEvent : WorkloadEvent
     {
         [ProtoIgnore]

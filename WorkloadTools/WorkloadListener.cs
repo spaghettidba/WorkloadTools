@@ -352,17 +352,18 @@ namespace WorkloadTools
 
             var results = from table1 in newWaits.AsEnumerable()
                           join table2 in lastWaits.AsEnumerable()
-                                on table1["wait_type"] equals table2["wait_type"]
+                                on table1["wait_type"] equals table2["wait_type"] into joinResult
+                          from matched in joinResult.DefaultIfEmpty()
                           select new
                           {
                               wait_type = Convert.ToString(table1["wait_type"]),
-                              wait_sec = Convert.ToDouble(table1["wait_sec"]) - Convert.ToDouble(table2["wait_sec"]),
-                              resource_sec = Convert.ToDouble(table1["resource_sec"]) - Convert.ToDouble(table2["resource_sec"]),
-                              signal_sec = Convert.ToDouble(table1["signal_sec"]) - Convert.ToDouble(table2["signal_sec"]),
-                              wait_count = Convert.ToDouble(table1["wait_count"]) - Convert.ToDouble(table2["wait_count"])
+                              wait_sec = matched != null ? Convert.ToDouble(table1["wait_sec"]) - Convert.ToDouble(matched["wait_sec"]) : Convert.ToDouble(table1["wait_sec"]),
+                              resource_sec = matched != null ? Convert.ToDouble(table1["resource_sec"]) - Convert.ToDouble(matched["resource_sec"]) : Convert.ToDouble(table1["resource_sec"]),
+                              signal_sec = matched != null ? Convert.ToDouble(table1["signal_sec"]) - Convert.ToDouble(matched["signal_sec"]) : Convert.ToDouble(table1["signal_sec"]),
+                              wait_count = matched != null ? Convert.ToDouble(table1["wait_count"]) - Convert.ToDouble(matched["wait_count"]) : Convert.ToDouble(table1["wait_count"])
                           };
 
-            return DataUtils.ToDataTable(results.Where(w => w.wait_sec > 0));
+            return DataUtils.ToDataTable(results.Where(w => w.wait_sec >= 0));
         }
 
         private DataTable GetWaits()
