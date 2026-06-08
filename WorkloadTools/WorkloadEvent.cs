@@ -11,12 +11,11 @@ namespace WorkloadTools
     [Serializable]
     [ProtoContract]
 
-    [ProtoInclude(0, typeof(CounterWorkloadEvent))]
-    [ProtoInclude(1, typeof(DiskPerfWorkloadEvent))]
-    [ProtoInclude(2, typeof(ErrorWorkloadEvent))]
-    [ProtoInclude(3, typeof(ExecutionWorkloadEvent))]
-    [ProtoInclude(4, typeof(MessageWorkloadEvent))]
-    [ProtoInclude(5, typeof(WaitStatsWorkloadEvent))]
+    [ProtoInclude(10, typeof(CounterWorkloadEvent))]
+    [ProtoInclude(11, typeof(DiskPerfWorkloadEvent))]
+    [ProtoInclude(12, typeof(ExecutionWorkloadEvent))]
+    [ProtoInclude(13, typeof(MessageWorkloadEvent))]
+    [ProtoInclude(14, typeof(WaitStatsWorkloadEvent))]
 
     public abstract class WorkloadEvent
     {
@@ -35,10 +34,10 @@ namespace WorkloadTools
             Unknown = -1
         }
 
-        [ProtoMember(0)]
+        [ProtoMember(1)]
         public DateTime StartTime{ get; set; }
 
-        [ProtoMember(1)]
+        [ProtoMember(2)]
         public EventType Type { get; set; } = EventType.Unknown;
         
     }

@@ -1,5 +1,8 @@
-﻿using WorkloadTools.Util;
+﻿using System.Data;
+
 using ProtoBuf;
+
+using WorkloadTools.Util;
 
 namespace WorkloadTools
 {

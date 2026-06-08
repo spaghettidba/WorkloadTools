@@ -16,10 +16,10 @@ namespace WorkloadTools
             TotalEvents
         }
 
-        [ProtoMember(1)]
+        [ProtoMember(10)]
         public MessageType MsgType { get; set; }
 
-        [ProtoMember(2)]
+        [ProtoMember(11)]
         public long Value { get; set; }
 
         public MessageWorkloadEvent()
