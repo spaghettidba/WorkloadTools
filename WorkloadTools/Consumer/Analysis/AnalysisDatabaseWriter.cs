@@ -43,6 +43,7 @@ namespace WorkloadTools.Consumer.Analysis
         [MethodImpl(MethodImplOptions.Synchronized)]
         public abstract void WriteToServer(DateTime intervalTime);
 
+        protected abstract void WriteToTable(DataTable dt, string tableName);
         protected abstract void WriteWaitsData(int current_interval_id);
         protected abstract void WriteDiskPerf(int current_interval_id);
         protected abstract void WritePerformanceCounters(int current_interval_id);

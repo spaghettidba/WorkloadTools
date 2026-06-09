@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 
 using Microsoft.Data.Sqlite;
+using DuckDB.NET.Data;
 
 namespace WorkloadTools
 {
@@ -67,7 +68,11 @@ namespace WorkloadTools
             }
             else if(DatabaseType == DatabaseTypeEnum.DuckDB.ToString())
             {
-                throw new NotImplementedException("Not implemented!");
+                var builder = new DuckDBConnectionStringBuilder()
+                {
+                    DataSource = DataSource,
+                };
+                return builder.ConnectionString;
             }
             else if (DatabaseType == DatabaseTypeEnum.SqlServer.ToString())
             {

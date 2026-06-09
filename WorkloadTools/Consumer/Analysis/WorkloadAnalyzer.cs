@@ -125,6 +125,20 @@ namespace WorkloadTools.Consumer.Analysis
                     Interval = Interval
                 };
             }
+            else if (ConnectionInfo.DatabaseType == SqlConnectionInfo.DatabaseTypeEnum.DuckDB.ToString())
+            {
+                databaseWriter = new DuckDBAnalysisDatabaseWriter()
+                {
+                    ConnectionInfo = ConnectionInfo,
+                    MaximumWriteRetries = MaximumWriteRetries,
+                    TruncateTo1024 = TruncateTo1024,
+                    TruncateTo4000 = TruncateTo4000,
+                    WriteDetail = WriteDetail,
+                    WriteSummary = WriteSummary,
+                    Data = workloadData,
+                    Interval = Interval
+                };
+            }
             else
             {
                 throw new NotSupportedException($"Database type {ConnectionInfo.DatabaseType} is not supported.");

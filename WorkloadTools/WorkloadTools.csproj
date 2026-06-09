@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Library</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -51,6 +51,7 @@
     <PackageReference Include="CoreWCF.Http" Version="1.9.0" />
     <PackageReference Include="CoreWCF.WebHttp" Version="1.9.0" />
     <PackageReference Include="CoreWCF.NetTcp" Version="1.9.0" />
+	<PackageReference Include="DuckDB.NET.Data.Full" Version="1.5.3" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">
@@ -87,6 +88,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Consumer\Analysis\createAnalysisView.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Consumer\Analysis\DuckDBDatabaseSchema.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Consumer\Analysis\SqliteDatabaseSchema.sql">

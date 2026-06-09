@@ -22,6 +22,12 @@ namespace WorkloadTools.Consumer.Analysis
         private SqlConnection _connection;
         private SqlTransaction _transaction;
 
+        protected override void WriteToTable(DataTable dt, string tableName)
+        {
+            logger.Warn("WHY ARE YOU HERE?");
+            return;
+        }
+
         [MethodImpl(MethodImplOptions.Synchronized)]
         public override void WriteToServer(DateTime intervalTime)
         {

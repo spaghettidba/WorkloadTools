@@ -27,7 +27,7 @@ using WorkloadTools.Util;
 namespace WorkloadTools.Consumer.Analysis
 {
 
-    internal class SqliteAnalysisDatabaseWriter : AnalysisDatabaseWriter
+    public class SqliteAnalysisDatabaseWriter : AnalysisDatabaseWriter
     {
         private SQLiteConnection _connection;
         private SQLiteTransaction _transaction;
@@ -35,7 +35,7 @@ namespace WorkloadTools.Consumer.Analysis
         //Given a DataTable and the name of the table, this method fill that table with the data.
         //If it is a temporary table, tableName needs to be temp.name_of_the_table.
         //If it is a permanent table, tableName doesn't need the main. prefix because it is automaticaly added in the query.
-        private void WriteToTable(DataTable dt, string tableName)
+        protected override void WriteToTable(DataTable dt, string tableName)
         {
             
             using (var command = new SQLiteCommand())
