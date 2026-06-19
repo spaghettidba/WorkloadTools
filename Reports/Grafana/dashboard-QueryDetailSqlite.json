@@ -1,0 +1,1055 @@
+{
+  "apiVersion": "dashboard.grafana.app/v2",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "QueryDetailSqlite",
+    "generation": 25,
+    "creationTimestamp": "2026-06-11T13:18:25Z",
+    "labels": {},
+    "annotations": {}
+  },
+  "spec": {
+    "annotations": [
+      {
+        "kind": "AnnotationQuery",
+        "spec": {
+          "query": {
+            "kind": "DataQuery",
+            "group": "grafana",
+            "version": "v0",
+            "spec": {},
+            "labels": {
+              "grafana.app/export-label": "grafana-1"
+            }
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "builtIn": true
+        }
+      }
+    ],
+    "cursorSync": "Off",
+    "editable": true,
+    "elements": {
+      "panel-1": {
+        "kind": "Panel",
+        "spec": {
+          "id": 1,
+          "title": "Query Text",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "text",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "code": {
+                  "language": "sql",
+                  "showLineNumbers": true,
+                  "showMiniMap": false
+                },
+                "content": "${QueryText}\n",
+                "mode": "code"
+              },
+              "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-2": {
+        "kind": "Panel",
+        "spec": {
+          "id": 2,
+          "title": "Total Cpu Time",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "frser-sqlite-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Baseline}"
+                      },
+                      "spec": {
+                        "queryText": "SELECT\n   (CAST(strftime('%s', I.end_time) AS INTEGER) / (30000/1000)) * (30000/1000) AS time\n  ,SUM(WD.sum_cpu_us) AS 'TestozzoSQLite'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (\"2505023241757917174\")\n    AND time BETWEEN 1778130000 AND 1778173200\nGROUP BY time\nORDER BY 1",
+                        "queryType": "table",
+                        "rawQueryText": "SELECT\n   (CAST(strftime('%s', I.end_time) AS INTEGER) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n  ,SUM(WD.sum_cpu_us) AS '${Baseline:text}'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (${SqlHash:doublequote})\n    AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time\nORDER BY 1",
+                        "timeColumns": [
+                          "time",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "frser-sqlite-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Benchmark}"
+                      },
+                      "spec": {
+                        "queryText": "SELECT\n   ((CAST(strftime('%s', I.end_time) AS INTEGER) - ${BenchmarkTimeDiff}) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n  ,SUM(WD.sum_cpu_us) AS '${Benchmark:text}'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (${SqlHash:doublequote})\n    AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time\nORDER BY 1",
+                        "queryType": "table",
+                        "rawQueryText": "SELECT\n   ((CAST(strftime('%s', I.end_time) AS INTEGER) - ${BenchmarkTimeDiff}) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n  ,SUM(WD.sum_cpu_us) AS '${Benchmark:text}'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (${SqlHash:doublequote})\n    AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time\nORDER BY 1",
+                        "timeColumns": [
+                          "time",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "annotations": {
+                  "clustering": -1,
+                  "multiLane": false
+                },
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "µs",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-3": {
+        "kind": "Panel",
+        "spec": {
+          "id": 3,
+          "title": "Total Duration",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "frser-sqlite-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Baseline}"
+                      },
+                      "spec": {
+                        "queryText": "SELECT\n   (CAST(strftime('%s', I.end_time) AS INTEGER) / (30000/1000)) * (30000/1000) AS time\n  ,SUM(WD.sum_duration_us) AS 'TestozzoSQLite'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (\"2505023241757917174\")\n    AND time BETWEEN 1778130000 AND 1778173200\nGROUP BY time\nORDER BY 1",
+                        "queryType": "table",
+                        "rawQueryText": "SELECT\n   (CAST(strftime('%s', I.end_time) AS INTEGER) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n  ,SUM(WD.sum_duration_us) AS '${Baseline:text}'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (${SqlHash:doublequote})\n    AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time\nORDER BY 1",
+                        "timeColumns": [
+                          "time",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "frser-sqlite-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Benchmark}"
+                      },
+                      "spec": {
+                        "queryText": "SELECT\n   ((CAST(strftime('%s', I.end_time) AS INTEGER) - ${BenchmarkTimeDiff}) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n  ,SUM(WD.sum_duration_us) AS '${Benchmark:text}'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (${SqlHash:doublequote})\n    AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time\nORDER BY 1",
+                        "queryType": "table",
+                        "rawQueryText": "SELECT\n   ((CAST(strftime('%s', I.end_time) AS INTEGER) - ${BenchmarkTimeDiff}) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n  ,SUM(WD.sum_duration_us) AS '${Benchmark:text}'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (${SqlHash:doublequote})\n    AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time\nORDER BY 1",
+                        "timeColumns": [
+                          "time",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "annotations": {
+                  "clustering": -1,
+                  "multiLane": false
+                },
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "µs",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-4": {
+        "kind": "Panel",
+        "spec": {
+          "id": 4,
+          "title": "Details",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "frser-sqlite-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Baseline}"
+                      },
+                      "spec": {
+                        "queryText": "SELECT (CAST(strftime('%s', I.end_time) AS INTEGER) / (30000/1000)) * (30000/1000) AS time\n      ,CAST(WD.sql_hash AS VARCHAR(100)) as 'Sql Hash'\n      ,SUM(WD.sum_cpu_us) as 'Baseline - Total Cpu Time'\n      ,SUM(WD.sum_duration_us) as 'Baseline - Total Duration'\n      ,SUM(WD.sum_reads) as 'Baseline - Total Reads'\n      ,SUM(WD.sum_writes) as 'Baseline - Total Writes'\n      ,SUM(WD.execution_count) as 'Baseline - Total Batches'\nFROM WorkloadDetails WD\n  JOIN Intervals I ON I.interval_id = WD.interval_id\nWHERE WD.sql_hash = 2505023241757917174\n      AND time BETWEEN 1778130000 AND 1778173200\nGROUP BY time, WD.sql_hash\nORDER BY time",
+                        "queryType": "table",
+                        "rawQueryText": "SELECT (CAST(strftime('%s', I.end_time) AS INTEGER) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n      ,CAST(WD.sql_hash AS VARCHAR(100)) as 'Sql Hash'\n      ,SUM(WD.sum_cpu_us) as 'Baseline - Total Cpu Time'\n      ,SUM(WD.sum_duration_us) as 'Baseline - Total Duration'\n      ,SUM(WD.sum_reads) as 'Baseline - Total Reads'\n      ,SUM(WD.sum_writes) as 'Baseline - Total Writes'\n      ,SUM(WD.execution_count) as 'Baseline - Total Batches'\nFROM WorkloadDetails WD\n  JOIN Intervals I ON I.interval_id = WD.interval_id\nWHERE WD.sql_hash = ${SqlHash}\n      AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time, WD.sql_hash\nORDER BY time",
+                        "timeColumns": [
+                          "time",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "frser-sqlite-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Benchmark}"
+                      },
+                      "spec": {
+                        "queryText": "SELECT ((CAST(strftime('%s', I.end_time) AS INTEGER) - ${BenchmarkTimeDiff}) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n      ,CAST(WD.sql_hash AS VARCHAR(100)) as 'Sql Hash'\n      ,SUM(WD.sum_cpu_us) as 'Benchmark - Total Cpu Time'\n      ,SUM(WD.sum_duration_us) as 'Benchmark - Total Duration'\n      ,SUM(WD.sum_reads) as 'Benchmark - Total Reads'\n      ,SUM(WD.sum_writes) as 'Benchmark - Total Writes'\n      ,SUM(WD.execution_count) as 'Benchmark - Total Batches'\nFROM WorkloadDetails WD\n  JOIN Intervals I ON I.interval_id = WD.interval_id\nWHERE WD.sql_hash = ${SqlHash}\n      AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time, WD.sql_hash\nORDER BY time",
+                        "queryType": "table",
+                        "rawQueryText": "SELECT ((CAST(strftime('%s', I.end_time) AS INTEGER) - ${BenchmarkTimeDiff}) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n      ,CAST(WD.sql_hash AS VARCHAR(100)) as 'Sql Hash'\n      ,SUM(WD.sum_cpu_us) as 'Benchmark - Total Cpu Time'\n      ,SUM(WD.sum_duration_us) as 'Benchmark - Total Duration'\n      ,SUM(WD.sum_reads) as 'Benchmark - Total Reads'\n      ,SUM(WD.sum_writes) as 'Benchmark - Total Writes'\n      ,SUM(WD.execution_count) as 'Benchmark - Total Batches'\nFROM WorkloadDetails WD\n  JOIN Intervals I ON I.interval_id = WD.interval_id\nWHERE WD.sql_hash = ${SqlHash}\n      AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time, WD.sql_hash\nORDER BY time",
+                        "timeColumns": [
+                          "time",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [
+                {
+                  "kind": "Transformation",
+                  "group": "merge",
+                  "spec": {
+                    "options": {}
+                  }
+                },
+                {
+                  "kind": "Transformation",
+                  "group": "organize",
+                  "spec": {
+                    "options": {
+                      "excludeByName": {},
+                      "includeByName": {},
+                      "indexByName": {
+                        "Baseline - Total Batches": 10,
+                        "Baseline - Total Cpu Time": 2,
+                        "Baseline - Total Duration": 4,
+                        "Baseline - Total Reads": 6,
+                        "Baseline - Total Writes": 8,
+                        "Benchmark - Total Batches": 11,
+                        "Benchmark - Total Cpu Time": 3,
+                        "Benchmark - Total Duration": 5,
+                        "Benchmark - Total Reads": 7,
+                        "Benchmark - Total Writes": 9,
+                        "Sql Hash": 1,
+                        "time": 0
+                      },
+                      "renameByName": {
+                        "Baseline - Total Batches": "${Baseline:text} - Total Batches",
+                        "Baseline - Total Cpu Time": "${Baseline:text} - Total Cpu Time",
+                        "Baseline - Total Duration": "${Baseline:text} - Total Duration Time",
+                        "Baseline - Total Reads": "${Baseline:text} - Total Reads",
+                        "Baseline - Total Writes": "${Baseline:text} - Total Writes",
+                        "Benchmark - Total Batches": "${Benchmark:text} - Total Batches",
+                        "Benchmark - Total Cpu Time": "${Benchmark:text} - Total Duration Time",
+                        "Benchmark - Total Duration": "${Benchmark:text} - Total Duration Time",
+                        "Benchmark - Total Reads": "${Benchmark:text} - Total Reads",
+                        "Benchmark - Total Writes": "${Benchmark:text} - Total Writes"
+                      }
+                    }
+                  }
+                }
+              ],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "table",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "cellHeight": "sm",
+                "enablePagination": false,
+                "frameIndex": 1,
+                "showHeader": true,
+                "sortBy": [
+                  {
+                    "desc": false,
+                    "displayName": "time"
+                  }
+                ]
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "noValue": "-",
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "footer": {
+                      "reducers": []
+                    },
+                    "inspect": false,
+                    "minWidth": 150,
+                    "wrapHeaderText": true
+                  }
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "end_time"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 229
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "^(?!.*Delta)(?=.* - Total )(?=.*(?:Cpu Time|Duration)).*$"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "ms"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "^(?!.*Delta).*(?:Batches|Reads|Writes).*$"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "locale"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": ".+\\s-\\sTotal\\s.+"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.footer.reducers",
+                        "value": [
+                          "sum"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Sql Hash"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 186
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "time"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 174
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-6": {
+        "kind": "Panel",
+        "spec": {
+          "id": 6,
+          "title": "Total Cpu Time",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "frser-sqlite-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Baseline}"
+                      },
+                      "spec": {
+                        "queryText": "SELECT\n   (CAST(strftime('%s', I.end_time) AS INTEGER) / (60000/1000)) * (60000/1000) AS time\n  ,SUM(WD.sum_cpu_us) AS 'TestozzoSQLite'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (\"4547561997451052831\")\n    AND time BETWEEN 1778140800 AND 1778162400\nGROUP BY time\nORDER BY 1",
+                        "queryType": "time series",
+                        "rawQueryText": "SELECT\n   (CAST(strftime('%s', I.end_time) AS INTEGER) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n  ,SUM(WD.sum_cpu_us) AS '${Baseline:text}'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (${SqlHash:doublequote})\n    AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time\nORDER BY 1",
+                        "timeColumns": [
+                          "time",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "frser-sqlite-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Benchmark}"
+                      },
+                      "spec": {
+                        "queryText": "SELECT\n   ((CAST(strftime('%s', I.end_time) AS INTEGER) - 2784242) / (60000/1000)) * (60000/1000) AS time\n  ,SUM(WD.sum_cpu_us) AS 'testEventi'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (\"4547561997451052831\")\n    AND time BETWEEN 1778140800 AND 1778162400\nGROUP BY time\nORDER BY 1",
+                        "queryType": "time series",
+                        "rawQueryText": "SELECT\n   ((CAST(strftime('%s', I.end_time) AS INTEGER) - ${BenchmarkTimeDiff}) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n  ,SUM(WD.sum_cpu_us) AS '${Benchmark:text}'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (${SqlHash:doublequote})\n    AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time\nORDER BY 1",
+                        "timeColumns": [
+                          "time",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "sum"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "µs",
+                  "thresholds": {
+                    "mode": "percentage",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 0,
+                        "color": "purple"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "fieldMinMax": false
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-7": {
+        "kind": "Panel",
+        "spec": {
+          "id": 7,
+          "title": "Total Duration",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "frser-sqlite-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Baseline}"
+                      },
+                      "spec": {
+                        "queryText": "SELECT\n   (CAST(strftime('%s', I.end_time) AS INTEGER) / (60000/1000)) * (60000/1000) AS time\n  ,SUM(WD.sum_duration_us) AS 'TestozzoSQLite'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (\"-4337140546958801659\")\n    AND time BETWEEN 1778140800 AND 1778162400\nGROUP BY time\nORDER BY 1",
+                        "queryType": "time series",
+                        "rawQueryText": "SELECT\n   (CAST(strftime('%s', I.end_time) AS INTEGER) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n  ,SUM(WD.sum_duration_us) AS '${Baseline:text}'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (${SqlHash:doublequote})\n    AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time\nORDER BY 1",
+                        "timeColumns": [
+                          "time",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "frser-sqlite-datasource",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Benchmark}"
+                      },
+                      "spec": {
+                        "queryText": "SELECT\n   ((CAST(strftime('%s', I.end_time) AS INTEGER) - 0) / (60000/1000)) * (60000/1000) AS time\n  ,SUM(WD.sum_duration_us) AS 'test4'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (\"-4337140546958801659\")\n    AND time BETWEEN 1778140800 AND 1778162400\nGROUP BY time\nORDER BY 1",
+                        "queryType": "time series",
+                        "rawQueryText": "SELECT\n   ((CAST(strftime('%s', I.end_time) AS INTEGER) - ${BenchmarkTimeDiff}) / ($__interval_ms/1000)) * ($__interval_ms/1000) AS time\n  ,SUM(WD.sum_duration_us) AS '${Benchmark:text}'\nFROM WorkloadDetails WD\n    JOIN Intervals I ON WD.interval_id = I.interval_id\n  WHERE WD.sql_hash IN (${SqlHash:doublequote})\n    AND time BETWEEN ${__from:date:seconds} AND ${__to:date:seconds}\nGROUP BY time\nORDER BY 1",
+                        "timeColumns": [
+                          "time",
+                          "ts"
+                        ]
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "sum"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "µs",
+                  "thresholds": {
+                    "mode": "percentage",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 0,
+                        "color": "purple"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "fieldMinMax": false
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "layout": {
+      "kind": "GridLayout",
+      "spec": {
+        "items": [
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 6,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-1"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 6,
+              "width": 4,
+              "height": 8,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-6"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 4,
+              "y": 6,
+              "width": 20,
+              "height": 8,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-2"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 14,
+              "width": 4,
+              "height": 8,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-7"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 4,
+              "y": 14,
+              "width": 20,
+              "height": 8,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-3"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 22,
+              "width": 24,
+              "height": 12,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-4"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "links": [],
+    "liveNow": false,
+    "preload": false,
+    "tags": [],
+    "timeSettings": {
+      "timezone": "utc",
+      "from": "now-6h",
+      "to": "now",
+      "autoRefresh": "",
+      "autoRefreshIntervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "hideTimepicker": false,
+      "fiscalYearStartMonth": 0
+    },
+    "title": "Query detail (Sqlite)",
+    "variables": [
+      {
+        "kind": "DatasourceVariable",
+        "spec": {
+          "name": "Baseline",
+          "pluginId": "frser-sqlite-datasource",
+          "refresh": "onDashboardLoad",
+          "regex": "",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "hide": "hideVariable",
+          "skipUrlSync": false,
+          "allowCustomValue": false
+        }
+      },
+      {
+        "kind": "DatasourceVariable",
+        "spec": {
+          "name": "Benchmark",
+          "pluginId": "frser-sqlite-datasource",
+          "refresh": "onDashboardLoad",
+          "regex": "",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "hide": "hideVariable",
+          "skipUrlSync": false,
+          "allowCustomValue": false
+        }
+      },
+      {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "SqlHash",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "query": "",
+          "hide": "hideVariable",
+          "skipUrlSync": false
+        }
+      },
+      {
+        "kind": "QueryVariable",
+        "spec": {
+          "name": "QueryText",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "hide": "hideVariable",
+          "refresh": "onDashboardLoad",
+          "skipUrlSync": false,
+          "query": {
+            "kind": "DataQuery",
+            "group": "frser-sqlite-datasource",
+            "version": "v0",
+            "datasource": {
+              "name": "${Baseline}"
+            },
+            "spec": {
+              "__legacyStringValue": "SELECT NQ.example_text\nFROM NormalizedQueries NQ\nWHERE CAST(NQ.sql_hash AS VARCHAR(100)) = ${SqlHash}"
+            }
+          },
+          "regex": "",
+          "regexApplyTo": "value",
+          "sort": "disabled",
+          "definition": "SELECT NQ.example_text\nFROM NormalizedQueries NQ\nWHERE CAST(NQ.sql_hash AS VARCHAR(100)) = ${SqlHash}",
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "allowCustomValue": false
+        }
+      },
+      {
+        "kind": "CustomVariable",
+        "spec": {
+          "name": "BenchmarkTimeDiff",
+          "query": "",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "hide": "hideVariable",
+          "skipUrlSync": false,
+          "allowCustomValue": false,
+          "valuesFormat": "csv"
+        }
+      }
+    ],
+    "preferences": {
+      "layout": {
+        "kind": "GridLayout",
+        "spec": {
+          "items": []
+        }
+      }
+    }
+  }
+}

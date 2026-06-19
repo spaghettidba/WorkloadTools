@@ -1,0 +1,1330 @@
+{
+  "apiVersion": "dashboard.grafana.app/v2",
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "QueryDetailDuckDB",
+    "generation": 12,
+    "creationTimestamp": "2026-06-16T14:05:48Z",
+    "labels": {},
+    "annotations": {}
+  },
+  "spec": {
+    "annotations": [
+      {
+        "kind": "AnnotationQuery",
+        "spec": {
+          "query": {
+            "kind": "DataQuery",
+            "group": "grafana",
+            "version": "v0",
+            "spec": {},
+            "labels": {
+              "grafana.app/export-label": "grafana-1"
+            }
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "builtIn": true
+        }
+      }
+    ],
+    "cursorSync": "Off",
+    "editable": true,
+    "elements": {
+      "panel-1": {
+        "kind": "Panel",
+        "spec": {
+          "id": 1,
+          "title": "Query Text",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "text",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "code": {
+                  "language": "sql",
+                  "showLineNumbers": true,
+                  "showMiniMap": false
+                },
+                "content": "${QueryText}\n",
+                "mode": "code"
+              },
+              "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-2": {
+        "kind": "Panel",
+        "spec": {
+          "id": 2,
+          "title": "Total Cpu Time",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "mssql",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Connection}"
+                      },
+                      "spec": {
+                        "dataset": "WorkloadTools",
+                        "editorMode": "code",
+                        "format": 0,
+                        "rawQuery": true,
+                        "rawSql": "SELECT\r\n   time_bucket($__interval, I.end_time) as \"time\"\r\n  ,CAST(SUM(WD.sum_cpu_us) AS bigint) AS \"${BaselineSchema:text}\"\r\nFROM \"${BaselineSchema:text}\".WorkloadDetails WD\r\n    JOIN \"${BaselineSchema:text}\".Intervals I ON WD.interval_id = I.interval_id\r\n  WHERE WD.sql_hash IN (${SqlHash:singlequote})\r\n    AND $__timeFilter(I.end_time)\r\nGROUP BY time_bucket($__interval, I.end_time)\r\nORDER BY 1",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "mssql",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Connection}"
+                      },
+                      "spec": {
+                        "dataset": "WorkloadTools",
+                        "editorMode": "code",
+                        "format": 0,
+                        "rawQuery": true,
+                        "rawSql": "SELECT\r\n   time_bucket($__interval, t.adj_time) as \"time\"\r\n  ,CAST(SUM(WD.sum_cpu_us) AS bigint) AS \"${BenchmarkSchema:text}\"\r\nFROM \"${BenchmarkSchema:text}\".WorkloadDetails WD\r\n    JOIN \"${BenchmarkSchema:text}\".Intervals I ON WD.interval_id = I.interval_id\r\n    JOIN (SELECT DATE_ADD(I.end_time, INTERVAL ${BenchmarkTimeDiff:text} MILLISECOND) as adj_time\r\n              ,end_time as end_time\r\n        FROM \"${BenchmarkSchema:text}\".Intervals) t ON t.end_time = I.end_time\r\nWHERE WD.sql_hash IN (${SqlHash:singlequote})\r\n  AND $__timeFilter(t.adj_time)\r\nGROUP BY time_bucket($__interval, t.adj_time)\r\nORDER BY 1",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "annotations": {
+                  "clustering": -1,
+                  "multiLane": false
+                },
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "µs",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  }
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "A .+"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "${BaselineSchema:text}"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "B .+"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "${BenchmarkSchema:text}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-3": {
+        "kind": "Panel",
+        "spec": {
+          "id": 3,
+          "title": "Total Duration",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "mssql",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Connection}"
+                      },
+                      "spec": {
+                        "dataset": "WorkloadTools",
+                        "editorMode": "code",
+                        "format": 0,
+                        "rawQuery": true,
+                        "rawSql": "SELECT\r\n   time_bucket($__interval, I.end_time) as \"time\"\r\n  ,CAST(SUM(WD.sum_duration_us) AS bigint) AS \"${BaselineSchema:text}\"\r\nFROM \"${BaselineSchema:text}\".WorkloadDetails WD\r\n    JOIN \"${BaselineSchema:text}\".Intervals I ON WD.interval_id = I.interval_id\r\n  WHERE WD.sql_hash IN (${SqlHash:singlequote})\r\n    AND $__timeFilter(I.end_time)\r\nGROUP BY time_bucket($__interval, I.end_time)\r\nORDER BY 1",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "mssql",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Connection}"
+                      },
+                      "spec": {
+                        "dataset": "WorkloadTools",
+                        "editorMode": "code",
+                        "format": 0,
+                        "rawQuery": true,
+                        "rawSql": "SELECT\r\n   time_bucket($__interval, t.adj_time) as \"time\"\r\n  ,CAST(SUM(WD.sum_duration_us) AS bigint) AS \"${BenchmarkSchema:text}\"\r\nFROM \"${BenchmarkSchema:text}\".WorkloadDetails WD\r\n    JOIN \"${BenchmarkSchema:text}\".Intervals I ON WD.interval_id = I.interval_id\r\n    JOIN (SELECT DATE_ADD(I.end_time, INTERVAL ${BenchmarkTimeDiff:text} MILLISECOND) as adj_time\r\n              ,I.end_time as end_time\r\n        FROM \"${BenchmarkSchema:text}\".Intervals I) t ON t.end_time = I.end_time\r\n  WHERE WD.sql_hash IN (${SqlHash:singlequote})\r\n    AND $__timeFilter(t.adj_time)\r\nGROUP BY time_bucket($__interval, t.adj_time)\r\nORDER BY 1",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "annotations": {
+                  "clustering": -1,
+                  "multiLane": false
+                },
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "none"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "µs",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  }
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "A .+"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "${BaselineSchema:text}"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "B .+"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "${BenchmarkSchema:text}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-4": {
+        "kind": "Panel",
+        "spec": {
+          "id": 4,
+          "title": "Details",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "mssql",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Connection}"
+                      },
+                      "spec": {
+                        "dataset": "WorkloadTools",
+                        "editorMode": "code",
+                        "format": 1,
+                        "rawQuery": true,
+                        "rawSql": "SELECT time_bucket($__interval, I.end_time) as \"time\"\r\n      ,CAST(WD.sql_hash AS VARCHAR(100)) as 'Sql Hash'\r\n      ,CAST(SUM(WD.sum_cpu_us) AS bigint) as 'Baseline - Total Cpu Time'\r\n      ,CAST(SUM(WD.sum_duration_us) AS bigint) as 'Baseline - Total Duration'\r\n      ,CAST(SUM(WD.sum_reads) AS bigint) as 'Baseline - Total Reads'\r\n      ,CAST(SUM(WD.sum_writes) AS bigint) as 'Baseline - Total Writes'\r\n      ,CAST(SUM(WD.execution_count) AS bigint) as 'Baseline - Total Batches'\r\nFROM \"${BaselineSchema:text}\".WorkloadDetails WD\r\n  JOIN \"${BaselineSchema:text}\".Intervals I ON I.interval_id = WD.interval_id\r\nWHERE WD.sql_hash = ${SqlHash}\r\n      AND $__timeFilter(I.end_time)\r\nGROUP BY time_bucket($__interval, I.end_time), WD.sql_hash\r\nORDER BY time",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "mssql",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Connection}"
+                      },
+                      "spec": {
+                        "dataset": "WorkloadTools",
+                        "editorMode": "code",
+                        "format": 1,
+                        "rawQuery": true,
+                        "rawSql": "SELECT time_bucket($__interval, t.adj_time) as \"time\"\r\n      ,CAST(WD.sql_hash AS VARCHAR(100)) as 'Sql Hash'\r\n      ,CAST(SUM(WD.sum_cpu_us) AS bigint) as 'Benchmark - Total Cpu Time'\r\n      ,CAST(SUM(WD.sum_duration_us) AS bigint) as 'Benchmark - Total Duration'\r\n      ,CAST(SUM(WD.sum_reads) AS bigint) as 'Benchmark - Total Reads'\r\n      ,CAST(SUM(WD.sum_writes) AS bigint) as 'Benchmark - Total Writes'\r\n      ,CAST(SUM(WD.execution_count) AS bigint) as 'Benchmark - Total Batches'\r\nFROM \"${BenchmarkSchema:text}\".WorkloadDetails WD\r\n  JOIN \"${BenchmarkSchema:text}\".Intervals I ON I.interval_id = WD.interval_id\r\n  JOIN (SELECT DATE_ADD(I.end_time, INTERVAL ${BenchmarkTimeDiff:text} MILLISECOND) as adj_time\r\n              ,I.end_time as end_time\r\n        FROM \"${BenchmarkSchema:text}\".Intervals I) t ON t.end_time = I.end_time\r\nWHERE WD.sql_hash = ${SqlHash}\r\n      AND $__timeFilter(t.adj_time)\r\nGROUP BY time_bucket($__interval, t.adj_time), WD.sql_hash\r\nORDER BY time",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [
+                {
+                  "kind": "Transformation",
+                  "group": "merge",
+                  "spec": {
+                    "options": {}
+                  }
+                },
+                {
+                  "kind": "Transformation",
+                  "group": "organize",
+                  "spec": {
+                    "options": {
+                      "excludeByName": {},
+                      "includeByName": {},
+                      "indexByName": {
+                        "Baseline - Total Batches": 10,
+                        "Baseline - Total Cpu Time": 2,
+                        "Baseline - Total Duration": 4,
+                        "Baseline - Total Reads": 6,
+                        "Baseline - Total Writes": 8,
+                        "Benchmark - Total Batches": 11,
+                        "Benchmark - Total Cpu Time": 3,
+                        "Benchmark - Total Duration": 5,
+                        "Benchmark - Total Reads": 7,
+                        "Benchmark - Total Writes": 9,
+                        "Sql Hash": 1,
+                        "time": 0
+                      },
+                      "renameByName": {
+                        "Baseline - Total Batches": "${BaselineSchema:text} - Total Batches",
+                        "Baseline - Total Cpu Time": "${BaselineSchema:text} - Total Cpu Time",
+                        "Baseline - Total Duration": "${BaselineSchema:text} - Total Duration Time",
+                        "Baseline - Total Reads": "${BaselineSchema:text} - Total Reads",
+                        "Baseline - Total Writes": "${BaselineSchema:text} - Total Writes",
+                        "Benchmark - Total Batches": "${BenchmarkSchema:text} - Total Batches",
+                        "Benchmark - Total Cpu Time": "${BenchmarkSchema:text} - Total Cpu Time",
+                        "Benchmark - Total Duration": "${BenchmarkSchema:text} - Total Duration Time",
+                        "Benchmark - Total Reads": "${BenchmarkSchema:text} - Total Reads",
+                        "Benchmark - Total Writes": "${BenchmarkSchema:text} - Total Writes"
+                      }
+                    }
+                  }
+                }
+              ],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "table",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "cellHeight": "sm",
+                "enablePagination": false,
+                "frameIndex": 1,
+                "showHeader": true,
+                "sortBy": [
+                  {
+                    "desc": false,
+                    "displayName": "time"
+                  }
+                ]
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "green"
+                      },
+                      {
+                        "value": 80,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "noValue": "-",
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "footer": {
+                      "reducers": []
+                    },
+                    "inspect": false,
+                    "minWidth": 150,
+                    "wrapHeaderText": true
+                  }
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "end_time"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 229
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "^(?!.*Delta)(?=.* - Total )(?=.*(?:Cpu Time|Duration)).*$"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "µs"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "^(?!.*Delta).*(?:Batches|Reads|Writes).*$"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "locale"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": ".+\\s-\\sTotal\\s.+"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.footer.reducers",
+                        "value": [
+                          "sum"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Sql Hash"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 186
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "time"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 174
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-6": {
+        "kind": "Panel",
+        "spec": {
+          "id": 6,
+          "title": "Total Cpu Time",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "mssql",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Connection}"
+                      },
+                      "spec": {
+                        "dataset": "WorkloadTools",
+                        "editorMode": "code",
+                        "format": 0,
+                        "rawQuery": true,
+                        "rawSql": "SELECT\r\n   time_bucket($__interval, I.end_time) as \"time\"\r\n  ,CAST(SUM(WD.sum_cpu_us) AS bigint) AS \"${BaselineSchema:text}\"\r\nFROM \"${BaselineSchema:text}\".WorkloadDetails WD\r\n    JOIN \"${BaselineSchema:text}\".Intervals I ON WD.interval_id = I.interval_id\r\n  WHERE WD.sql_hash IN (${SqlHash:singlequote})\r\n    AND $__timeFilter(I.end_time)\r\nGROUP BY time_bucket($__interval, I.end_time)\r\nORDER BY 1",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "mssql",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Connection}"
+                      },
+                      "spec": {
+                        "dataset": "WorkloadTools",
+                        "editorMode": "code",
+                        "format": 0,
+                        "rawQuery": true,
+                        "rawSql": "SELECT\r\n   time_bucket($__interval, t.adj_time) as \"time\"\r\n  ,CAST(SUM(WD.sum_cpu_us) AS bigint) AS \"${BenchmarkSchema:text}\"\r\nFROM \"${BenchmarkSchema:text}\".WorkloadDetails WD\r\n    JOIN \"${BenchmarkSchema:text}\".Intervals I ON WD.interval_id = I.interval_id\r\n    JOIN (SELECT DATE_ADD(I.end_time, INTERVAL ${BenchmarkTimeDiff:text} MILLISECOND) as adj_time\r\n              ,I.end_time as end_time\r\n        FROM \"${BenchmarkSchema:text}\".Intervals I) t ON t.end_time = I.end_time\r\n  WHERE WD.sql_hash IN (${SqlHash:singlequote})\r\n    AND $__timeFilter(t.adj_time)\r\nGROUP BY time_bucket($__interval, t.adj_time)\r\nORDER BY 1",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "sum"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "µs",
+                  "thresholds": {
+                    "mode": "percentage",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 0,
+                        "color": "purple"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "fieldMinMax": false
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "A .+"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "${BaselineSchema:text}"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "B .+"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "${BenchmarkSchema:text}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-7": {
+        "kind": "Panel",
+        "spec": {
+          "id": 7,
+          "title": "Total Duration",
+          "description": "",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "mssql",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Connection}"
+                      },
+                      "spec": {
+                        "dataset": "WorkloadTools",
+                        "editorMode": "code",
+                        "format": 0,
+                        "rawQuery": true,
+                        "rawSql": "SELECT\r\n   time_bucket($__interval, I.end_time) as \"time\"\r\n  ,CAST(SUM(WD.sum_duration_us) AS bigint) AS \"${BaselineSchema:text}\"\r\nFROM \"${BaselineSchema:text}\".WorkloadDetails WD\r\n    JOIN \"${BaselineSchema:text}\".Intervals I ON WD.interval_id = I.interval_id\r\n  WHERE WD.sql_hash IN (${SqlHash:singlequote})\r\n    AND $__timeFilter(I.end_time)\r\nGROUP BY time_bucket($__interval, I.end_time)\r\nORDER BY 1",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "mssql",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${Connection}"
+                      },
+                      "spec": {
+                        "dataset": "WorkloadTools",
+                        "editorMode": "code",
+                        "format": 0,
+                        "rawQuery": true,
+                        "rawSql": "SELECT\r\n   time_bucket($__interval, t.adj_time) as \"time\"\r\n  ,CAST(SUM(WD.sum_duration_us) AS bigint) AS \"${BenchmarkSchema:text}\"\r\nFROM \"${BenchmarkSchema:text}\".WorkloadDetails WD\r\n    JOIN \"${BenchmarkSchema:text}\".Intervals I ON WD.interval_id = I.interval_id\r\n    JOIN (SELECT DATE_ADD(I.end_time, INTERVAL ${BenchmarkTimeDiff:text} MILLISECOND) as adj_time\r\n              ,I.end_time as end_time\r\n        FROM \"${BenchmarkSchema:text}\".Intervals I) t ON t.end_time = I.end_time\r\n  WHERE WD.sql_hash IN (${SqlHash:singlequote})\r\n    AND $__timeFilter(t.adj_time)\r\nGROUP BY time_bucket($__interval, t.adj_time)\r\nORDER BY 1",
+                        "sql": {
+                          "columns": [
+                            {
+                              "parameters": [],
+                              "type": "function"
+                            }
+                          ],
+                          "groupBy": [
+                            {
+                              "property": {
+                                "type": "string"
+                              },
+                              "type": "groupBy"
+                            }
+                          ],
+                          "limit": 50
+                        }
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.2",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                  "calcs": [
+                    "sum"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "µs",
+                  "thresholds": {
+                    "mode": "percentage",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 0,
+                        "color": "purple"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "fieldMinMax": false
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "A .+"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "${BaselineSchema:text}"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "scope": "series",
+                      "options": "B .+"
+                    },
+                    "properties": [
+                      {
+                        "id": "displayName",
+                        "value": "${BenchmarkSchema:text}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "layout": {
+      "kind": "GridLayout",
+      "spec": {
+        "items": [
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 6,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-1"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 6,
+              "width": 4,
+              "height": 8,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-6"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 4,
+              "y": 6,
+              "width": 20,
+              "height": 8,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-2"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 14,
+              "width": 4,
+              "height": 8,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-7"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 4,
+              "y": 14,
+              "width": 20,
+              "height": 8,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-3"
+              }
+            }
+          },
+          {
+            "kind": "GridLayoutItem",
+            "spec": {
+              "x": 0,
+              "y": 22,
+              "width": 24,
+              "height": 12,
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-4"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "links": [],
+    "liveNow": false,
+    "preload": false,
+    "tags": [],
+    "timeSettings": {
+      "timezone": "utc",
+      "from": "2026-05-07T09:38:01.000Z",
+      "to": "2026-05-07T12:39:20.000Z",
+      "autoRefresh": "",
+      "autoRefreshIntervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "hideTimepicker": false,
+      "fiscalYearStartMonth": 0
+    },
+    "title": "Query detail (DuckDB)",
+    "variables": [
+      {
+        "kind": "DatasourceVariable",
+        "spec": {
+          "name": "Connection",
+          "pluginId": "motherduck-duckdb-datasource",
+          "refresh": "onDashboardLoad",
+          "regex": "",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "hide": "hideVariable",
+          "skipUrlSync": false,
+          "allowCustomValue": false
+        }
+      },
+      {
+        "kind": "CustomVariable",
+        "spec": {
+          "name": "BaselineSchema",
+          "query": "",
+          "current": {
+            "text": "dbo",
+            "value": "dbo"
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "hide": "hideVariable",
+          "skipUrlSync": false,
+          "allowCustomValue": false,
+          "valuesFormat": "csv"
+        }
+      },
+      {
+        "kind": "CustomVariable",
+        "spec": {
+          "name": "BenchmarkSchema",
+          "query": "",
+          "current": {
+            "text": "dbo",
+            "value": "dbo"
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "hide": "hideVariable",
+          "skipUrlSync": false,
+          "allowCustomValue": false,
+          "valuesFormat": "csv"
+        }
+      },
+      {
+        "kind": "TextVariable",
+        "spec": {
+          "name": "SqlHash",
+          "current": {
+            "text": "-961245663784441138",
+            "value": "-961245663784441138"
+          },
+          "query": "-961245663784441138",
+          "hide": "hideVariable",
+          "skipUrlSync": false
+        }
+      },
+      {
+        "kind": "QueryVariable",
+        "spec": {
+          "name": "QueryText",
+          "current": {
+            "text": "",
+            "value": ""
+          },
+          "hide": "hideVariable",
+          "refresh": "onDashboardLoad",
+          "skipUrlSync": false,
+          "query": {
+            "kind": "DataQuery",
+            "group": "motherduck-duckdb-datasource",
+            "version": "v0",
+            "datasource": {
+              "name": "${Connection}"
+            },
+            "spec": {
+              "__legacyStringValue": "SELECT NQ.example_text\nFROM \"\"${BaselineSchema:text}\"\".NormalizedQueries NQ\nWHERE CAST(NQ.sql_hash AS VARCHAR(100)) = ${SqlHash:text}"
+            }
+          },
+          "regex": "",
+          "regexApplyTo": "value",
+          "sort": "disabled",
+          "definition": "SELECT NQ.example_text\nFROM \"\"${BaselineSchema:text}\"\".NormalizedQueries NQ\nWHERE CAST(NQ.sql_hash AS VARCHAR(100)) = ${SqlHash:text}",
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "allowCustomValue": false
+        }
+      },
+      {
+        "kind": "CustomVariable",
+        "spec": {
+          "name": "BenchmarkTimeDiff",
+          "query": "",
+          "current": {
+            "text": "0",
+            "value": "0"
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": false,
+          "hide": "hideVariable",
+          "skipUrlSync": false,
+          "allowCustomValue": false,
+          "valuesFormat": "csv"
+        }
+      }
+    ],
+    "preferences": {
+      "layout": {
+        "kind": "GridLayout",
+        "spec": {
+          "items": []
+        }
+      }
+    }
+  }
+}
