@@ -16,8 +16,9 @@ namespace WorkloadTools.Util
         public static DataTable ToDataTable<T>(IEnumerable<T> items)
         {
             var tb = new DataTable(typeof(T).Name);
+            var type = typeof(T);
 
-            var props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             foreach (var prop in props)
             {

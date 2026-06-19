@@ -11,7 +11,7 @@ namespace WorkloadTools.Consumer.Analysis
     {
         private WorkloadAnalyzer analyzer;
 
-        private int _uploadIntervalSeconds;
+        private int _uploadIntervalSeconds = 60; // 1 minute is the default
 
         public SqlConnectionInfo ConnectionInfo { get; set; }
         public int UploadIntervalSeconds
@@ -23,7 +23,12 @@ namespace WorkloadTools.Consumer.Analysis
                 {
                     throw new ArgumentOutOfRangeException("UploadIntervalSeconds must be an exact multiple of 60");
                 }
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException("UploadIntervalSeconds cannot be less than or equal to 0");
+                }
                 _uploadIntervalSeconds = value;
+                if(analyzer != null) analyzer.Interval = value;
             }
         }
 
@@ -45,14 +50,13 @@ namespace WorkloadTools.Consumer.Analysis
         {
             if(analyzer == null)
             {
-                analyzer = new WorkloadAnalyzer()
+                analyzer = new WorkloadAnalyzer(ConnectionInfo)
                 {
                     Interval = UploadIntervalSeconds / 60,
-                    ConnectionInfo = ConnectionInfo,
 					MaximumWriteRetries = MaximumWriteRetries,
 					TruncateTo1024 = SqlNormalizerTruncateTo1024,
 					TruncateTo4000 = SqlNormalizerTruncateTo4000,
-                    WriteDetail = WriteDetail
+                    WriteDetail = WriteDetail,
 				};
             }
 

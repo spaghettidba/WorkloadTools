@@ -4,10 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using ProtoBuf;
+
 namespace WorkloadTools
 {
-	[Serializable]
-	public class ErrorWorkloadEvent : ExecutionWorkloadEvent
+    [ProtoContract]
+    public class ErrorWorkloadEvent : ExecutionWorkloadEvent
 	{
 		public ErrorWorkloadEvent()
         {

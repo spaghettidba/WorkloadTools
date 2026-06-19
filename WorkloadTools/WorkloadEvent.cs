@@ -1,11 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
+
+using ProtoBuf;
 
 namespace WorkloadTools
 {
     [Serializable]
+    [ProtoContract]
+
+    [ProtoInclude(10, typeof(CounterWorkloadEvent))]
+    [ProtoInclude(11, typeof(DiskPerfWorkloadEvent))]
+    [ProtoInclude(12, typeof(ExecutionWorkloadEvent))]
+    [ProtoInclude(13, typeof(MessageWorkloadEvent))]
+    [ProtoInclude(14, typeof(WaitStatsWorkloadEvent))]
+
     public abstract class WorkloadEvent
     {
         public enum EventType 
@@ -23,7 +34,10 @@ namespace WorkloadTools
             Unknown = -1
         }
 
+        [ProtoMember(1)]
         public DateTime StartTime{ get; set; }
+
+        [ProtoMember(2)]
         public EventType Type { get; set; } = EventType.Unknown;
         
     }

@@ -39,18 +39,27 @@ namespace SqlWorkload
 
             try
             {
-                var options = new Options();
-                if (!CommandLine.Parser.Default.ParseArguments(args, options))
-                {
-                    return;
-                }
-                Run(options);
+                var result = CommandLine.Parser.Default.ParseArguments<Options>(args)
+                    .WithParsed(options => Run(options))
+                    .WithNotParsed(errors => DisplayHelp(errors));
             }
             catch(Exception e)
             {
                 logger.Error(e);
             }
 
+        }
+
+        static void DisplayHelp(IEnumerable<Error> _)
+        {
+            Console.WriteLine("SqlWorkload - SQL Workload Capture and Replay Tool");
+            Console.WriteLine("\nUsage: SqlWorkload [options]");
+            Console.WriteLine("\nOptions:");
+            Console.WriteLine("  -F, --File <file>         Configuration file (default: SqlWorkload.json)");
+            Console.WriteLine("  -L, --Log <file>          Log file path");
+            Console.WriteLine("  -E, --LogLevel <level>    Log level (Trace, Debug, Info, Warn, Error, Fatal)");
+            Console.WriteLine("  --help                    Show help message");
+            Console.WriteLine("  --version                 Show version information");
         }
 
         static void Run(Options options)
@@ -95,7 +104,11 @@ namespace SqlWorkload
             if (!File.Exists(options.ConfigurationFile))
             {
                 logger.Error("File not found!");
-                Console.WriteLine(options.GetUsage());
+                Console.WriteLine("Configuration file not found: " + options.ConfigurationFile);
+                Console.WriteLine("\nUsage: SqlWorkload [options]");
+                Console.WriteLine("  -F, --File <file>         Configuration file (default: SqlWorkload.json)");
+                Console.WriteLine("  -L, --Log <file>          Log file path");
+                Console.WriteLine("  -E, --LogLevel <level>    Log level");
                 return;
             }
 
@@ -155,7 +168,7 @@ namespace SqlWorkload
 
     class Options
     {
-        [Option('F', "File", DefaultValue = "SqlWorkload.json", HelpText = "Configuration file")]
+        [Option('F', "File", Default = "SqlWorkload.json", HelpText = "Configuration file")]
         public string ConfigurationFile { get; set; }
 
         [Option('L', "Log", HelpText = "Log file")]
@@ -163,17 +176,6 @@ namespace SqlWorkload
 
         [Option('E', "LogLevel", HelpText = "Log level")]
         public string LogLevel { get; set; }
-
-        [ParserState]
-        public IParserState LastParserState { get; set; }
-
-        [HelpOption]
-        public string GetUsage()
-        {
-            return HelpText.AutoBuild(this,
-              (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
-        }
-    
     }
 
 }

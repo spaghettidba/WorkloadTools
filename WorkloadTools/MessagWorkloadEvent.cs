@@ -4,9 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using ProtoBuf;
+
 namespace WorkloadTools
 {
-    [Serializable]
+    [ProtoContract]
     public class MessageWorkloadEvent : WorkloadEvent
     {
         public enum MessageType
@@ -14,8 +16,11 @@ namespace WorkloadTools
             TotalEvents
         }
 
+        [ProtoMember(10)]
         public MessageType MsgType { get; set; }
-        public object Value { get; set; }
+
+        [ProtoMember(11)]
+        public long Value { get; set; }
 
         public MessageWorkloadEvent()
         {
